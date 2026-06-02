@@ -76,13 +76,24 @@
 #define KEY_DATE_VISIBLE         118
 #define KEY_TEMP_VISIBLE         119
 #define KEY_TEMP_UNIT            110
-#define KEY_NUMBER_FONT          125
+#define KEY_NUMBER_FONT          121
 #define KEY_VIBRATE_BT_DISCONNECT 54
 #define KEY_VIBRATE_BT_RECONNECT  55
 #define KEY_HOUR_HAND_OUTER      114
 #define KEY_HOUR_HAND_INNER      115
 #define KEY_MIN_HAND_OUTER       116
 #define KEY_MIN_HAND_INNER       117
+// Message keys — new colour settings
+#define KEY_BACKGROUND_COLOR     126
+#define KEY_NUMBER_COLOR         127
+#define KEY_ICON_COLOR           128
+#define KEY_HOUR_MARKER_COLOR    129
+#define KEY_MINUTE_MARKER_COLOR  130
+#define KEY_CENTER_DOT_50_COLOR  131
+#define KEY_CENTER_DOT_20_COLOR  132
+#define KEY_MIDDLE_RING_20_COLOR 133
+#define KEY_DATE_COLOR           134
+#define KEY_TEMP_COLOR_KEY       135
 
 // Shake mode
 #define SHAKE_MODE_ON_SHAKE     0
@@ -109,13 +120,7 @@
 #define APP_MSG_OUTBOX_SIZE     64
 
 // Visual constants
-#define FIXED_BG_COLOR           GColorBlack
-#define FIXED_TEXT_COLOR         GColorWhite
 #define FIXED_MIN_HAND_NOBT      GColorWhite
-#define FIXED_MARKER_COLOR       GColorWhite
-#define FIXED_TEMP_COLOR         GColorLightGray
-#define FIXED_BATT_MID_COLOR     GColorYellow
-#define FIXED_BATT_LOW_COLOR     GColorRed
 #define FIXED_BATT_PCT_MID       50
 #define FIXED_BATT_PCT_LOW       20
 
@@ -145,6 +150,17 @@ typedef struct {
   GColor min_hand_outer;
   GColor min_hand_inner;
   int8_t number_font;  // 0=LECO28, 1=Bitham30Black, 2=Gothic24Bold, 3=RobotoCondensed21, 4=DroidSerif28Bold, 5=Bitham42Light
+  // Colour settings
+  GColor background_color;
+  GColor number_color;
+  GColor icon_color;
+  GColor hour_marker_color;
+  GColor minute_marker_color;
+  GColor center_dot_50_color;
+  GColor center_dot_20_color;
+  GColor middle_ring_20_color;
+  GColor date_color;
+  GColor temp_color;
 } Settings;
 
 // ============================================================
@@ -196,6 +212,17 @@ static void settings_set_defaults(Settings *s) {
   s->min_hand_outer              = GColorWhite;
   s->min_hand_inner              = GColorBlue;
   s->number_font                 = 3;  // Roboto Condensed 21
+  // Colour defaults
+  s->background_color            = GColorBlack;
+  s->number_color                = GColorWhite;
+  s->icon_color                  = GColorWhite;
+  s->hour_marker_color           = GColorWhite;
+  s->minute_marker_color         = GColorWhite;
+  s->center_dot_50_color         = GColorWhite;
+  s->center_dot_20_color         = GColorRed;
+  s->middle_ring_20_color        = GColorRed;
+  s->date_color                  = GColorWhite;
+  s->temp_color                  = GColorLightGray;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -314,7 +341,7 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz)
   int half = sz / 2;
   GPoint origin = GPoint(center.x - half, center.y - half);
 
-  graphics_context_set_stroke_color(ctx, FIXED_MARKER_COLOR);
+  graphics_context_set_stroke_color(ctx, s_settings.icon_color);
   graphics_context_set_stroke_width(ctx, 1);
   for (int i = 0; i < path_count; i++) {
     GPath *path_ptr = gpath_create(&paths[i]);
@@ -354,7 +381,7 @@ static void draw_hour_number(GContext *ctx, int hour, GPoint center) {
   if (ty < 2) ty = 2;
   if (tx + tw > SCREEN_W - 2) tx = SCREEN_W - 2 - tw;
   if (ty + th > SCREEN_H - 2) ty = SCREEN_H - 2 - th;
-  graphics_context_set_text_color(ctx, FIXED_MARKER_COLOR);
+  graphics_context_set_text_color(ctx, s_settings.number_color);
   graphics_draw_text(ctx, buf, font, GRect(tx, ty, tw, th),
     GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
 }
@@ -368,7 +395,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
 
-  graphics_context_set_fill_color(ctx, FIXED_BG_COLOR);
+  graphics_context_set_fill_color(ctx, s_settings.background_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   bool show_icons = false;
@@ -380,7 +407,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
   // ---- Minute markers (60 × 1px dot) ----
   if (s_settings.display_minor_markers) {
-    graphics_context_set_stroke_color(ctx, FIXED_MARKER_COLOR);
+    graphics_context_set_stroke_color(ctx, s_settings.minute_marker_color);
     graphics_context_set_stroke_width(ctx, 1);
     for (int i = 0; i < 60; i++) {
       int32_t angle = DEG_TO_TRIGANGLE(i * 6);
@@ -397,7 +424,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Hour tick marks (12 × 3px wide, 1px deep) ----
-  graphics_context_set_stroke_color(ctx, FIXED_MARKER_COLOR);
+  graphics_context_set_stroke_color(ctx, s_settings.hour_marker_color);
   graphics_context_set_stroke_width(ctx, 3);
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
@@ -514,10 +541,10 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
                      outer, inner);
 
   // Centre cap: white outer → black border → battery ring → black outline → dot
-  GColor cap = (s_battery_pct <= FIXED_BATT_PCT_LOW)  ? FIXED_BATT_LOW_COLOR :
-               (s_battery_pct <= FIXED_BATT_PCT_MID)  ? FIXED_TEXT_COLOR :
-                                                         FIXED_BG_COLOR;
-  graphics_context_set_fill_color(ctx, FIXED_TEXT_COLOR);
+  GColor cap = (s_battery_pct <= FIXED_BATT_PCT_LOW)  ? s_settings.middle_ring_20_color :
+               (s_battery_pct <= FIXED_BATT_PCT_MID)  ? GColorWhite :
+                                                         s_settings.background_color;
+  graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_circle(ctx, center, 7);
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_circle(ctx, center, 6);
@@ -526,7 +553,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_circle(ctx, center, 2);
   graphics_context_set_fill_color(ctx,
-    (s_battery_pct <= FIXED_BATT_PCT_MID) ? GColorRed : FIXED_TEXT_COLOR);
+    (s_battery_pct <= FIXED_BATT_PCT_MID) ? s_settings.center_dot_20_color : s_settings.center_dot_50_color);
   graphics_fill_circle(ctx, center, 1);
 }
 
@@ -578,7 +605,7 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     } else {
       snprintf(temp_str, sizeof(temp_str), "%d\xc2\xb0" "C", (int)s_temp_c);
     }
-    draw_centred_text(ctx, temp_str, font, cx, comp_y, bounds.size.w, FIXED_TEMP_COLOR);
+    draw_centred_text(ctx, temp_str, font, cx, comp_y, bounds.size.w, s_settings.temp_color);
   }
 
   if (show_date) {
@@ -588,7 +615,7 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
              day_names[s_tick_tm.tm_wday], s_tick_tm.tm_mday);
     draw_centred_text(ctx, date_str, font, cx,
                       show_temp ? comp_y + 18 : comp_y,
-                      bounds.size.w, FIXED_TEMP_COLOR);
+                      bounds.size.w, s_settings.date_color);
   }
 }
 
@@ -680,6 +707,26 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (mhi) s_settings.min_hand_inner  = rgb_to_gcolor(mhi->value->int32);
   Tuple *nf = dict_find(iter, KEY_NUMBER_FONT);
   if (nf) s_settings.number_font = (int8_t)nf->value->int32;
+  Tuple *bgc = dict_find(iter, KEY_BACKGROUND_COLOR);
+  if (bgc) s_settings.background_color = rgb_to_gcolor(bgc->value->int32);
+  Tuple *nc = dict_find(iter, KEY_NUMBER_COLOR);
+  if (nc) s_settings.number_color = rgb_to_gcolor(nc->value->int32);
+  Tuple *ic = dict_find(iter, KEY_ICON_COLOR);
+  if (ic) s_settings.icon_color = rgb_to_gcolor(ic->value->int32);
+  Tuple *hmc = dict_find(iter, KEY_HOUR_MARKER_COLOR);
+  if (hmc) s_settings.hour_marker_color = rgb_to_gcolor(hmc->value->int32);
+  Tuple *mmc = dict_find(iter, KEY_MINUTE_MARKER_COLOR);
+  if (mmc) s_settings.minute_marker_color = rgb_to_gcolor(mmc->value->int32);
+  Tuple *cd50 = dict_find(iter, KEY_CENTER_DOT_50_COLOR);
+  if (cd50) s_settings.center_dot_50_color = rgb_to_gcolor(cd50->value->int32);
+  Tuple *cd20 = dict_find(iter, KEY_CENTER_DOT_20_COLOR);
+  if (cd20) s_settings.center_dot_20_color = rgb_to_gcolor(cd20->value->int32);
+  Tuple *mr20 = dict_find(iter, KEY_MIDDLE_RING_20_COLOR);
+  if (mr20) s_settings.middle_ring_20_color = rgb_to_gcolor(mr20->value->int32);
+  Tuple *dc = dict_find(iter, KEY_DATE_COLOR);
+  if (dc) s_settings.date_color = rgb_to_gcolor(dc->value->int32);
+  Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR_KEY);
+  if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
   persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
@@ -746,7 +793,7 @@ static void init(void) {
   s_tick_tm = *localtime(&now);
 
   s_window = window_create();
-  window_set_background_color(s_window, GColorBlack);
+  window_set_background_color(s_window, s_settings.background_color);
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load   = window_load,
     .unload = window_unload,

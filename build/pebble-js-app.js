@@ -678,13 +678,23 @@
 	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
 	    'KEY_VIBRATE_BT_DISCONNECT':  54,
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           125
+	    'KEY_NUMBER_FONT':           121
 	  };
 	  const COLOR_MAP = {
-	    'KEY_HOUR_HAND_OUTER': 114,
-	    'KEY_HOUR_HAND_INNER': 115,
-	    'KEY_MIN_HAND_OUTER':  116,
-	    'KEY_MIN_HAND_INNER':  117
+	    'KEY_HOUR_HAND_OUTER':      114,
+	    'KEY_HOUR_HAND_INNER':      115,
+	    'KEY_MIN_HAND_OUTER':       116,
+	    'KEY_MIN_HAND_INNER':       117,
+	    'KEY_BACKGROUND_COLOR':     126,
+	    'KEY_NUMBER_COLOR':         127,
+	    'KEY_ICON_COLOR':           128,
+	    'KEY_HOUR_MARKER_COLOR':    129,
+	    'KEY_MINUTE_MARKER_COLOR':  130,
+	    'KEY_CENTER_DOT_50_COLOR':  131,
+	    'KEY_CENTER_DOT_20_COLOR':  132,
+	    'KEY_MIDDLE_RING_20_COLOR': 133,
+	    'KEY_DATE_COLOR':           134,
+	    'KEY_TEMP_COLOR':           135
 	  };
 	
 	  let dict = {};
@@ -778,17 +788,25 @@
 	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
 	    'KEY_VIBRATE_BT_DISCONNECT':  54,
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           125,
-	    'KEY_ICON_SCALE':            126,
-	    'KEY_ICON_STYLE':            127
+	    'KEY_NUMBER_FONT':           121
 	  };
 	
-	  // Hand colour keys — sent as 0xRRGGBB integers
+	  // Colour keys — sent as 0xRRGGBB integers
 	  const COLOR_MAP = {
-	    'KEY_HOUR_HAND_OUTER': 114,
-	    'KEY_HOUR_HAND_INNER': 115,
-	    'KEY_MIN_HAND_OUTER':  116,
-	    'KEY_MIN_HAND_INNER':  117
+	    'KEY_HOUR_HAND_OUTER':      114,
+	    'KEY_HOUR_HAND_INNER':      115,
+	    'KEY_MIN_HAND_OUTER':       116,
+	    'KEY_MIN_HAND_INNER':       117,
+	    'KEY_BACKGROUND_COLOR':     126,
+	    'KEY_NUMBER_COLOR':         127,
+	    'KEY_ICON_COLOR':           128,
+	    'KEY_HOUR_MARKER_COLOR':    129,
+	    'KEY_MINUTE_MARKER_COLOR':  130,
+	    'KEY_CENTER_DOT_50_COLOR':  131,
+	    'KEY_CENTER_DOT_20_COLOR':  132,
+	    'KEY_MIDDLE_RING_20_COLOR': 133,
+	    'KEY_DATE_COLOR':           134,
+	    'KEY_TEMP_COLOR':           135
 	  };
 	
 	  // Build numeric-keyed dict for sendAppMessage
