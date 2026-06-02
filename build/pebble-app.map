@@ -131,6 +131,8 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_TEMP_F
                 0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_TEMP_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_TEMP_C
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_TAP_ACTION
@@ -145,11 +147,17 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_SHAKE_MODE
                 0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_SECONDS_HAND_MODE
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_SECONDS_HAND_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_PERCENT_ILLUMINATED
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_OBSERVATION_EPOCH
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_NUMBER_FONT
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_NUMBER_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_NORTHERN_HEMISPHERE
                 0x00000000        0x4 src/message_keys.auto.c.49.o
@@ -159,13 +167,21 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_MIN_HAND_INNER
                 0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_MINUTE_MARKER_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_MINOR_MARKER_LENGTH
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_MIDDLE_RING_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_MIDDLE_RING_20_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_LONGITUDE
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_LATITUDE
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_JS_READY
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_ICON_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_ICON_9
                 0x00000000        0x4 src/message_keys.auto.c.49.o
@@ -215,6 +231,8 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .bss.MESSAGE_KEY_KEY_ICON_0
                 0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_HOUR_MARKER_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_HOUR_HAND_OUTER
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_HOUR_HAND_INNER
@@ -245,9 +263,25 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_DATE_VISIBLE
                 0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_DATE_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_CUSTOM_LOCATION
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .data.MESSAGE_KEY_KEY_COMPLICATION_VISIBLE
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_CENTER_DOT_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_CENTER_DOT_50_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_CENTER_DOT_20_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_BT_DISCONNECT_OUTER_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_BT_DISCONNECT_INNER_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_BATTERY_INDICATOR_ENABLED
+                0x00000000        0x4 src/message_keys.auto.c.49.o
+ .data.MESSAGE_KEY_KEY_BACKGROUND_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.49.o
  .bss           0x00000000        0x0 /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
  .text.accel_data_service_subscribe__deprecated
@@ -2155,11 +2189,11 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
 
-.debug_info     0x00000000     0x40ec
+.debug_info     0x00000000     0x41fc
  .debug_info    0x00000000     0x37a4 src/c/main.c.49.o
  .debug_info    0x000037a4      0x33e aplite/appinfo.auto.c.49.o
  .debug_info    0x00003ae2      0x10d aplite/src/resource_ids.auto.c.49.o
- .debug_info    0x00003bef      0x4fd src/message_keys.auto.c.49.o
+ .debug_info    0x00003bef      0x60d src/message_keys.auto.c.49.o
 
 .debug_abbrev   0x00000000      0x6e3
  .debug_abbrev  0x00000000      0x596 src/c/main.c.49.o
@@ -2193,12 +2227,12 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_line    0x00001a31      0x114 aplite/src/resource_ids.auto.c.49.o
  .debug_line    0x00001b45      0x10d src/message_keys.auto.c.49.o
 
-.debug_str      0x00000000     0x22a9
- .debug_str     0x00000000     0x22a9 src/c/main.c.49.o
+.debug_str      0x00000000     0x24f1
+ .debug_str     0x00000000     0x24f1 src/c/main.c.49.o
                                0x1738 (size before relaxing)
- .debug_str     0x000022a9      0x4bf aplite/appinfo.auto.c.49.o
- .debug_str     0x000022a9      0x2b4 aplite/src/resource_ids.auto.c.49.o
- .debug_str     0x000022a9      0x96b src/message_keys.auto.c.49.o
+ .debug_str     0x000024f1      0x4bf aplite/appinfo.auto.c.49.o
+ .debug_str     0x000024f1      0x2b4 aplite/src/resource_ids.auto.c.49.o
+ .debug_str     0x000024f1      0xbb3 src/message_keys.auto.c.49.o
 
 .debug_frame    0x00000000      0x2ec
  .debug_frame   0x00000000      0x2ec src/c/main.c.49.o
