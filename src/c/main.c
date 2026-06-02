@@ -89,6 +89,7 @@
 #define KEY_SECONDS_SHAKE_DUR     143
 #define KEY_TEST_BATTERY_ALERT    144
 #define KEY_TEST_BT_DISCONNECT    145
+#define KEY_TEST_BATTERY_50       146
 
 // Message keys — colour settings (sent as 0xRRGGBB)
 #define KEY_HOUR_HAND_OUTER       114
@@ -907,6 +908,18 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
   Tuple *ssd = dict_find(iter, KEY_SECONDS_SHAKE_DUR);
   if (ssd) s_settings.seconds_shake_dur = (int8_t)ssd->value->int32;
+
+  // Test battery 50%-20% alert: temporarily set battery to 35% for 5 seconds
+  Tuple *tb50 = dict_find(iter, KEY_TEST_BATTERY_50);
+  if (tb50 && tb50->value->int32) {
+    if (s_test_timer) app_timer_cancel(s_test_timer);
+    s_test_battery_active = true;
+    s_test_bt_active = false;
+    s_battery_pct = 35;  // Force 50%-20% threshold
+    layer_mark_dirty(s_minute_layer);
+    s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
+    return;  // Don't persist — this is a preview only
+  }
 
   // Test battery alert: temporarily set battery to 10% for 5 seconds
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);

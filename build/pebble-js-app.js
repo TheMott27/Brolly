@@ -680,7 +680,8 @@
 	  'KEY_SECONDS_HAND_MODE':          142,
 	  'KEY_SECONDS_SHAKE_DUR':          143,
 	  'KEY_TEST_BATTERY_ALERT':         144,
-	  'KEY_TEST_BT_DISCONNECT':         145
+	  'KEY_TEST_BT_DISCONNECT':         145,
+	  'KEY_TEST_BATTERY_50':            146
 	};
 	
 	const SETTINGS_COLOR_MAP = {
