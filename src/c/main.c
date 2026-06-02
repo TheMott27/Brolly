@@ -121,7 +121,7 @@
 #define PERSIST_ICONS           0
 #define PERSIST_TEMP_C          24
 #define PERSIST_TEMP_F          25
-#define PERSIST_SETTINGS        26
+#define PERSIST_SETTINGS        27
 
 #define SHAKE_DISPLAY_MS        30000
 #define APP_MSG_INBOX_SIZE      512
@@ -243,11 +243,11 @@ static void settings_set_defaults(Settings *s) {
   s->middle_ring_20_color        = GColorRed;
   s->center_dot_color            = GColorWhite;
   s->middle_ring_color           = GColorWhite;
-  s->date_color                  = GColorWhite;
-  s->temp_color                  = GColorLightGray;
+  s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
+  s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
   s->seconds_hand_color          = GColorFromRGB(0, 97, 254);
-  s->seconds_hand_mode           = 0; // 0 = never show
+  s->seconds_hand_mode           = 0; // 0 = never show (default)
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -605,6 +605,19 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, 2);
   graphics_context_set_fill_color(ctx, dot);
   graphics_fill_circle(ctx, center, 1);
+
+  // Draw seconds hand
+  if (s_settings.seconds_hand_mode != 0) {
+    bool show = (s_settings.seconds_hand_mode == 1) || 
+                (s_settings.seconds_hand_mode == 2 && s_showing_seconds);
+    if (show) {
+      int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
+      GPoint sec_tip = polar_to_point(center, sec_angle, 72);
+      graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
+      graphics_context_set_stroke_width(ctx, 3);
+      graphics_draw_line(ctx, center, sec_tip);
+    }
+  }
 }
 
 static void seconds_layer_update(Layer *layer, GContext *ctx) {
@@ -618,15 +631,18 @@ static void seconds_layer_update(Layer *layer, GContext *ctx) {
   int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
   
   // Seconds hand: 200% of minute hand length
-  int hand_length = (radius * 19) / 10;
-  GPoint tip = polar_to_point(center, angle, hand_length);
+  GPoint tip = polar_to_point(center, angle, (radius * 19) / 10);
   
-  // Draw with 1px black border
+  // DEBUG: Draw a red dot at the tip position
+  graphics_context_set_fill_color(ctx, GColorRed);
+  graphics_fill_circle(ctx, tip, 3);
+  
+  // Draw black border (2px)
   graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_stroke_width(ctx, 3); // 1px color + 1px border on each side
+  graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_line(ctx, center, tip);
   
-  // Draw the colored line on top
+  // Draw colored line on top (1px)
   graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
   graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_line(ctx, center, tip);

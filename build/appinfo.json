@@ -12,8 +12,8 @@
         "gabbro"
     ],
     "capabilities": [
-        "location",
-        "configurable"
+        "configurable",
+        "location"
     ],
     "configureUrl": "https://aww2setts-au3w7dkw.manus.space/",
     "watchapp": {
@@ -93,7 +93,24 @@
         "KEY_HAND_OUTLINE_WIDTH": 122,
         "KEY_HAND_OUTLINE_COLOR": 123,
         "KEY_HAND_SHADOW_OFFSET": 124,
-        "KEY_HAND_SHADOW_COLOR": 125
+        "KEY_HAND_SHADOW_COLOR": 125,
+        "KEY_BACKGROUND_COLOR": 126,
+        "KEY_NUMBER_COLOR": 127,
+        "KEY_ICON_COLOR": 128,
+        "KEY_HOUR_MARKER_COLOR": 129,
+        "KEY_MINUTE_MARKER_COLOR": 130,
+        "KEY_CENTER_DOT_50_COLOR": 131,
+        "KEY_CENTER_DOT_20_COLOR": 132,
+        "KEY_MIDDLE_RING_20_COLOR": 133,
+        "KEY_DATE_COLOR": 134,
+        "KEY_TEMP_COLOR": 135,
+        "KEY_BT_DISCONNECT_OUTER_COLOR": 136,
+        "KEY_BT_DISCONNECT_INNER_COLOR": 137,
+        "KEY_BATTERY_INDICATOR_ENABLED": 138,
+        "KEY_CENTER_DOT_COLOR": 139,
+        "KEY_MIDDLE_RING_COLOR": 140,
+        "KEY_SECONDS_HAND_COLOR": 141,
+        "KEY_SECONDS_HAND_MODE": 142
     },
     "resources": {
         "media": [
@@ -221,6 +238,23 @@
         "KEY_HAND_OUTLINE_WIDTH": 122,
         "KEY_HAND_OUTLINE_COLOR": 123,
         "KEY_HAND_SHADOW_OFFSET": 124,
-        "KEY_HAND_SHADOW_COLOR": 125
+        "KEY_HAND_SHADOW_COLOR": 125,
+        "KEY_BACKGROUND_COLOR": 126,
+        "KEY_NUMBER_COLOR": 127,
+        "KEY_ICON_COLOR": 128,
+        "KEY_HOUR_MARKER_COLOR": 129,
+        "KEY_MINUTE_MARKER_COLOR": 130,
+        "KEY_CENTER_DOT_50_COLOR": 131,
+        "KEY_CENTER_DOT_20_COLOR": 132,
+        "KEY_MIDDLE_RING_20_COLOR": 133,
+        "KEY_DATE_COLOR": 134,
+        "KEY_TEMP_COLOR": 135,
+        "KEY_BT_DISCONNECT_OUTER_COLOR": 136,
+        "KEY_BT_DISCONNECT_INNER_COLOR": 137,
+        "KEY_BATTERY_INDICATOR_ENABLED": 138,
+        "KEY_CENTER_DOT_COLOR": 139,
+        "KEY_MIDDLE_RING_COLOR": 140,
+        "KEY_SECONDS_HAND_COLOR": 141,
+        "KEY_SECONDS_HAND_MODE": 142
     }
 }
