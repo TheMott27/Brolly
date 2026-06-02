@@ -625,11 +625,13 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
     inner_ring   = s_settings.min_hand_inner;
   }
 
-  // Draw order (outside in): outer_ring → battery_ring → inner_ring → black sep → dot
+  // Draw order (outside in): battery_ring → outer_ring → inner_ring → black sep → dot
+  // battery_ring at r6 is drawn first so outer_ring at r5 sits on top of it,
+  // leaving a 1px visible ring of battery_ring colour around the outer_ring.
+  graphics_context_set_fill_color(ctx, battery_ring);
+  graphics_fill_circle(ctx, center, 6);
   graphics_context_set_fill_color(ctx, outer_ring);
   graphics_fill_circle(ctx, center, 5);
-  graphics_context_set_fill_color(ctx, battery_ring);
-  graphics_fill_circle(ctx, center, 4);
   graphics_context_set_fill_color(ctx, inner_ring);
   graphics_fill_circle(ctx, center, 3);
   graphics_context_set_fill_color(ctx, GColorBlack);
