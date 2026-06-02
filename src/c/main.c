@@ -626,9 +626,9 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   }
   
   graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_fill_circle(ctx, center, 9);
+  graphics_fill_circle(ctx, center, 6);
   graphics_context_set_fill_color(ctx, outer_ring);
-  graphics_fill_circle(ctx, center, 8);
+  graphics_fill_circle(ctx, center, 5);
   graphics_context_set_fill_color(ctx, inner_ring);
   graphics_fill_circle(ctx, center, 4);
   graphics_context_set_fill_color(ctx, GColorBlack);
