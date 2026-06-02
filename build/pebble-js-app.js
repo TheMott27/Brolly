@@ -137,6 +137,10 @@
 	// Message keys (must match package.json)
 	const KEY_ICON_0              = 0;
 	const KEY_WEATHER_CITY        = 24;
+	const KEY_SUNRISE_HOUR        = 25;
+	const KEY_SUNRISE_MINUTE      = 26;
+	const KEY_SUNSET_HOUR         = 27;
+	const KEY_SUNSET_MINUTE       = 28;
 	const KEY_TZ_OFFSET_MIN       = 29;
 	const KEY_MOON_AGE            = 30;
 	const KEY_PERCENT_ILLUMINATED = 31;

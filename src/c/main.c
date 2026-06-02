@@ -563,6 +563,26 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     }
   }
 
+  // ---- DEBUG: show sunrise/sunset raw values in red ----
+  {
+    char dbg1[32], dbg2[32];
+    snprintf(dbg1, sizeof(dbg1), "SR:%d:%02d SS:%d:%02d",
+             (int)s_sunrise_hour, (int)s_sunrise_min,
+             (int)s_sunset_hour,  (int)s_sunset_min);
+    int now_min_dbg = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
+    int sr_delta = (s_sunrise_hour >= 0) ?
+      (((int)s_sunrise_hour * 60 + (int)s_sunrise_min) - now_min_dbg + 1440) % 1440 : -1;
+    int ss_delta = (s_sunset_hour >= 0) ?
+      (((int)s_sunset_hour * 60 + (int)s_sunset_min) - now_min_dbg + 1440) % 1440 : -1;
+    snprintf(dbg2, sizeof(dbg2), "dSR:%d dSS:%d", sr_delta, ss_delta);
+    GFont dbg_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+    graphics_context_set_text_color(ctx, GColorRed);
+    graphics_draw_text(ctx, dbg1, dbg_font, GRect(0, 0, 144, 18),
+      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    graphics_draw_text(ctx, dbg2, dbg_font, GRect(0, 16, 144, 18),
+      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+  }
+
   // ---- Hour numbers / icons ----
   const int icon_half = FIXED_ICON_SIZE / 2;
   const int num_half  = 14;
