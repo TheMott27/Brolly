@@ -687,6 +687,24 @@ Pebble.addEventListener('webviewclosed', function(e) {
     return;
   }
 
+  // Test commands: send only the test key to the watch, don't save settings
+  var TEST_KEYS = {
+    'KEY_TEST_BATTERY_ALERT': 144,
+    'KEY_TEST_BT_DISCONNECT': 145,
+    'KEY_TEST_BATTERY_50':    146
+  };
+  for (var tk in TEST_KEYS) {
+    if (response.hasOwnProperty(tk) && parseInt(response[tk]) === 1) {
+      var testDict = {};
+      testDict[TEST_KEYS[tk]] = 1;
+      Pebble.sendAppMessage(testDict,
+        function() { console.log('Brolly: Test command sent'); },
+        function(err) { console.log('Brolly: Test command failed: ' + JSON.stringify(err)); }
+      );
+      return;  // Don't process as a settings save
+    }
+  }
+
   let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
 
   // Build numeric-keyed dict for sendAppMessage
