@@ -1553,7 +1553,7 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .note.gnu.build-id
                 0x00000084       0x24 linker stubs
 
-.text           0x000000a8     0x1d6b
+.text           0x000000a8     0x1d3b
  *(.text)
  .text          0x000000a8       0x14 /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
  .text          0x000000bc       0xa0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_aeabi_ldivmod.o)
@@ -1581,14 +1581,14 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
                 0x0000073c       0x4c src/c/main.c.49.o
  .text.window_load
                 0x00000788       0xd4 src/c/main.c.49.o
- .text.draw_inittick_hand
-                0x0000085c       0xec src/c/main.c.49.o
  .text.polar_to_point
-                0x00000948       0x4c src/c/main.c.49.o
- .text.minute_layer_update
-                0x00000994      0x1d0 src/c/main.c.49.o
+                0x0000085c       0x4c src/c/main.c.49.o
+ .text.draw_inittick_hand
+                0x000008a8       0xec src/c/main.c.49.o
  .text.hour_layer_update
-                0x00000b64       0x90 src/c/main.c.49.o
+                0x00000994       0x90 src/c/main.c.49.o
+ .text.minute_layer_update
+                0x00000a24      0x1d0 src/c/main.c.49.o
  .text.draw_centred_text
                 0x00000bf4       0x9a src/c/main.c.49.o
  *fill*         0x00000c8e        0x2 
@@ -1597,441 +1597,441 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .text.accel_tap_handler
                 0x00000de8       0xb8 src/c/main.c.49.o
  .text.seconds_layer_update
-                0x00000ea0       0xdc src/c/main.c.49.o
+                0x00000ea0       0xac src/c/main.c.49.o
  .text.square_perimeter_point.constprop.0
-                0x00000f7c       0xbe src/c/main.c.49.o
- *fill*         0x0000103a        0x2 
+                0x00000f4c       0xbe src/c/main.c.49.o
+ *fill*         0x0000100a        0x2 
  .text.bg_layer_update
-                0x0000103c      0x554 src/c/main.c.49.o
+                0x0000100c      0x554 src/c/main.c.49.o
  .text.startup.main
-                0x00001590      0x1e0 src/c/main.c.49.o
-                0x00001590                main
+                0x00001560      0x1e0 src/c/main.c.49.o
+                0x00001560                main
  .text.accel_tap_service_subscribe
-                0x00001770        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001770                accel_tap_service_subscribe
+                0x00001740        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001740                accel_tap_service_subscribe
  .text.accel_tap_service_unsubscribe
-                0x0000177c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000177c                accel_tap_service_unsubscribe
+                0x0000174c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000174c                accel_tap_service_unsubscribe
  .text.app_event_loop
-                0x00001788        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001788                app_event_loop
+                0x00001758        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001758                app_event_loop
  .text.app_message_open
-                0x00001794        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001794                app_message_open
+                0x00001764        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001764                app_message_open
  .text.app_timer_cancel
-                0x000017a0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017a0                app_timer_cancel
+                0x00001770        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001770                app_timer_cancel
  .text.app_timer_register
-                0x000017ac        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017ac                app_timer_register
+                0x0000177c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000177c                app_timer_register
  .text.battery_state_service_peek
-                0x000017b8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017b8                battery_state_service_peek
+                0x00001788        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001788                battery_state_service_peek
  .text.battery_state_service_subscribe
-                0x000017c4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017c4                battery_state_service_subscribe
+                0x00001794        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001794                battery_state_service_subscribe
  .text.battery_state_service_unsubscribe
-                0x000017d0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017d0                battery_state_service_unsubscribe
+                0x000017a0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017a0                battery_state_service_unsubscribe
  .text.cos_lookup
-                0x000017dc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017dc                cos_lookup
+                0x000017ac        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017ac                cos_lookup
  .text.dict_find
-                0x000017e8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017e8                dict_find
+                0x000017b8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017b8                dict_find
  .text.fonts_get_system_font
-                0x000017f4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000017f4                fonts_get_system_font
+                0x000017c4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017c4                fonts_get_system_font
  .text.gpath_create
-                0x00001800        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001800                gpath_create
+                0x000017d0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017d0                gpath_create
  .text.gpath_destroy
-                0x0000180c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000180c                gpath_destroy
+                0x000017dc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017dc                gpath_destroy
  .text.gpath_draw_outline
-                0x00001818        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001818                gpath_draw_outline
+                0x000017e8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017e8                gpath_draw_outline
  .text.gpath_move_to
-                0x00001824        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001824                gpath_move_to
+                0x000017f4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000017f4                gpath_move_to
  .text.graphics_draw_line
-                0x00001830        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001830                graphics_draw_line
+                0x00001800        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001800                graphics_draw_line
  .text.graphics_fill_circle
-                0x0000183c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000183c                graphics_fill_circle
+                0x0000180c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000180c                graphics_fill_circle
  .text.graphics_fill_rect
-                0x00001848        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001848                graphics_fill_rect
+                0x00001818        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001818                graphics_fill_rect
  .text.layer_add_child
-                0x00001854        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001854                layer_add_child
+                0x00001824        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001824                layer_add_child
  .text.layer_create
-                0x00001860        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001860                layer_create
+                0x00001830        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001830                layer_create
  .text.layer_destroy
-                0x0000186c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000186c                layer_destroy
+                0x0000183c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000183c                layer_destroy
  .text.layer_get_bounds
-                0x00001878        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001878                layer_get_bounds
+                0x00001848        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001848                layer_get_bounds
  .text.layer_mark_dirty
-                0x00001884        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001884                layer_mark_dirty
+                0x00001854        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001854                layer_mark_dirty
  .text.layer_set_update_proc
-                0x00001890        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001890                layer_set_update_proc
- .text.memset   0x0000189c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000189c                memset
+                0x00001860        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001860                layer_set_update_proc
+ .text.memset   0x0000186c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000186c                memset
  .text.persist_exists
-                0x000018a8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018a8                persist_exists
+                0x00001878        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001878                persist_exists
  .text.persist_read_int
-                0x000018b4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018b4                persist_read_int
+                0x00001884        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001884                persist_read_int
  .text.persist_write_int
-                0x000018c0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018c0                persist_write_int
+                0x00001890        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001890                persist_write_int
  .text.sin_lookup
-                0x000018cc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018cc                sin_lookup
+                0x0000189c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000189c                sin_lookup
  .text.snprintf
-                0x000018d8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018d8                snprintf
+                0x000018a8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018a8                snprintf
  .text.tick_timer_service_subscribe
-                0x000018e4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018e4                tick_timer_service_subscribe
+                0x000018b4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018b4                tick_timer_service_subscribe
  .text.tick_timer_service_unsubscribe
-                0x000018f0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018f0                tick_timer_service_unsubscribe
+                0x000018c0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018c0                tick_timer_service_unsubscribe
  .text.vibes_double_pulse
-                0x000018fc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000018fc                vibes_double_pulse
+                0x000018cc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018cc                vibes_double_pulse
  .text.vibes_short_pulse
-                0x00001908        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001908                vibes_short_pulse
+                0x000018d8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018d8                vibes_short_pulse
  .text.window_create
-                0x00001914        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001914                window_create
+                0x000018e4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018e4                window_create
  .text.window_destroy
-                0x00001920        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001920                window_destroy
+                0x000018f0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018f0                window_destroy
  .text.window_get_root_layer
-                0x0000192c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000192c                window_get_root_layer
+                0x000018fc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000018fc                window_get_root_layer
  .text.window_set_window_handlers
-                0x00001938        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001938                window_set_window_handlers
+                0x00001908        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001908                window_set_window_handlers
  .text.window_stack_push
-                0x00001944        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001944                window_stack_push
+                0x00001914        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001914                window_stack_push
  .text.app_message_register_inbox_received
-                0x00001950        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001950                app_message_register_inbox_received
+                0x00001920        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001920                app_message_register_inbox_received
  .text.graphics_draw_text
-                0x0000195c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000195c                graphics_draw_text
+                0x0000192c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000192c                graphics_draw_text
  .text.persist_read_data
-                0x00001968        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001968                persist_read_data
+                0x00001938        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001938                persist_read_data
  .text.persist_write_data
-                0x00001974        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001974                persist_write_data
+                0x00001944        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001944                persist_write_data
  .text.graphics_text_layout_get_content_size
-                0x00001980        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001980                graphics_text_layout_get_content_size
+                0x00001950        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001950                graphics_text_layout_get_content_size
  .text.graphics_context_set_fill_color
-                0x0000198c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x0000198c                graphics_context_set_fill_color
+                0x0000195c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000195c                graphics_context_set_fill_color
  .text.graphics_context_set_stroke_color
-                0x00001998        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x00001998                graphics_context_set_stroke_color
+                0x00001968        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001968                graphics_context_set_stroke_color
  .text.graphics_context_set_text_color
-                0x000019a4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019a4                graphics_context_set_text_color
+                0x00001974        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001974                graphics_context_set_text_color
  .text.window_set_background_color
-                0x000019b0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019b0                window_set_background_color
+                0x00001980        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001980                window_set_background_color
  .text.localtime
-                0x000019bc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019bc                localtime
+                0x0000198c        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x0000198c                localtime
  .text.graphics_context_set_stroke_width
-                0x000019c8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019c8                graphics_context_set_stroke_width
- .text.time     0x000019d4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019d4                time
+                0x00001998        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x00001998                graphics_context_set_stroke_width
+ .text.time     0x000019a4        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000019a4                time
  .text.connection_service_peek_pebble_app_connection
-                0x000019e0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019e0                connection_service_peek_pebble_app_connection
+                0x000019b0        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000019b0                connection_service_peek_pebble_app_connection
  .text.connection_service_subscribe
-                0x000019ec        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019ec                connection_service_subscribe
+                0x000019bc        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000019bc                connection_service_subscribe
  .text.connection_service_unsubscribe
-                0x000019f8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
-                0x000019f8                connection_service_unsubscribe
+                0x000019c8        0xc /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+                0x000019c8                connection_service_unsubscribe
  .text.__udivmoddi4
-                0x00001a04      0x2f4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
-                0x00001a04                __udivmoddi4
+                0x000019d4      0x2f4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
+                0x000019d4                __udivmoddi4
  *(.rodata)
- .rodata        0x00001cf8        0x2 src/c/main.c.49.o
+ .rodata        0x00001cc8        0x2 src/c/main.c.49.o
  *(.rodata*)
  .rodata.complication_layer_update.str1.1
-                0x00001cfa       0xf9 src/c/main.c.49.o
+                0x00001cca       0xf9 src/c/main.c.49.o
                                  0x28 (size before relaxing)
  .rodata.bg_layer_update.str1.1
-                0x00001df3       0xb8 src/c/main.c.49.o
+                0x00001dc3       0xb8 src/c/main.c.49.o
  .rodata.CSWTCH.76
-                0x00001df3       0x20 src/c/main.c.49.o
+                0x00001dc3       0x20 src/c/main.c.49.o
  .rodata.str1.1
-                0x00001e13       0x1c src/c/main.c.49.o
+                0x00001de3       0x1c src/c/main.c.49.o
 
-.glue_7         0x00001e14        0x0
- .glue_7        0x00001e14        0x0 linker stubs
+.glue_7         0x00001de4        0x0
+ .glue_7        0x00001de4        0x0 linker stubs
 
-.glue_7t        0x00001e14        0x0
- .glue_7t       0x00001e14        0x0 linker stubs
+.glue_7t        0x00001de4        0x0
+ .glue_7t       0x00001de4        0x0 linker stubs
 
-.vfp11_veneer   0x00001e14        0x0
- .vfp11_veneer  0x00001e14        0x0 linker stubs
+.vfp11_veneer   0x00001de4        0x0
+ .vfp11_veneer  0x00001de4        0x0 linker stubs
 
-.v4_bx          0x00001e14        0x0
- .v4_bx         0x00001e14        0x0 linker stubs
+.v4_bx          0x00001de4        0x0
+ .v4_bx         0x00001de4        0x0 linker stubs
 
-.init           0x00001e14        0x4
- .init          0x00001e14        0x4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
-                0x00001e14                _init
+.init           0x00001de4        0x4
+ .init          0x00001de4        0x4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
+                0x00001de4                _init
 
-.fini           0x00001e18        0x4
- .fini          0x00001e18        0x4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
-                0x00001e18                _fini
+.fini           0x00001de8        0x4
+ .fini          0x00001de8        0x4 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
+                0x00001de8                _fini
 
-.iplt           0x00001e1c        0x0
- .iplt          0x00001e1c        0x0 src/c/main.c.49.o
+.iplt           0x00001dec        0x0
+ .iplt          0x00001dec        0x0 src/c/main.c.49.o
 
-.rel.dyn        0x00001e1c        0x0
- .rel.iplt      0x00001e1c        0x0 src/c/main.c.49.o
- .rel.got       0x00001e1c        0x0 src/c/main.c.49.o
+.rel.dyn        0x00001dec        0x0
+ .rel.iplt      0x00001dec        0x0 src/c/main.c.49.o
+ .rel.got       0x00001dec        0x0 src/c/main.c.49.o
 
 .ARM.exidx.text.__udivmoddi4
-                0x00001e1c        0x8
+                0x00001dec        0x8
  .ARM.exidx.text.__udivmoddi4
-                0x00001e1c        0x8 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
+                0x00001dec        0x8 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
 
-.data           0x00001e24      0x5d8
+.data           0x00001df4      0x5d8
  *(.data)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtbegin.o
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
- .data          0x00001e24        0x0 src/c/main.c.49.o
- .data          0x00001e24        0x0 aplite/appinfo.auto.c.49.o
- .data          0x00001e24        0x0 aplite/src/resource_ids.auto.c.49.o
- .data          0x00001e24        0x0 src/message_keys.auto.c.49.o
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_aeabi_ldivmod.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_dvmd_tls.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-atexit.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-exit.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-findfp.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fwalk.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-stdio.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-closer.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-reent.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-impure.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-lseekr.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-readr.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-writer.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-init.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fini.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-lock.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-__atexit.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-__call_atexit.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-freer.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-mallocr.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-mlock.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fclose.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fflush.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-sbrkr.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-sysconf.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
- .data          0x00001e24        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtn.o
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtbegin.o
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/crt0.o
+ .data          0x00001df4        0x0 src/c/main.c.49.o
+ .data          0x00001df4        0x0 aplite/appinfo.auto.c.49.o
+ .data          0x00001df4        0x0 aplite/src/resource_ids.auto.c.49.o
+ .data          0x00001df4        0x0 src/message_keys.auto.c.49.o
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/current/sdk-core/pebble/aplite/lib/libpebble.a(tmp7jpKUopebble.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_aeabi_ldivmod.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_dvmd_tls.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-atexit.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-exit.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-findfp.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fwalk.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-stdio.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-closer.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-reent.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-impure.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-lseekr.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-readr.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-writer.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-init.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fini.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-lock.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-__atexit.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-__call_atexit.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-freer.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-mallocr.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-mlock.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fclose.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-fflush.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-sbrkr.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-sysconf.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
+ .data          0x00001df4        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtn.o
  *(.data.*)
  .data.rel.ro.local.day_names.0
-                0x00001e24       0x1c src/c/main.c.49.o
+                0x00001df4       0x1c src/c/main.c.49.o
  .data.rel.ro.local.UNKNOWN_PATHS
-                0x00001e40       0x18 src/c/main.c.49.o
+                0x00001e10       0x18 src/c/main.c.49.o
  .data.__compound_literal.60
-                0x00001e58        0x8 src/c/main.c.49.o
+                0x00001e28        0x8 src/c/main.c.49.o
  .data.__compound_literal.59
-                0x00001e60       0x1c src/c/main.c.49.o
+                0x00001e30       0x1c src/c/main.c.49.o
  .data.__compound_literal.58
-                0x00001e7c       0x14 src/c/main.c.49.o
+                0x00001e4c       0x14 src/c/main.c.49.o
  .data.rel.ro.local.TIMELINE_MOON_PATHS
-                0x00001e90        0x8 src/c/main.c.49.o
+                0x00001e60        0x8 src/c/main.c.49.o
  .data.__compound_literal.57
-                0x00001e98       0x90 src/c/main.c.49.o
+                0x00001e68       0x90 src/c/main.c.49.o
  .data.rel.ro.local.PARTLY_CLOUDY_NIGHT_PATHS
-                0x00001f28       0x18 src/c/main.c.49.o
+                0x00001ef8       0x18 src/c/main.c.49.o
  .data.__compound_literal.56
-                0x00001f40        0x8 src/c/main.c.49.o
+                0x00001f10        0x8 src/c/main.c.49.o
  .data.__compound_literal.55
-                0x00001f48       0x34 src/c/main.c.49.o
+                0x00001f18       0x34 src/c/main.c.49.o
  .data.__compound_literal.54
-                0x00001f7c       0x84 src/c/main.c.49.o
+                0x00001f4c       0x84 src/c/main.c.49.o
  .data.rel.ro.local.TIMELINE_SUN_PATHS
-                0x00002000       0x48 src/c/main.c.49.o
+                0x00001fd0       0x48 src/c/main.c.49.o
  .data.__compound_literal.53
-                0x00002048        0x8 src/c/main.c.49.o
+                0x00002018        0x8 src/c/main.c.49.o
  .data.__compound_literal.52
-                0x00002050        0x8 src/c/main.c.49.o
+                0x00002020        0x8 src/c/main.c.49.o
  .data.__compound_literal.51
-                0x00002058        0x8 src/c/main.c.49.o
+                0x00002028        0x8 src/c/main.c.49.o
  .data.__compound_literal.50
-                0x00002060        0x8 src/c/main.c.49.o
+                0x00002030        0x8 src/c/main.c.49.o
  .data.__compound_literal.49
-                0x00002068        0x8 src/c/main.c.49.o
+                0x00002038        0x8 src/c/main.c.49.o
  .data.__compound_literal.48
-                0x00002070        0x8 src/c/main.c.49.o
+                0x00002040        0x8 src/c/main.c.49.o
  .data.__compound_literal.47
-                0x00002078        0x8 src/c/main.c.49.o
+                0x00002048        0x8 src/c/main.c.49.o
  .data.__compound_literal.46
-                0x00002080        0x8 src/c/main.c.49.o
+                0x00002050        0x8 src/c/main.c.49.o
  .data.__compound_literal.45
-                0x00002088       0x24 src/c/main.c.49.o
+                0x00002058       0x24 src/c/main.c.49.o
  .data.rel.ro.local.PARTLY_CLOUDY_PATHS
-                0x000020ac       0x40 src/c/main.c.49.o
+                0x0000207c       0x40 src/c/main.c.49.o
  .data.__compound_literal.38
-                0x000020ec        0x8 src/c/main.c.49.o
+                0x000020bc        0x8 src/c/main.c.49.o
  .data.__compound_literal.37
-                0x000020f4        0x8 src/c/main.c.49.o
+                0x000020c4        0x8 src/c/main.c.49.o
  .data.__compound_literal.36
-                0x000020fc        0x8 src/c/main.c.49.o
+                0x000020cc        0x8 src/c/main.c.49.o
  .data.__compound_literal.35
-                0x00002104        0x8 src/c/main.c.49.o
+                0x000020d4        0x8 src/c/main.c.49.o
  .data.__compound_literal.34
-                0x0000210c       0x34 src/c/main.c.49.o
+                0x000020dc       0x34 src/c/main.c.49.o
  .data.__compound_literal.33
-                0x00002140        0x8 src/c/main.c.49.o
+                0x00002110        0x8 src/c/main.c.49.o
  .data.__compound_literal.32
-                0x00002148        0x8 src/c/main.c.49.o
+                0x00002118        0x8 src/c/main.c.49.o
  .data.__compound_literal.31
-                0x00002150       0x24 src/c/main.c.49.o
+                0x00002120       0x24 src/c/main.c.49.o
  .data.rel.ro.local.LIGHT_RAIN_PATHS
-                0x00002174       0x30 src/c/main.c.49.o
+                0x00002144       0x30 src/c/main.c.49.o
  .data.__compound_literal.24
-                0x000021a4        0x8 src/c/main.c.49.o
+                0x00002174        0x8 src/c/main.c.49.o
  .data.__compound_literal.23
-                0x000021ac        0x8 src/c/main.c.49.o
+                0x0000217c        0x8 src/c/main.c.49.o
  .data.__compound_literal.22
-                0x000021b4        0x8 src/c/main.c.49.o
+                0x00002184        0x8 src/c/main.c.49.o
  .data.__compound_literal.21
-                0x000021bc        0x8 src/c/main.c.49.o
+                0x0000218c        0x8 src/c/main.c.49.o
  .data.__compound_literal.20
-                0x000021c4        0x8 src/c/main.c.49.o
+                0x00002194        0x8 src/c/main.c.49.o
  .data.__compound_literal.19
-                0x000021cc       0x34 src/c/main.c.49.o
+                0x0000219c       0x34 src/c/main.c.49.o
  .data.rel.ro.local.HEAVY_SNOW_PATHS
-                0x00002200       0x40 src/c/main.c.49.o
+                0x000021d0       0x40 src/c/main.c.49.o
  .data.__compound_literal.18
-                0x00002240        0x8 src/c/main.c.49.o
+                0x00002210        0x8 src/c/main.c.49.o
  .data.__compound_literal.17
-                0x00002248        0x8 src/c/main.c.49.o
+                0x00002218        0x8 src/c/main.c.49.o
  .data.__compound_literal.16
-                0x00002250        0x8 src/c/main.c.49.o
+                0x00002220        0x8 src/c/main.c.49.o
  .data.__compound_literal.15
-                0x00002258        0x8 src/c/main.c.49.o
+                0x00002228        0x8 src/c/main.c.49.o
  .data.__compound_literal.14
-                0x00002260        0x8 src/c/main.c.49.o
+                0x00002230        0x8 src/c/main.c.49.o
  .data.__compound_literal.13
-                0x00002268        0x8 src/c/main.c.49.o
+                0x00002238        0x8 src/c/main.c.49.o
  .data.__compound_literal.12
-                0x00002270        0x8 src/c/main.c.49.o
+                0x00002240        0x8 src/c/main.c.49.o
  .data.__compound_literal.11
-                0x00002278       0x34 src/c/main.c.49.o
+                0x00002248       0x34 src/c/main.c.49.o
  .data.rel.ro.local.HEAVY_RAIN_PATHS
-                0x000022ac       0x28 src/c/main.c.49.o
+                0x0000227c       0x28 src/c/main.c.49.o
  .data.__compound_literal.10
-                0x000022d4        0x8 src/c/main.c.49.o
+                0x000022a4        0x8 src/c/main.c.49.o
  .data.__compound_literal.9
-                0x000022dc        0x8 src/c/main.c.49.o
+                0x000022ac        0x8 src/c/main.c.49.o
  .data.__compound_literal.8
-                0x000022e4        0x8 src/c/main.c.49.o
+                0x000022b4        0x8 src/c/main.c.49.o
  .data.__compound_literal.7
-                0x000022ec        0x8 src/c/main.c.49.o
+                0x000022bc        0x8 src/c/main.c.49.o
  .data.__compound_literal.6
-                0x000022f4       0x34 src/c/main.c.49.o
+                0x000022c4       0x34 src/c/main.c.49.o
  .data.rel.ro.local.THUNDERSTORM_PATHS
-                0x00002328       0x20 src/c/main.c.49.o
+                0x000022f8       0x20 src/c/main.c.49.o
  .data.__compound_literal.5
-                0x00002348       0x1c src/c/main.c.49.o
+                0x00002318       0x1c src/c/main.c.49.o
  .data.__compound_literal.4
-                0x00002364        0xc src/c/main.c.49.o
+                0x00002334        0xc src/c/main.c.49.o
  .data.__compound_literal.3
-                0x00002370       0x18 src/c/main.c.49.o
+                0x00002340       0x18 src/c/main.c.49.o
  .data.__compound_literal.2
-                0x00002388       0x1c src/c/main.c.49.o
+                0x00002358       0x1c src/c/main.c.49.o
  .data.rel.ro.local.CLOUDY_DAY_PATHS
-                0x000023a4       0x10 src/c/main.c.49.o
+                0x00002374       0x10 src/c/main.c.49.o
  .data.__compound_literal.1
-                0x000023b4        0x8 src/c/main.c.49.o
+                0x00002384        0x8 src/c/main.c.49.o
  .data.__compound_literal.0
-                0x000023bc       0x34 src/c/main.c.49.o
+                0x0000238c       0x34 src/c/main.c.49.o
  .data.s_bg_last_hour
-                0x000023f0        0x1 src/c/main.c.49.o
+                0x000023c0        0x1 src/c/main.c.49.o
  .data.s_battery_pct
-                0x000023f1        0x1 src/c/main.c.49.o
+                0x000023c1        0x1 src/c/main.c.49.o
  .data.s_bt_connected
-                0x000023f2        0x1 src/c/main.c.49.o
- *fill*         0x000023f3        0x1 
+                0x000023c2        0x1 src/c/main.c.49.o
+ *fill*         0x000023c3        0x1 
  .data.s_temp_f
-                0x000023f4        0x2 src/c/main.c.49.o
- *fill*         0x000023f6        0x2 
+                0x000023c4        0x2 src/c/main.c.49.o
+ *fill*         0x000023c6        0x2 
  .data.MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
-                0x000023f8        0x4 src/message_keys.auto.c.49.o
-                0x000023f8                MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
+                0x000023c8        0x4 src/message_keys.auto.c.49.o
+                0x000023c8                MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
 
-.igot.plt       0x000023fc        0x0
- .igot.plt      0x000023fc        0x0 src/c/main.c.49.o
+.igot.plt       0x000023cc        0x0
+ .igot.plt      0x000023cc        0x0 src/c/main.c.49.o
 
-.got            0x000023fc        0x4
- .got           0x000023fc        0x4 src/c/main.c.49.o
+.got            0x000023cc        0x4
+ .got           0x000023cc        0x4 src/c/main.c.49.o
 
-.got.plt        0x00002400        0xc
- .got.plt       0x00002400        0xc src/c/main.c.49.o
-                0x00002400                _GLOBAL_OFFSET_TABLE_
+.got.plt        0x000023d0        0xc
+ .got.plt       0x000023d0        0xc src/c/main.c.49.o
+                0x000023d0                _GLOBAL_OFFSET_TABLE_
 
-.bss            0x0000240c       0x90
+.bss            0x000023dc       0x90
  *(.bss)
  *(.bss.*)
  .bss.s_tick_tm
-                0x0000240c       0x30 src/c/main.c.49.o
+                0x000023dc       0x30 src/c/main.c.49.o
  .bss.s_showing_seconds
-                0x0000243c        0x1 src/c/main.c.49.o
- *fill*         0x0000243d        0x3 
+                0x0000240c        0x1 src/c/main.c.49.o
+ *fill*         0x0000240d        0x3 
  .bss.s_seconds_timer
-                0x00002440        0x4 src/c/main.c.49.o
+                0x00002410        0x4 src/c/main.c.49.o
  .bss.s_shake_timer
-                0x00002444        0x4 src/c/main.c.49.o
+                0x00002414        0x4 src/c/main.c.49.o
  .bss.s_showing_icons
-                0x00002448        0x1 src/c/main.c.49.o
- *fill*         0x00002449        0x1 
- .bss.s_temp_c  0x0000244a        0x2 src/c/main.c.49.o
- .bss.s_icons   0x0000244c       0x18 src/c/main.c.49.o
+                0x00002418        0x1 src/c/main.c.49.o
+ *fill*         0x00002419        0x1 
+ .bss.s_temp_c  0x0000241a        0x2 src/c/main.c.49.o
+ .bss.s_icons   0x0000241c       0x18 src/c/main.c.49.o
  .bss.s_settings
-                0x00002464       0x1f src/c/main.c.49.o
- *fill*         0x00002483        0x1 
+                0x00002434       0x1f src/c/main.c.49.o
+ *fill*         0x00002453        0x1 
  .bss.s_complication_layer
-                0x00002484        0x4 src/c/main.c.49.o
+                0x00002454        0x4 src/c/main.c.49.o
  .bss.s_seconds_layer
-                0x00002488        0x4 src/c/main.c.49.o
+                0x00002458        0x4 src/c/main.c.49.o
  .bss.s_minute_layer
-                0x0000248c        0x4 src/c/main.c.49.o
+                0x0000245c        0x4 src/c/main.c.49.o
  .bss.s_hour_layer
-                0x00002490        0x4 src/c/main.c.49.o
+                0x00002460        0x4 src/c/main.c.49.o
  .bss.s_bg_layer
-                0x00002494        0x4 src/c/main.c.49.o
- .bss.s_window  0x00002498        0x4 src/c/main.c.49.o
+                0x00002464        0x4 src/c/main.c.49.o
+ .bss.s_window  0x00002468        0x4 src/c/main.c.49.o
 
 DISCARD
  libc.a(*)
@@ -2155,11 +2155,11 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
 
-.debug_info     0x00000000     0x4166
- .debug_info    0x00000000     0x381e src/c/main.c.49.o
- .debug_info    0x0000381e      0x33e aplite/appinfo.auto.c.49.o
- .debug_info    0x00003b5c      0x10d aplite/src/resource_ids.auto.c.49.o
- .debug_info    0x00003c69      0x4fd src/message_keys.auto.c.49.o
+.debug_info     0x00000000     0x40ec
+ .debug_info    0x00000000     0x37a4 src/c/main.c.49.o
+ .debug_info    0x000037a4      0x33e aplite/appinfo.auto.c.49.o
+ .debug_info    0x00003ae2      0x10d aplite/src/resource_ids.auto.c.49.o
+ .debug_info    0x00003bef      0x4fd src/message_keys.auto.c.49.o
 
 .debug_abbrev   0x00000000      0x6e3
  .debug_abbrev  0x00000000      0x596 src/c/main.c.49.o
@@ -2168,9 +2168,9 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_abbrev  0x00000699       0x4a src/message_keys.auto.c.49.o
 
 .debug_loclists
-                0x00000000     0x1dfa
+                0x00000000     0x1df1
  .debug_loclists
-                0x00000000     0x1dfa src/c/main.c.49.o
+                0x00000000     0x1df1 src/c/main.c.49.o
 
 .debug_aranges  0x00000000      0x100
  .debug_aranges
@@ -2183,15 +2183,15 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
                 0x000000e8       0x18 src/message_keys.auto.c.49.o
 
 .debug_rnglists
-                0x00000000      0x1c5
+                0x00000000      0x1c2
  .debug_rnglists
-                0x00000000      0x1c5 src/c/main.c.49.o
+                0x00000000      0x1c2 src/c/main.c.49.o
 
-.debug_line     0x00000000     0x1c57
- .debug_line    0x00000000     0x18d1 src/c/main.c.49.o
- .debug_line    0x000018d1      0x165 aplite/appinfo.auto.c.49.o
- .debug_line    0x00001a36      0x114 aplite/src/resource_ids.auto.c.49.o
- .debug_line    0x00001b4a      0x10d src/message_keys.auto.c.49.o
+.debug_line     0x00000000     0x1c52
+ .debug_line    0x00000000     0x18cc src/c/main.c.49.o
+ .debug_line    0x000018cc      0x165 aplite/appinfo.auto.c.49.o
+ .debug_line    0x00001a31      0x114 aplite/src/resource_ids.auto.c.49.o
+ .debug_line    0x00001b45      0x10d src/message_keys.auto.c.49.o
 
 .debug_str      0x00000000     0x22a9
  .debug_str     0x00000000     0x22a9 src/c/main.c.49.o

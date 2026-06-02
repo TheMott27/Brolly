@@ -633,18 +633,9 @@ static void seconds_layer_update(Layer *layer, GContext *ctx) {
   // Seconds hand: 200% of minute hand length
   GPoint tip = polar_to_point(center, angle, (radius * 19) / 10);
   
-  // DEBUG: Draw a red dot at the tip position
-  graphics_context_set_fill_color(ctx, GColorRed);
-  graphics_fill_circle(ctx, tip, 3);
-  
-  // Draw black border (2px)
-  graphics_context_set_stroke_color(ctx, GColorBlack);
-  graphics_context_set_stroke_width(ctx, 2);
-  graphics_draw_line(ctx, center, tip);
-  
-  // Draw colored line on top (1px)
+  // Draw seconds hand (no outline)
   graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-  graphics_context_set_stroke_width(ctx, 1);
+  graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_line(ctx, center, tip);
 }
 
