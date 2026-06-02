@@ -352,15 +352,27 @@ function getDictionaryOM(json) {
     }
   }
 
-  // Parse sunrise/sunset from daily data (format: "2026-06-02T05:23")
+  // Parse sunrise/sunset from daily data (format: "2026-06-02T05:23").
+  // Use tomorrow's value when today's event has already passed.
   let sunrise_hour = 6, sunrise_min = 0, sunset_hour = 20, sunset_min = 0;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
   if (json.daily && json.daily.sunrise && json.daily.sunrise.length > 0) {
     let sr = new Date(json.daily.sunrise[0] + ':00');
+    let srMin = sr.getHours() * 60 + sr.getMinutes();
+    // If today's sunrise has already passed and tomorrow's data exists, use tomorrow's
+    if (srMin < nowMinutes && json.daily.sunrise.length > 1) {
+      sr = new Date(json.daily.sunrise[1] + ':00');
+    }
     sunrise_hour = sr.getHours();
     sunrise_min  = sr.getMinutes();
   }
   if (json.daily && json.daily.sunset && json.daily.sunset.length > 0) {
     let ss = new Date(json.daily.sunset[0] + ':00');
+    let ssMin = ss.getHours() * 60 + ss.getMinutes();
+    // If today's sunset has already passed and tomorrow's data exists, use tomorrow's
+    if (ssMin < nowMinutes && json.daily.sunset.length > 1) {
+      ss = new Date(json.daily.sunset[1] + ':00');
+    }
     sunset_hour = ss.getHours();
     sunset_min  = ss.getMinutes();
   }
