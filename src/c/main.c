@@ -526,10 +526,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (delta < 0) delta += 1440;  // wrap to next day
       if (delta > 720) continue;     // more than 12 hours away — skip
 
-      // Round to nearest 12-minute multiple
-      int rounded = ((event_min + 6) / 12) * 12;
-      // Map to 12-hour clock angle (720 min = full revolution)
-      int32_t angle = DEG_TO_TRIGANGLE((rounded % 720) * 360 / 720);
+      // Correct marker position:
+      // 1. Round the minutes component to nearest 12
+      // 2. marker = (hour % 12) * 5  +  rounded_min / 12
+      // Each of the 60 markers = 6 degrees
+      int hour12 = (int)eh % 12;
+      int rounded_min = (((int)em + 6) / 12) * 12;  // round to nearest 12
+      if (rounded_min >= 60) { hour12 = (hour12 + 1) % 12; rounded_min = 0; }
+      int marker = hour12 * 5 + rounded_min / 12;  // 0-59
+      int32_t angle = DEG_TO_TRIGANGLE(marker * 6);  // 6 degrees per marker
 
       // Tip at screen edge, base 5px inward
       GPoint tip  = square_perimeter_point(center, angle, 0, 0);
