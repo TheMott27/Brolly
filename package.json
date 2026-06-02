@@ -9,7 +9,7 @@
   "dependencies": {},
   "pebble": {
     "displayName": "Brolly - Analogue Weather",
-    "uuid": "a2f7c841-3b19-4e56-9d2a-8f1c3e7b0d94",
+    "uuid": "9c0b56d6-1db4-45a5-9e06-13c82229d24c",
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
