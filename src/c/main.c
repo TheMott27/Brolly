@@ -208,7 +208,6 @@ static bool s_showing_icons = false;
 static AppTimer *s_shake_timer = NULL;
 static AppTimer *s_seconds_timer = NULL;
 static bool s_showing_seconds = false;
-static Layer *s_seconds_layer;
 
 // Shared time snapshot — set once per tick, read by all layer callbacks
 static struct tm s_tick_tm;
@@ -446,6 +445,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, s_settings.background_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
+  // ---- Seconds hand (drawn after fill, before markers/numbers so it sits behind them) ----
+  if (s_settings.seconds_hand_mode != SECONDS_MODE_NEVER &&
+      !(s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds)) {
+    int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
+    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+    GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), 8);
+    graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_draw_line(ctx, sec_tail, sec_tip);
+  }
+
   bool show_icons = false;
   switch (s_settings.shake_mode) {
     case SHAKE_MODE_ON_SHAKE:     show_icons = s_showing_icons; break;
@@ -631,28 +641,6 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 }
 
 // ============================================================
-// SECONDS LAYER
-// ============================================================
-
-static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  if (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER) return;
-  if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds) return;
-
-  GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
-  int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-
-  // Tip: reach the screen edge (0 margin)
-  GPoint tip = square_perimeter_point(center, angle, 0, 0);
-  // Tail start: just outside the centre cap outer white ring (radius 8)
-  GPoint tail = polar_to_point(center, angle + DEG_TO_TRIGANGLE(180), 8);
-
-  graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, tail, tip);
-}
-
-// ============================================================
 // COMPLICATION LAYER — temperature + date
 // ============================================================
 
@@ -751,7 +739,7 @@ static void update_tick_subscription(void) {
 static void seconds_timer_callback(void *data) {
   s_seconds_timer = NULL;
   s_showing_seconds = false;
-  layer_mark_dirty(s_seconds_layer);
+  layer_mark_dirty(s_bg_layer);
   update_tick_subscription();  // Drop back to MINUTE_UNIT
 }
 
@@ -760,7 +748,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
   // Seconds layer: only redraw when seconds are actually visible
   if (needs_second_ticks()) {
-    layer_mark_dirty(s_seconds_layer);
+    layer_mark_dirty(s_bg_layer);
   }
 
   // Minute hand and complication: only on minute boundary
@@ -793,7 +781,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   // Also show seconds hand on shake if in shake mode
   if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE) {
     s_showing_seconds = true;
-    layer_mark_dirty(s_seconds_layer);
+    layer_mark_dirty(s_bg_layer);
     if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
     s_seconds_timer = app_timer_register((uint32_t)s_settings.seconds_shake_dur * 1000, seconds_timer_callback, NULL);
     update_tick_subscription();  // Switch to SECOND_UNIT while showing
@@ -911,7 +899,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_seconds_layer);
+  layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
   layer_mark_dirty(s_complication_layer);
@@ -924,11 +912,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
-
-  // Seconds hand is behind everything including background markers/numbers/icons
-  s_seconds_layer = layer_create(bounds);
-  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
-  layer_add_child(root, s_seconds_layer);
 
   s_bg_layer = layer_create(bounds);
   layer_set_update_proc(s_bg_layer, bg_layer_update);
@@ -952,7 +935,6 @@ static void window_unload(Window *window) {
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);
   layer_destroy(s_minute_layer);
-  layer_destroy(s_seconds_layer);
 }
 
 // ============================================================
