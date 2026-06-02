@@ -554,34 +554,34 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int marker = hour12 * 5 + rounded_min / 12;  // 0-59
       int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-      // Draw a 5x5px square at the screen edge
+      // Draw a 10px wide, 5px long marker at the screen edge
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       
-      // Perpendicular direction (rotate 90 degrees from radial) — ±2.5 for 5px total width
+      // Perpendicular direction (rotate 90 degrees from radial) — ±5 for 10px total width
       int32_t sin_a = sin_lookup(angle);
       int32_t cos_a = cos_lookup(angle);
-      int dx_perp = (int)(-(cos_a * 5) / TRIG_MAX_RATIO / 2);
-      int dy_perp = (int)(-(sin_a * 5) / TRIG_MAX_RATIO / 2);
+      int dx_perp = (int)(-(cos_a * 5) / TRIG_MAX_RATIO);
+      int dy_perp = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
       
       // Inward direction (toward center) — 5px deep
       int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
       int dy_in = (int)( (cos_a * 5) / TRIG_MAX_RATIO);
       
-      // Four corners of the 5x5 square
-      GPoint p1 = GPoint(outer_pt.x + dx_perp,           outer_pt.y + dy_perp);           // top-left
-      GPoint p2 = GPoint(outer_pt.x - dx_perp,           outer_pt.y - dy_perp);           // top-right
-      GPoint p3 = GPoint(outer_pt.x - dx_perp + dx_in,   outer_pt.y - dy_perp + dy_in);   // bottom-right
-      GPoint p4 = GPoint(outer_pt.x + dx_perp + dx_in,   outer_pt.y + dy_perp + dy_in);   // bottom-left
+      // Draw as a thick line: from (outer_pt - perp) to (outer_pt + perp), then inward 5px
+      GPoint p1 = GPoint(outer_pt.x - dx_perp,           outer_pt.y - dy_perp);           // left edge
+      GPoint p2 = GPoint(outer_pt.x + dx_perp,           outer_pt.y + dy_perp);           // right edge
+      GPoint p3 = GPoint(outer_pt.x + dx_perp + dx_in,   outer_pt.y + dy_perp + dy_in);   // right-inward
+      GPoint p4 = GPoint(outer_pt.x - dx_perp + dx_in,   outer_pt.y - dy_perp + dy_in);   // left-inward
       
       GColor marker_color = (evt == 0) ? s_settings.sunrise_marker_color : s_settings.sunset_marker_color;
       graphics_context_set_fill_color(ctx, marker_color);
-      GPathInfo sq_path = {
+      GPathInfo rect_path = {
         .num_points = 4,
         .points = (GPoint[]) { p1, p2, p3, p4 }
       };
-      GPath *sq = gpath_create(&sq_path);
-      gpath_draw_filled(ctx, sq);
-      gpath_destroy(sq);
+      GPath *rect = gpath_create(&rect_path);
+      gpath_draw_filled(ctx, rect);
+      gpath_destroy(rect);
     }
   }
 
@@ -1110,6 +1110,12 @@ static void init(void) {
   }
   if (persist_exists(PERSIST_TEMP_C)) s_temp_c = (int16_t)persist_read_int(PERSIST_TEMP_C);
   if (persist_exists(PERSIST_TEMP_F)) s_temp_f = (int16_t)persist_read_int(PERSIST_TEMP_F);
+
+  // Initialize sunrise/sunset with default values (will be overwritten by weather data)
+  s_sunrise_hour = 6;
+  s_sunrise_min = 0;
+  s_sunset_hour = 18;
+  s_sunset_min = 0;
 
   time_t now = time(NULL);
   s_tick_tm = *localtime(&now);
