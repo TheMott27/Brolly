@@ -678,7 +678,9 @@
 	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
 	    'KEY_VIBRATE_BT_DISCONNECT':  54,
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           121
+	    'KEY_NUMBER_FONT':           121,
+	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
+	    'KEY_SECONDS_HAND_MODE':     142
 	  };
 	  const COLOR_MAP = {
 	    'KEY_HOUR_HAND_OUTER':      114,
@@ -696,7 +698,10 @@
 	    'KEY_DATE_COLOR':           134,
 	    'KEY_TEMP_COLOR':                 135,
 	    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
-	    'KEY_BT_DISCONNECT_INNER_COLOR':  137
+	    'KEY_BT_DISCONNECT_INNER_COLOR':  137,
+	    'KEY_CENTER_DOT_COLOR':       139,
+	    'KEY_MIDDLE_RING_COLOR':      140,
+	    'KEY_SECONDS_HAND_COLOR':     141
 	  };
 	
 	  let dict = {};
@@ -790,7 +795,9 @@
 	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
 	    'KEY_VIBRATE_BT_DISCONNECT':  54,
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           121
+	    'KEY_NUMBER_FONT':           121,
+	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
+	    'KEY_SECONDS_HAND_MODE':     142
 	  };
 	
 	  // Colour keys — sent as 0xRRGGBB integers
@@ -810,7 +817,10 @@
 	    'KEY_DATE_COLOR':           134,
 	    'KEY_TEMP_COLOR':                 135,
 	    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
-	    'KEY_BT_DISCONNECT_INNER_COLOR':  137
+	    'KEY_BT_DISCONNECT_INNER_COLOR':  137,
+	    'KEY_CENTER_DOT_COLOR':       139,
+	    'KEY_MIDDLE_RING_COLOR':      140,
+	    'KEY_SECONDS_HAND_COLOR':     141
 	  };
 	
 	  // Build numeric-keyed dict for sendAppMessage
