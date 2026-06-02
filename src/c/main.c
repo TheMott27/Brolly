@@ -121,7 +121,7 @@
 #define PERSIST_ICONS           0
 #define PERSIST_TEMP_C          24
 #define PERSIST_TEMP_F          25
-#define PERSIST_SETTINGS        27
+#define PERSIST_SETTINGS        28
 
 #define SHAKE_DISPLAY_MS        30000
 #define APP_MSG_INBOX_SIZE      512
@@ -175,7 +175,6 @@ typedef struct {
   GColor temp_color;
   bool battery_indicator_enabled;
   GColor seconds_hand_color;
-  int8_t seconds_hand_mode; // 0: never, 1: always, 2: shake only
 } Settings;
 
 // ============================================================
@@ -197,8 +196,7 @@ static bool s_bt_connected = true;
 static uint8_t s_battery_pct = 100;
 static bool s_showing_icons = false;
 static AppTimer *s_shake_timer = NULL;
-static AppTimer *s_seconds_timer = NULL;
-static bool s_showing_seconds = false;
+
 
 // Shared time snapshot — set once per tick, read by all layer callbacks
 static struct tm s_tick_tm;
@@ -247,7 +245,6 @@ static void settings_set_defaults(Settings *s) {
   s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
   s->seconds_hand_color          = GColorFromRGB(0, 97, 254);
-  s->seconds_hand_mode           = 0; // 0 = never show (default)
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -606,36 +603,16 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, dot);
   graphics_fill_circle(ctx, center, 1);
 
-  // Draw seconds hand
-  if (s_settings.seconds_hand_mode != 0) {
-    bool show = (s_settings.seconds_hand_mode == 1) || 
-                (s_settings.seconds_hand_mode == 2 && s_showing_seconds);
-    if (show) {
-      int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-      GPoint sec_tip = polar_to_point(center, sec_angle, 72);
-      graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-      graphics_context_set_stroke_width(ctx, 3);
-      graphics_draw_line(ctx, center, sec_tip);
-    }
-  }
+
 }
 
 static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  // Check if seconds hand should be shown
-  if (s_settings.seconds_hand_mode == 0) return; // Never show
-  if (s_settings.seconds_hand_mode == 2 && !s_showing_seconds) return; // Show only on shake
-  
   GRect bounds = layer_get_bounds(layer);
   GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
-  int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-  
-  // Seconds hand: 200% of minute hand length
-  GPoint tip = polar_to_point(center, angle, (radius * 19) / 10);
-  
-  // Draw seconds hand (no outline)
+  GPoint tip = polar_to_point(center, angle, 72);
   graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_line(ctx, center, tip);
 }
 
@@ -713,11 +690,6 @@ static void shake_timer_callback(void *data) {
   layer_mark_dirty(s_complication_layer);
 }
 
-static void seconds_timer_callback(void *data) {
-  s_seconds_timer = NULL;
-  s_showing_seconds = false;
-  layer_mark_dirty(s_seconds_layer);
-}
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_tick_tm = *tick_time;
@@ -733,17 +705,12 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   if (s_settings.shake_mode != SHAKE_MODE_ON_SHAKE) return;
   s_showing_icons = true;
-  s_showing_seconds = true;
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_complication_layer);
-  layer_mark_dirty(s_seconds_layer);
   
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   s_shake_timer = app_timer_register(5000, shake_timer_callback, NULL);
-  
-  if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
-  s_seconds_timer = app_timer_register(30000, seconds_timer_callback, NULL);
 }
 
 static void battery_handler(BatteryChargeState charge) {
@@ -834,8 +801,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
   Tuple *shc = dict_find(iter, KEY_SECONDS_HAND_COLOR);
   if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
-  Tuple *shm = dict_find(iter, KEY_SECONDS_HAND_MODE);
-  if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
+
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
   persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
