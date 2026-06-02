@@ -554,34 +554,22 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int marker = hour12 * 5 + rounded_min / 12;  // 0-59
       int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-      // Draw a 10px wide, 5px long marker at the screen edge
+      // Draw a 3px wide, 5px long marker from the screen edge inward
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-      
-      // Perpendicular direction (rotate 90 degrees from radial) — ±5 for 10px total width
-      int32_t sin_a = sin_lookup(angle);
-      int32_t cos_a = cos_lookup(angle);
-      int dx_perp = (int)(-(cos_a * 5) / TRIG_MAX_RATIO);
-      int dy_perp = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
-      
-      // Inward direction (toward center) — 5px deep
-      int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
-      int dy_in = (int)( (cos_a * 5) / TRIG_MAX_RATIO);
-      
-      // Draw as a thick line: from (outer_pt - perp) to (outer_pt + perp), then inward 5px
-      GPoint p1 = GPoint(outer_pt.x - dx_perp,           outer_pt.y - dy_perp);           // left edge
-      GPoint p2 = GPoint(outer_pt.x + dx_perp,           outer_pt.y + dy_perp);           // right edge
-      GPoint p3 = GPoint(outer_pt.x + dx_perp + dx_in,   outer_pt.y + dy_perp + dy_in);   // right-inward
-      GPoint p4 = GPoint(outer_pt.x - dx_perp + dx_in,   outer_pt.y - dy_perp + dy_in);   // left-inward
-      
+      int dx = center.x - outer_pt.x;
+      int dy = center.y - outer_pt.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+      if (dist == 0) continue;
+      // Step 5px inward along the inward direction
+      GPoint inner_pt = GPoint(outer_pt.x + dx * 5 / dist,
+                               outer_pt.y + dy * 5 / dist);
+
       GColor marker_color = (evt == 0) ? s_settings.sunrise_marker_color : s_settings.sunset_marker_color;
-      graphics_context_set_fill_color(ctx, marker_color);
-      GPathInfo rect_path = {
-        .num_points = 4,
-        .points = (GPoint[]) { p1, p2, p3, p4 }
-      };
-      GPath *rect = gpath_create(&rect_path);
-      gpath_draw_filled(ctx, rect);
-      gpath_destroy(rect);
+      graphics_context_set_stroke_color(ctx, marker_color);
+      graphics_context_set_stroke_width(ctx, 3);
+      graphics_draw_line(ctx, inner_pt, outer_pt);
     }
   }
 
