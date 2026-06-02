@@ -523,8 +523,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     graphics_draw_line(ctx, inner_pt, outer_pt);
   }
 
-  // ---- Sunrise / sunset highlighted minute markers ----
-  // The minute marker at the event's clock position is drawn 3px wide and 5px long.
+  // ---- Sunrise / sunset markers ----
+  // 5x5px filled square at the event's clock position.
   // Sunrise = sunrise_marker_color, sunset = sunset_marker_color (user-configurable).
   // Visibility: always, with weather icons, or off.
   // Position formula: marker = (hour%12)*5 + round(minutes/12), angle = marker*6°
@@ -554,22 +554,34 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int marker = hour12 * 5 + rounded_min / 12;  // 0-59
       int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-      // Draw a 3px wide, 5px long marker from the screen edge inward
+      // Draw a 5x5px square at the screen edge
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-      int dx = center.x - outer_pt.x;
-      int dy = center.y - outer_pt.y;
-      int adx = dx < 0 ? -dx : dx;
-      int ady = dy < 0 ? -dy : dy;
-      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-      if (dist == 0) continue;
-      // Step 5px inward along the inward direction
-      GPoint inner_pt = GPoint(outer_pt.x + dx * 5 / dist,
-                               outer_pt.y + dy * 5 / dist);
-
+      
+      // Perpendicular direction (rotate 90 degrees from radial)
+      int32_t sin_a = sin_lookup(angle);
+      int32_t cos_a = cos_lookup(angle);
+      int dx_perp = (int)(-(cos_a * 2) / TRIG_MAX_RATIO);  // ±2 for 5px width
+      int dy_perp = (int)(-(sin_a * 2) / TRIG_MAX_RATIO);
+      
+      // Inward direction (toward center) — 5px deep
+      int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
+      int dy_in = (int)( (cos_a * 5) / TRIG_MAX_RATIO);
+      
+      // Four corners of the 5x5 square
+      GPoint p1 = GPoint(outer_pt.x + dx_perp,           outer_pt.y + dy_perp);           // top-left
+      GPoint p2 = GPoint(outer_pt.x - dx_perp,           outer_pt.y - dy_perp);           // top-right
+      GPoint p3 = GPoint(outer_pt.x - dx_perp + dx_in,   outer_pt.y - dy_perp + dy_in);   // bottom-right
+      GPoint p4 = GPoint(outer_pt.x + dx_perp + dx_in,   outer_pt.y + dy_perp + dy_in);   // bottom-left
+      
       GColor marker_color = (evt == 0) ? s_settings.sunrise_marker_color : s_settings.sunset_marker_color;
-      graphics_context_set_stroke_color(ctx, marker_color);
-      graphics_context_set_stroke_width(ctx, 3);
-      graphics_draw_line(ctx, inner_pt, outer_pt);
+      graphics_context_set_fill_color(ctx, marker_color);
+      GPathInfo sq_path = {
+        .num_points = 4,
+        .points = (GPoint[]) { p1, p2, p3, p4 }
+      };
+      GPath *sq = gpath_create(&sq_path);
+      gpath_draw_filled(ctx, sq);
+      gpath_destroy(sq);
     }
   }
 
