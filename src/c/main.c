@@ -509,10 +509,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     graphics_draw_line(ctx, inner_pt, outer_pt);
   }
 
-  // ---- Sunrise / sunset triangles ----
-  // Each triangle is 5x5px, tip pointing toward centre, placed at the screen edge.
+  // ---- Sunrise / sunset highlighted minute markers ----
+  // The minute marker at the event's clock position is drawn 3px wide and 10px long.
+  // Sunrise = GColorOrange, sunset = GColorOxfordBlue.
   // Only shown when the event is within the next 12 hours.
-  // Rounding: event time rounded to nearest 12-minute multiple.
+  // Position formula: marker = (hour%12)*5 + round(minutes/12), angle = marker*6°
   if (s_sunrise_hour >= 0 || s_sunset_hour >= 0) {
     int now_min = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
 
@@ -526,61 +527,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (delta < 0) delta += 1440;  // wrap to next day
       if (delta > 720) continue;     // more than 12 hours away — skip
 
-      // Correct marker position:
-      // 1. Round the minutes component to nearest 12
-      // 2. marker = (hour % 12) * 5  +  rounded_min / 12
-      // Each of the 60 markers = 6 degrees
+      // Map event time to nearest minute marker (0-59)
       int hour12 = (int)eh % 12;
       int rounded_min = (((int)em + 6) / 12) * 12;  // round to nearest 12
       if (rounded_min >= 60) { hour12 = (hour12 + 1) % 12; rounded_min = 0; }
       int marker = hour12 * 5 + rounded_min / 12;  // 0-59
-      int32_t angle = DEG_TO_TRIGANGLE(marker * 6);  // 6 degrees per marker
+      int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-      // Tip at screen edge, base 5px inward
-      GPoint tip  = square_perimeter_point(center, angle, 0, 0);
-      // Perpendicular offset for triangle base (±2px)
-      int32_t sin_a = sin_lookup(angle);
-      int32_t cos_a = cos_lookup(angle);
-      // inward direction unit vector * 5
-      int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
-      int dy_in = (int)( (cos_a * 5) / TRIG_MAX_RATIO);
-      // perpendicular (rotate 90°) * 2
-      int dx_perp = (int)(-(cos_a * 2) / TRIG_MAX_RATIO);
-      int dy_perp = (int)(-(sin_a * 2) / TRIG_MAX_RATIO);
-      GPoint base_l = GPoint(tip.x + dx_in + dx_perp, tip.y + dy_in + dy_perp);
-      GPoint base_r = GPoint(tip.x + dx_in - dx_perp, tip.y + dy_in - dy_perp);
+      // Draw a 3px wide, 10px long marker from the screen edge inward
+      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+      int dx = center.x - outer_pt.x;
+      int dy = center.y - outer_pt.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+      if (dist == 0) continue;
+      // Step 10px inward along the inward direction
+      GPoint inner_pt = GPoint(outer_pt.x + dx * 10 / dist,
+                               outer_pt.y + dy * 10 / dist);
 
-      // Sunrise = dark orange, sunset = dark blue
-      GColor tri_color = (evt == 0) ? GColorOrange : GColorOxfordBlue;
-      graphics_context_set_fill_color(ctx, tri_color);
-      GPathInfo tri_path = {
-        .num_points = 3,
-        .points = (GPoint[]) { tip, base_l, base_r }
-      };
-      GPath *tri = gpath_create(&tri_path);
-      gpath_draw_filled(ctx, tri);
-      gpath_destroy(tri);
+      GColor marker_color = (evt == 0) ? GColorOrange : GColorOxfordBlue;
+      graphics_context_set_stroke_color(ctx, marker_color);
+      graphics_context_set_stroke_width(ctx, 3);
+      graphics_draw_line(ctx, inner_pt, outer_pt);
     }
-  }
-
-  // ---- DEBUG: show sunrise/sunset raw values in red ----
-  {
-    char dbg1[32], dbg2[32];
-    snprintf(dbg1, sizeof(dbg1), "SR:%d:%02d SS:%d:%02d",
-             (int)s_sunrise_hour, (int)s_sunrise_min,
-             (int)s_sunset_hour,  (int)s_sunset_min);
-    int now_min_dbg = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
-    int sr_delta = (s_sunrise_hour >= 0) ?
-      (((int)s_sunrise_hour * 60 + (int)s_sunrise_min) - now_min_dbg + 1440) % 1440 : -1;
-    int ss_delta = (s_sunset_hour >= 0) ?
-      (((int)s_sunset_hour * 60 + (int)s_sunset_min) - now_min_dbg + 1440) % 1440 : -1;
-    snprintf(dbg2, sizeof(dbg2), "dSR:%d dSS:%d", sr_delta, ss_delta);
-    GFont dbg_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
-    graphics_context_set_text_color(ctx, GColorRed);
-    graphics_draw_text(ctx, dbg1, dbg_font, GRect(0, 0, 144, 18),
-      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-    graphics_draw_text(ctx, dbg2, dbg_font, GRect(0, 16, 144, 18),
-      GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
   }
 
   // ---- Hour numbers / icons ----
