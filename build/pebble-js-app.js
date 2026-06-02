@@ -729,6 +729,17 @@
 	
 	Pebble.addEventListener('ready', init);
 	
+	// When app message connection opens (watch connects to phone),
+	// immediately send saved settings so they load even on first install.
+	Pebble.addEventListener('appmessage', function(e) {
+	  // This fires when the watch sends a message, but we use it as a signal
+	  // that the connection is active. Send settings proactively.
+	  let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
+	  if (Object.keys(configData).length > 0) {
+	    sendSavedSettings(configData);
+	  }
+	});
+	
 	Pebble.addEventListener('showConfiguration', function() {
 	  // Use the stored URL (which includes all saved settings as query params)
 	  // so the page reopens pre-populated with the user's last choices.
