@@ -105,8 +105,6 @@
 #define KEY_TEMP_COLOR            135
 #define KEY_BT_DISCONNECT_OUTER_COLOR 136
 #define KEY_BT_DISCONNECT_INNER_COLOR 137
-#define KEY_CENTER_DOT_COLOR      139
-#define KEY_MIDDLE_RING_COLOR     140
 #define KEY_SECONDS_HAND_COLOR    141
 
 // Seconds hand visibility modes
@@ -132,7 +130,7 @@
 #define PERSIST_ICONS           0
 #define PERSIST_TEMP_C          24
 #define PERSIST_TEMP_F          25
-#define PERSIST_SETTINGS        29
+#define PERSIST_SETTINGS        30
 
 #define SHAKE_DISPLAY_MS        30000
 #define APP_MSG_INBOX_SIZE      512
@@ -178,8 +176,6 @@ typedef struct {
   GColor center_dot_50_color;
   GColor center_dot_20_color;
   GColor middle_ring_20_color;
-  GColor center_dot_color;
-  GColor middle_ring_color;
   GColor date_color;
   GColor temp_color;
   bool battery_indicator_enabled;
@@ -249,8 +245,6 @@ static void settings_set_defaults(Settings *s) {
   s->center_dot_50_color         = GColorRed;
   s->center_dot_20_color         = GColorRed;
   s->middle_ring_20_color        = GColorRed;
-  s->center_dot_color            = GColorWhite;
-  s->middle_ring_color           = GColorWhite;
   s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
@@ -599,20 +593,25 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   draw_inittick_hand(ctx, center, polar_to_point(center, angle, radius * 95 / 100),
                      outer, inner);
 
-  // Centre cap: white outer → black border → battery ring → black outline → dot
-  // Outer ring (always middle_ring_color from appearance) and inner ring (changes with battery)
-  GColor outer_ring = s_settings.middle_ring_color;  // Never changes
+  // Centre cap colours derived from hand settings:
+  //   outer ring  = seconds hand colour (or white if seconds always hidden)
+  //   inner ring  = minute hand inner stripe
+  //   dot         = hour hand outer colour
+  // Battery indicator colours override inner_ring and dot when active.
+  GColor sec_color = (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER)
+                     ? GColorWhite : s_settings.seconds_hand_color;
+  GColor outer_ring = sec_color;
   GColor inner_ring, dot;
-  
+
   if (s_settings.battery_indicator_enabled) {
-    // >50%: both ring and dot use normal appearance colours
+    // >50%: inner ring and dot use hand-derived colours
     if (s_battery_pct > FIXED_BATT_PCT_MID) {
-      inner_ring = s_settings.middle_ring_color;
-      dot        = s_settings.center_dot_color;
+      inner_ring = s_settings.min_hand_inner;
+      dot        = s_settings.hour_hand_outer;
     }
-    // 50%–20%: ring stays normal, dot turns alert colour
+    // 50%–20%: ring stays hand-derived, dot turns alert colour
     else if (s_battery_pct > FIXED_BATT_PCT_LOW) {
-      inner_ring = s_settings.middle_ring_color;
+      inner_ring = s_settings.min_hand_inner;
       dot        = s_settings.center_dot_50_color;
     }
     // <20%: both ring and dot turn alert colour
@@ -621,9 +620,9 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
       dot        = s_settings.center_dot_20_color;
     }
   } else {
-    // Battery indicator off: both use normal appearance colours
-    inner_ring = s_settings.middle_ring_color;
-    dot        = s_settings.center_dot_color;
+    // Battery indicator off: use hand-derived colours
+    inner_ring = s_settings.min_hand_inner;
+    dot        = s_settings.hour_hand_outer;
   }
   
   graphics_context_set_fill_color(ctx, GColorWhite);
@@ -872,10 +871,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (cd20) s_settings.center_dot_20_color = rgb_to_gcolor(cd20->value->int32);
   Tuple *mr20 = dict_find(iter, KEY_MIDDLE_RING_20_COLOR);
   if (mr20) s_settings.middle_ring_20_color = rgb_to_gcolor(mr20->value->int32);
-  Tuple *cdc = dict_find(iter, KEY_CENTER_DOT_COLOR);
-  if (cdc) s_settings.center_dot_color = rgb_to_gcolor(cdc->value->int32);
-  Tuple *mrc = dict_find(iter, KEY_MIDDLE_RING_COLOR);
-  if (mrc) s_settings.middle_ring_color = rgb_to_gcolor(mrc->value->int32);
   Tuple *dc = dict_find(iter, KEY_DATE_COLOR);
   if (dc) s_settings.date_color = rgb_to_gcolor(dc->value->int32);
   Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR);

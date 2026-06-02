@@ -698,8 +698,6 @@
 	  'KEY_TEMP_COLOR':                 135,
 	  'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
 	  'KEY_BT_DISCONNECT_INNER_COLOR':  137,
-	  'KEY_CENTER_DOT_COLOR':           139,
-	  'KEY_MIDDLE_RING_COLOR':          140,
 	  'KEY_SECONDS_HAND_COLOR':         141
 	};
 	
