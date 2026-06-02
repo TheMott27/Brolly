@@ -1,0 +1,212 @@
+{
+  "appKeys": [
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "display",
+      "key": "KEY_DISPLAY_HOUR_MARKERS",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "display",
+      "key": "KEY_DISPLAY_MINOR_MARKERS",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "display",
+      "key": "KEY_SHAKE_MODE",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "display",
+      "key": "KEY_DATE_VISIBLE",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "display",
+      "key": "KEY_TEMP_VISIBLE",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "weather",
+      "key": "KEY_TEMP_UNIT",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "weather",
+      "key": "KEY_WEATHER_SERVICE",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": "",
+      "group": "weather",
+      "key": "KEY_CUSTOM_LOCATION",
+      "platformDependencies": {},
+      "type": "string"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "alerts",
+      "key": "KEY_BT_DISCONNECT_MIN_INNER_RED",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "alerts",
+      "key": "KEY_VIBRATE_BT_DISCONNECT",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 0,
+      "group": "alerts",
+      "key": "KEY_VIBRATE_BT_RECONNECT",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_HOUR_HAND_OUTER",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 0, 0],
+      "group": "colors",
+      "key": "KEY_HOUR_HAND_INNER",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_MIN_HAND_OUTER",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [0, 85, 255],
+      "group": "colors",
+      "key": "KEY_MIN_HAND_INNER",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": 3,
+      "group": "display",
+      "key": "KEY_NUMBER_FONT",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [0, 0, 0],
+      "group": "colors",
+      "key": "KEY_BACKGROUND_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_NUMBER_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_ICON_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_HOUR_MARKER_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_MINUTE_MARKER_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_CENTER_DOT_50_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 0, 0],
+      "group": "colors",
+      "key": "KEY_CENTER_DOT_20_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 0, 0],
+      "group": "colors",
+      "key": "KEY_MIDDLE_RING_20_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_DATE_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    },
+    {
+      "capabilities": ["configurable"],
+      "defaultValue": [255, 255, 255],
+      "group": "colors",
+      "key": "KEY_TEMP_COLOR",
+      "platformDependencies": {},
+      "type": "uint8"
+    }
+  ]
+}
