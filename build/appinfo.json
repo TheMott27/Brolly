@@ -12,8 +12,8 @@
         "gabbro"
     ],
     "capabilities": [
-        "configurable",
-        "location"
+        "location",
+        "configurable"
     ],
     "configureUrl": "https://aww2setts-au3w7dkw.manus.space/",
     "watchapp": {
@@ -109,7 +109,9 @@
         "KEY_BATTERY_INDICATOR_ENABLED": 138,
         "KEY_SECONDS_HAND_COLOR": 141,
         "KEY_SECONDS_HAND_MODE": 142,
-        "KEY_SECONDS_SHAKE_DUR": 143
+        "KEY_SECONDS_SHAKE_DUR": 143,
+        "KEY_TEST_BATTERY_ALERT": 144,
+        "KEY_TEST_BT_DISCONNECT": 145
     },
     "resources": {
         "media": [
@@ -253,6 +255,8 @@
         "KEY_BATTERY_INDICATOR_ENABLED": 138,
         "KEY_SECONDS_HAND_COLOR": 141,
         "KEY_SECONDS_HAND_MODE": 142,
-        "KEY_SECONDS_SHAKE_DUR": 143
+        "KEY_SECONDS_SHAKE_DUR": 143,
+        "KEY_TEST_BATTERY_ALERT": 144,
+        "KEY_TEST_BT_DISCONNECT": 145
     }
 }

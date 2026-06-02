@@ -87,6 +87,8 @@
 #define KEY_BATTERY_INDICATOR_ENABLED 138
 #define KEY_SECONDS_HAND_MODE     142
 #define KEY_SECONDS_SHAKE_DUR     143
+#define KEY_TEST_BATTERY_ALERT    144
+#define KEY_TEST_BT_DISCONNECT    145
 
 // Message keys — colour settings (sent as 0xRRGGBB)
 #define KEY_HOUR_HAND_OUTER       114
@@ -204,6 +206,11 @@ static bool s_showing_icons = false;
 static AppTimer *s_shake_timer = NULL;
 static AppTimer *s_seconds_timer = NULL;
 static bool s_showing_seconds = false;
+
+// Test mode: temporarily override battery/BT state for settings preview
+static AppTimer *s_test_timer = NULL;
+static bool s_test_battery_active = false;
+static bool s_test_bt_active = false;
 
 // Shared time snapshot — set once per tick, read by all layer callbacks
 static struct tm s_tick_tm;
@@ -763,6 +770,23 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
 }
 
+static void test_timer_callback(void *context) {
+  s_test_timer = NULL;
+  if (s_test_battery_active) {
+    // Restore real battery level from the system
+    BatteryChargeState charge = battery_state_service_peek();
+    s_battery_pct = charge.charge_percent;
+    s_test_battery_active = false;
+  }
+  if (s_test_bt_active) {
+    // Restore real BT state from the system
+    s_bt_connected = connection_service_peek_pebble_app_connection();
+    s_test_bt_active = false;
+  }
+  layer_mark_dirty(s_minute_layer);
+  layer_mark_dirty(s_hour_layer);
+}
+
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   if (s_settings.shake_mode != SHAKE_MODE_ON_SHAKE) return;
   s_showing_icons = true;
@@ -884,6 +908,30 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *ssd = dict_find(iter, KEY_SECONDS_SHAKE_DUR);
   if (ssd) s_settings.seconds_shake_dur = (int8_t)ssd->value->int32;
 
+  // Test battery alert: temporarily set battery to 10% for 5 seconds
+  Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);
+  if (tba && tba->value->int32) {
+    if (s_test_timer) app_timer_cancel(s_test_timer);
+    s_test_battery_active = true;
+    s_test_bt_active = false;
+    s_battery_pct = 10;  // Force <20% threshold
+    layer_mark_dirty(s_minute_layer);
+    s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
+    return;  // Don't persist — this is a preview only
+  }
+
+  // Test BT disconnect: temporarily simulate disconnect for 5 seconds
+  Tuple *tbt = dict_find(iter, KEY_TEST_BT_DISCONNECT);
+  if (tbt && tbt->value->int32) {
+    if (s_test_timer) app_timer_cancel(s_test_timer);
+    s_test_bt_active = true;
+    s_test_battery_active = false;
+    s_bt_connected = false;
+    layer_mark_dirty(s_minute_layer);
+    s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
+    return;  // Don't persist — this is a preview only
+  }
+
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
   persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
   persist_write_int(PERSIST_TEMP_C, s_temp_c);
@@ -987,6 +1035,7 @@ static void deinit(void) {
   battery_state_service_unsubscribe();
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
+  if (s_test_timer) app_timer_cancel(s_test_timer);
   window_destroy(s_window);
 }
 
