@@ -607,25 +607,22 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   //   <20%:     ALL four elements turn center_dot_20_color (single alert colour)
   GColor sec_color = (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER)
                      ? GColorWhite : s_settings.seconds_hand_color;
-  GColor battery_ring, outer_ring, inner_ring, dot;
+  GColor battery_ring, inner_ring, dot;
 
   if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_LOW) {
     // <20%: all cap elements turn the low-battery alert colour
     GColor alert = s_settings.center_dot_20_color;
     battery_ring = alert;
-    outer_ring   = alert;
     inner_ring   = alert;
     dot          = alert;
   } else if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_MID) {
     // 50%-20%: only battery ring changes
     battery_ring = s_settings.center_dot_50_color;
-    outer_ring   = sec_color;
     inner_ring   = s_settings.min_hand_inner;
     dot          = s_settings.hour_hand_outer;
   } else {
     // >50% or indicator off: all use normal hand-derived colours
     battery_ring = GColorWhite;
-    outer_ring   = sec_color;
     inner_ring   = s_settings.min_hand_inner;
     dot          = s_settings.hour_hand_outer;
   }
