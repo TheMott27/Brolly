@@ -925,14 +925,14 @@ static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
-  s_bg_layer = layer_create(bounds);
-  layer_set_update_proc(s_bg_layer, bg_layer_update);
-  layer_add_child(root, s_bg_layer);
-
-  // Seconds hand is behind hour hand, complication, and minute hand
+  // Seconds hand is behind everything including background markers/numbers/icons
   s_seconds_layer = layer_create(bounds);
   layer_set_update_proc(s_seconds_layer, seconds_layer_update);
   layer_add_child(root, s_seconds_layer);
+
+  s_bg_layer = layer_create(bounds);
+  layer_set_update_proc(s_bg_layer, bg_layer_update);
+  layer_add_child(root, s_bg_layer);
 
   s_hour_layer = layer_create(bounds);
   layer_set_update_proc(s_hour_layer, hour_layer_update);
