@@ -680,7 +680,8 @@
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
 	    'KEY_NUMBER_FONT':           121,
 	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
-	    'KEY_SECONDS_HAND_MODE':     142
+	    'KEY_SECONDS_HAND_MODE':     142,
+	    'KEY_SECONDS_SHAKE_DUR':     143
 	  };
 	  const COLOR_MAP = {
 	    'KEY_HOUR_HAND_OUTER':      114,
@@ -797,7 +798,8 @@
 	    'KEY_VIBRATE_BT_RECONNECT':   55,
 	    'KEY_NUMBER_FONT':           121,
 	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
-	    'KEY_SECONDS_HAND_MODE':     142
+	    'KEY_SECONDS_HAND_MODE':     142,
+	    'KEY_SECONDS_SHAKE_DUR':     143
 	  };
 	
 	  // Colour keys — sent as 0xRRGGBB integers

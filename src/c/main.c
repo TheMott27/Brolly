@@ -102,6 +102,7 @@
 #define KEY_MIDDLE_RING_COLOR    140
 #define KEY_SECONDS_HAND_COLOR   141
 #define KEY_SECONDS_HAND_MODE    142
+#define KEY_SECONDS_SHAKE_DUR    143
 
 // Seconds hand visibility modes
 #define SECONDS_MODE_ALWAYS      1
@@ -181,6 +182,7 @@ typedef struct {
   bool battery_indicator_enabled;
   GColor seconds_hand_color;
   int8_t seconds_hand_mode; // 0=never, 1=always, 2=shake only
+  int8_t seconds_shake_dur; // seconds to show on shake: 5, 10, 20, 30
 } Settings;
 
 // ============================================================
@@ -254,6 +256,7 @@ static void settings_set_defaults(Settings *s) {
   s->battery_indicator_enabled   = true;
   s->seconds_hand_color          = GColorWhite;
   s->seconds_hand_mode           = SECONDS_MODE_SHAKE;
+  s->seconds_shake_dur           = 10;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -745,7 +748,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
     s_showing_seconds = true;
     layer_mark_dirty(s_seconds_layer);
     if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
-    s_seconds_timer = app_timer_register(30000, seconds_timer_callback, NULL);
+    s_seconds_timer = app_timer_register((uint32_t)s_settings.seconds_shake_dur * 1000, seconds_timer_callback, NULL);
   }
 }
 
@@ -839,6 +842,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
   Tuple *shm = dict_find(iter, KEY_SECONDS_HAND_MODE);
   if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
+  Tuple *ssd = dict_find(iter, KEY_SECONDS_SHAKE_DUR);
+  if (ssd) s_settings.seconds_shake_dur = (int8_t)ssd->value->int32;
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
   persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
