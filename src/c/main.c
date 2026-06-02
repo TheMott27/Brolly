@@ -100,6 +100,13 @@
 #define KEY_BATTERY_INDICATOR_ENABLED 138
 #define KEY_CENTER_DOT_COLOR     139
 #define KEY_MIDDLE_RING_COLOR    140
+#define KEY_SECONDS_HAND_COLOR   141
+#define KEY_SECONDS_HAND_MODE    142
+
+// Seconds hand visibility modes
+#define SECONDS_MODE_ALWAYS      1
+#define SECONDS_MODE_NEVER       0
+#define SECONDS_MODE_SHAKE       2
 
 // Shake mode
 #define SHAKE_MODE_ON_SHAKE     0
@@ -172,6 +179,8 @@ typedef struct {
   GColor date_color;
   GColor temp_color;
   bool battery_indicator_enabled;
+  GColor seconds_hand_color;
+  int8_t seconds_hand_mode; // 0=never, 1=always, 2=shake only
 } Settings;
 
 // ============================================================
@@ -192,6 +201,9 @@ static bool s_bt_connected = true;
 static uint8_t s_battery_pct = 100;
 static bool s_showing_icons = false;
 static AppTimer *s_shake_timer = NULL;
+static AppTimer *s_seconds_timer = NULL;
+static bool s_showing_seconds = false;
+static Layer *s_seconds_layer;
 
 
 // Shared time snapshot — set once per tick, read by all layer callbacks
@@ -240,6 +252,8 @@ static void settings_set_defaults(Settings *s) {
   s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
+  s->seconds_hand_color          = GColorWhite;
+  s->seconds_hand_mode           = SECONDS_MODE_ALWAYS;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -603,6 +617,28 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 
 
 // ============================================================
+// SECONDS LAYER
+// ============================================================
+
+static void seconds_layer_update(Layer *layer, GContext *ctx) {
+  if (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER) return;
+  if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds) return;
+
+  GRect bounds = layer_get_bounds(layer);
+  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
+
+  // Tip: reach the screen edge (0 margin)
+  GPoint tip = square_perimeter_point(center, angle, 0, 0);
+  // Tail start: just outside the centre cap outer white ring (radius 8)
+  GPoint tail = polar_to_point(center, angle + DEG_TO_TRIGANGLE(180), 8);
+
+  graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_line(ctx, tail, tip);
+}
+
+// ============================================================
 // COMPLICATION LAYER — temperature + date
 // ============================================================
 
@@ -677,8 +713,15 @@ static void shake_timer_callback(void *data) {
 }
 
 
+static void seconds_timer_callback(void *data) {
+  s_seconds_timer = NULL;
+  s_showing_seconds = false;
+  layer_mark_dirty(s_seconds_layer);
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_tick_tm = *tick_time;
+  layer_mark_dirty(s_seconds_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
   layer_mark_dirty(s_complication_layer);
@@ -696,6 +739,14 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   s_shake_timer = app_timer_register(5000, shake_timer_callback, NULL);
+
+  // Also show seconds hand on shake if in shake mode
+  if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE) {
+    s_showing_seconds = true;
+    layer_mark_dirty(s_seconds_layer);
+    if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
+    s_seconds_timer = app_timer_register(30000, seconds_timer_callback, NULL);
+  }
 }
 
 static void battery_handler(BatteryChargeState charge) {
@@ -784,7 +835,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
   Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
   if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
-
+  Tuple *shc = dict_find(iter, KEY_SECONDS_HAND_COLOR);
+  if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
+  Tuple *shm = dict_find(iter, KEY_SECONDS_HAND_MODE);
+  if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
   persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
@@ -793,6 +847,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
+  layer_mark_dirty(s_seconds_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
   layer_mark_dirty(s_complication_layer);
@@ -822,6 +877,9 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_minute_layer, minute_layer_update);
   layer_add_child(root, s_minute_layer);
 
+  s_seconds_layer = layer_create(bounds);
+  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
+  layer_add_child(root, s_seconds_layer);
 }
 
 static void window_unload(Window *window) {
@@ -829,6 +887,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);
   layer_destroy(s_minute_layer);
+  layer_destroy(s_seconds_layer);
 }
 
 // ============================================================
@@ -880,6 +939,7 @@ static void deinit(void) {
   connection_service_unsubscribe();
   battery_state_service_unsubscribe();
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
+  if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
   window_destroy(s_window);
 }
 
