@@ -1858,7 +1858,7 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .ARM.exidx.text.__udivmoddi4
                 0x000022e8        0x8 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/libgcc.a(_udivmoddi4.o)
 
-.data           0x000022f0      0x5dc
+.data           0x000022f0      0x5d8
  *(.data)
  .data          0x000022f0        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crti.o
  .data          0x000022f0        0x0 /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtbegin.o
@@ -1900,157 +1900,157 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  *(.data.*)
  .data.rel.ro.local.day_names.0
                 0x000022f0       0x1c src/c/main.c.49.o
- .data.s_subscribed_seconds
-                0x0000230c        0x1 src/c/main.c.49.o
- *fill*         0x0000230d        0x3 
  .data.rel.ro.local.UNKNOWN_PATHS
-                0x00002310       0x18 src/c/main.c.49.o
+                0x0000230c       0x18 src/c/main.c.49.o
  .data.__compound_literal.60
-                0x00002328        0x8 src/c/main.c.49.o
+                0x00002324        0x8 src/c/main.c.49.o
  .data.__compound_literal.59
-                0x00002330       0x1c src/c/main.c.49.o
+                0x0000232c       0x1c src/c/main.c.49.o
  .data.__compound_literal.58
-                0x0000234c       0x14 src/c/main.c.49.o
+                0x00002348       0x14 src/c/main.c.49.o
  .data.rel.ro.local.TIMELINE_MOON_PATHS
-                0x00002360        0x8 src/c/main.c.49.o
+                0x0000235c        0x8 src/c/main.c.49.o
  .data.__compound_literal.57
-                0x00002368       0x90 src/c/main.c.49.o
+                0x00002364       0x90 src/c/main.c.49.o
  .data.rel.ro.local.PARTLY_CLOUDY_NIGHT_PATHS
-                0x000023f8       0x18 src/c/main.c.49.o
+                0x000023f4       0x18 src/c/main.c.49.o
  .data.__compound_literal.56
-                0x00002410        0x8 src/c/main.c.49.o
+                0x0000240c        0x8 src/c/main.c.49.o
  .data.__compound_literal.55
-                0x00002418       0x34 src/c/main.c.49.o
+                0x00002414       0x34 src/c/main.c.49.o
  .data.__compound_literal.54
-                0x0000244c       0x84 src/c/main.c.49.o
+                0x00002448       0x84 src/c/main.c.49.o
  .data.rel.ro.local.TIMELINE_SUN_PATHS
-                0x000024d0       0x48 src/c/main.c.49.o
+                0x000024cc       0x48 src/c/main.c.49.o
  .data.__compound_literal.53
-                0x00002518        0x8 src/c/main.c.49.o
+                0x00002514        0x8 src/c/main.c.49.o
  .data.__compound_literal.52
-                0x00002520        0x8 src/c/main.c.49.o
+                0x0000251c        0x8 src/c/main.c.49.o
  .data.__compound_literal.51
-                0x00002528        0x8 src/c/main.c.49.o
+                0x00002524        0x8 src/c/main.c.49.o
  .data.__compound_literal.50
-                0x00002530        0x8 src/c/main.c.49.o
+                0x0000252c        0x8 src/c/main.c.49.o
  .data.__compound_literal.49
-                0x00002538        0x8 src/c/main.c.49.o
+                0x00002534        0x8 src/c/main.c.49.o
  .data.__compound_literal.48
-                0x00002540        0x8 src/c/main.c.49.o
+                0x0000253c        0x8 src/c/main.c.49.o
  .data.__compound_literal.47
-                0x00002548        0x8 src/c/main.c.49.o
+                0x00002544        0x8 src/c/main.c.49.o
  .data.__compound_literal.46
-                0x00002550        0x8 src/c/main.c.49.o
+                0x0000254c        0x8 src/c/main.c.49.o
  .data.__compound_literal.45
-                0x00002558       0x24 src/c/main.c.49.o
+                0x00002554       0x24 src/c/main.c.49.o
  .data.rel.ro.local.PARTLY_CLOUDY_PATHS
-                0x0000257c       0x40 src/c/main.c.49.o
+                0x00002578       0x40 src/c/main.c.49.o
  .data.__compound_literal.38
-                0x000025bc        0x8 src/c/main.c.49.o
+                0x000025b8        0x8 src/c/main.c.49.o
  .data.__compound_literal.37
-                0x000025c4        0x8 src/c/main.c.49.o
+                0x000025c0        0x8 src/c/main.c.49.o
  .data.__compound_literal.36
-                0x000025cc        0x8 src/c/main.c.49.o
+                0x000025c8        0x8 src/c/main.c.49.o
  .data.__compound_literal.35
-                0x000025d4        0x8 src/c/main.c.49.o
+                0x000025d0        0x8 src/c/main.c.49.o
  .data.__compound_literal.34
-                0x000025dc       0x34 src/c/main.c.49.o
+                0x000025d8       0x34 src/c/main.c.49.o
  .data.__compound_literal.33
-                0x00002610        0x8 src/c/main.c.49.o
+                0x0000260c        0x8 src/c/main.c.49.o
  .data.__compound_literal.32
-                0x00002618        0x8 src/c/main.c.49.o
+                0x00002614        0x8 src/c/main.c.49.o
  .data.__compound_literal.31
-                0x00002620       0x24 src/c/main.c.49.o
+                0x0000261c       0x24 src/c/main.c.49.o
  .data.rel.ro.local.LIGHT_RAIN_PATHS
-                0x00002644       0x30 src/c/main.c.49.o
+                0x00002640       0x30 src/c/main.c.49.o
  .data.__compound_literal.24
-                0x00002674        0x8 src/c/main.c.49.o
+                0x00002670        0x8 src/c/main.c.49.o
  .data.__compound_literal.23
-                0x0000267c        0x8 src/c/main.c.49.o
+                0x00002678        0x8 src/c/main.c.49.o
  .data.__compound_literal.22
-                0x00002684        0x8 src/c/main.c.49.o
+                0x00002680        0x8 src/c/main.c.49.o
  .data.__compound_literal.21
-                0x0000268c        0x8 src/c/main.c.49.o
+                0x00002688        0x8 src/c/main.c.49.o
  .data.__compound_literal.20
-                0x00002694        0x8 src/c/main.c.49.o
+                0x00002690        0x8 src/c/main.c.49.o
  .data.__compound_literal.19
-                0x0000269c       0x34 src/c/main.c.49.o
+                0x00002698       0x34 src/c/main.c.49.o
  .data.rel.ro.local.HEAVY_SNOW_PATHS
-                0x000026d0       0x40 src/c/main.c.49.o
+                0x000026cc       0x40 src/c/main.c.49.o
  .data.__compound_literal.18
-                0x00002710        0x8 src/c/main.c.49.o
+                0x0000270c        0x8 src/c/main.c.49.o
  .data.__compound_literal.17
-                0x00002718        0x8 src/c/main.c.49.o
+                0x00002714        0x8 src/c/main.c.49.o
  .data.__compound_literal.16
-                0x00002720        0x8 src/c/main.c.49.o
+                0x0000271c        0x8 src/c/main.c.49.o
  .data.__compound_literal.15
-                0x00002728        0x8 src/c/main.c.49.o
+                0x00002724        0x8 src/c/main.c.49.o
  .data.__compound_literal.14
-                0x00002730        0x8 src/c/main.c.49.o
+                0x0000272c        0x8 src/c/main.c.49.o
  .data.__compound_literal.13
-                0x00002738        0x8 src/c/main.c.49.o
+                0x00002734        0x8 src/c/main.c.49.o
  .data.__compound_literal.12
-                0x00002740        0x8 src/c/main.c.49.o
+                0x0000273c        0x8 src/c/main.c.49.o
  .data.__compound_literal.11
-                0x00002748       0x34 src/c/main.c.49.o
+                0x00002744       0x34 src/c/main.c.49.o
  .data.rel.ro.local.HEAVY_RAIN_PATHS
-                0x0000277c       0x28 src/c/main.c.49.o
+                0x00002778       0x28 src/c/main.c.49.o
  .data.__compound_literal.10
-                0x000027a4        0x8 src/c/main.c.49.o
+                0x000027a0        0x8 src/c/main.c.49.o
  .data.__compound_literal.9
-                0x000027ac        0x8 src/c/main.c.49.o
+                0x000027a8        0x8 src/c/main.c.49.o
  .data.__compound_literal.8
-                0x000027b4        0x8 src/c/main.c.49.o
+                0x000027b0        0x8 src/c/main.c.49.o
  .data.__compound_literal.7
-                0x000027bc        0x8 src/c/main.c.49.o
+                0x000027b8        0x8 src/c/main.c.49.o
  .data.__compound_literal.6
-                0x000027c4       0x34 src/c/main.c.49.o
+                0x000027c0       0x34 src/c/main.c.49.o
  .data.rel.ro.local.THUNDERSTORM_PATHS
-                0x000027f8       0x20 src/c/main.c.49.o
+                0x000027f4       0x20 src/c/main.c.49.o
  .data.__compound_literal.5
-                0x00002818       0x1c src/c/main.c.49.o
+                0x00002814       0x1c src/c/main.c.49.o
  .data.__compound_literal.4
-                0x00002834        0xc src/c/main.c.49.o
+                0x00002830        0xc src/c/main.c.49.o
  .data.__compound_literal.3
-                0x00002840       0x18 src/c/main.c.49.o
+                0x0000283c       0x18 src/c/main.c.49.o
  .data.__compound_literal.2
-                0x00002858       0x1c src/c/main.c.49.o
+                0x00002854       0x1c src/c/main.c.49.o
  .data.rel.ro.local.CLOUDY_DAY_PATHS
-                0x00002874       0x10 src/c/main.c.49.o
+                0x00002870       0x10 src/c/main.c.49.o
  .data.__compound_literal.1
-                0x00002884        0x8 src/c/main.c.49.o
+                0x00002880        0x8 src/c/main.c.49.o
  .data.__compound_literal.0
-                0x0000288c       0x34 src/c/main.c.49.o
+                0x00002888       0x34 src/c/main.c.49.o
  .data.s_bg_last_hour
-                0x000028c0        0x1 src/c/main.c.49.o
+                0x000028bc        0x1 src/c/main.c.49.o
  .data.s_sunset_hour
-                0x000028c1        0x1 src/c/main.c.49.o
+                0x000028bd        0x1 src/c/main.c.49.o
  .data.s_sunrise_hour
-                0x000028c2        0x1 src/c/main.c.49.o
+                0x000028be        0x1 src/c/main.c.49.o
  .data.s_battery_pct
-                0x000028c3        0x1 src/c/main.c.49.o
+                0x000028bf        0x1 src/c/main.c.49.o
  .data.s_bt_connected
-                0x000028c4        0x1 src/c/main.c.49.o
- *fill*         0x000028c5        0x1 
+                0x000028c0        0x1 src/c/main.c.49.o
+ *fill*         0x000028c1        0x1 
  .data.s_temp_f
-                0x000028c6        0x2 src/c/main.c.49.o
+                0x000028c2        0x2 src/c/main.c.49.o
  .data.MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
-                0x000028c8        0x4 src/message_keys.auto.c.49.o
-                0x000028c8                MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
+                0x000028c4        0x4 src/message_keys.auto.c.49.o
+                0x000028c4                MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED
 
-.igot.plt       0x000028cc        0x0
- .igot.plt      0x000028cc        0x0 src/c/main.c.49.o
+.igot.plt       0x000028c8        0x0
+ .igot.plt      0x000028c8        0x0 src/c/main.c.49.o
 
-.got            0x000028cc        0x4
- .got           0x000028cc        0x4 src/c/main.c.49.o
+.got            0x000028c8        0x4
+ .got           0x000028c8        0x4 src/c/main.c.49.o
 
-.got.plt        0x000028d0        0xc
- .got.plt       0x000028d0        0xc src/c/main.c.49.o
-                0x000028d0                _GLOBAL_OFFSET_TABLE_
+.got.plt        0x000028cc        0xc
+ .got.plt       0x000028cc        0xc src/c/main.c.49.o
+                0x000028cc                _GLOBAL_OFFSET_TABLE_
 
-.bss            0x000028dc       0x98
+.bss            0x000028d8       0x9c
  *(.bss)
  *(.bss.*)
+ .bss.s_subscribed_seconds
+                0x000028d8        0x1 src/c/main.c.49.o
+ *fill*         0x000028d9        0x3 
  .bss.s_cached_number_font
                 0x000028dc        0x4 src/c/main.c.49.o
  .bss.s_tick_tm

@@ -448,29 +448,36 @@
 	    }
 	  }
 	
-	  // Parse sunrise/sunset from daily data (format: "2026-06-02T05:23").
+	  // Parse sunrise/sunset from daily data (format: "2026-06-02T05:23", local time).
+	  // Parse manually to avoid JS Date() treating the string as UTC in some environments.
 	  // Use tomorrow's value when today's event has already passed.
+	  function parseHHMM(isoStr) {
+	    // isoStr = "2026-06-02T05:23" — extract HH and MM from the time part
+	    let tPart = isoStr.split('T')[1] || '00:00';
+	    let parts = tPart.split(':');
+	    return { h: parseInt(parts[0], 10), m: parseInt(parts[1], 10) };
+	  }
 	  let sunrise_hour = 6, sunrise_min = 0, sunset_hour = 20, sunset_min = 0;
 	  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 	  if (json.daily && json.daily.sunrise && json.daily.sunrise.length > 0) {
-	    let sr = new Date(json.daily.sunrise[0] + ':00');
-	    let srMin = sr.getHours() * 60 + sr.getMinutes();
+	    let sr = parseHHMM(json.daily.sunrise[0]);
+	    let srMin = sr.h * 60 + sr.m;
 	    // If today's sunrise has already passed and tomorrow's data exists, use tomorrow's
 	    if (srMin < nowMinutes && json.daily.sunrise.length > 1) {
-	      sr = new Date(json.daily.sunrise[1] + ':00');
+	      sr = parseHHMM(json.daily.sunrise[1]);
 	    }
-	    sunrise_hour = sr.getHours();
-	    sunrise_min  = sr.getMinutes();
+	    sunrise_hour = sr.h;
+	    sunrise_min  = sr.m;
 	  }
 	  if (json.daily && json.daily.sunset && json.daily.sunset.length > 0) {
-	    let ss = new Date(json.daily.sunset[0] + ':00');
-	    let ssMin = ss.getHours() * 60 + ss.getMinutes();
+	    let ss = parseHHMM(json.daily.sunset[0]);
+	    let ssMin = ss.h * 60 + ss.m;
 	    // If today's sunset has already passed and tomorrow's data exists, use tomorrow's
 	    if (ssMin < nowMinutes && json.daily.sunset.length > 1) {
-	      ss = new Date(json.daily.sunset[1] + ':00');
+	      ss = parseHHMM(json.daily.sunset[1]);
 	    }
-	    sunset_hour = ss.getHours();
-	    sunset_min  = ss.getMinutes();
+	    sunset_hour = ss.h;
+	    sunset_min  = ss.m;
 	  }
 	
 	  let dictionary = {

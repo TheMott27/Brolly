@@ -789,7 +789,7 @@ static bool needs_second_ticks(void) {
 }
 
 // Switches between SECOND_UNIT and MINUTE_UNIT based on current state.
-static bool s_subscribed_seconds = true;
+static bool s_subscribed_seconds = false;  // Set correctly in init() after update_tick_subscription()
 static void update_tick_subscription(void) {
   bool want_seconds = needs_second_ticks();
   if (want_seconds && !s_subscribed_seconds) {
