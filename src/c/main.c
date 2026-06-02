@@ -515,7 +515,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 
   // Centre cap: white outer → black border → battery ring → black outline → dot
   GColor cap = (s_battery_pct <= FIXED_BATT_PCT_LOW)  ? FIXED_BATT_LOW_COLOR :
-               (s_battery_pct <= FIXED_BATT_PCT_MID)  ? FIXED_BATT_MID_COLOR :
+               (s_battery_pct <= FIXED_BATT_PCT_MID)  ? FIXED_TEXT_COLOR :
                                                          FIXED_BG_COLOR;
   graphics_context_set_fill_color(ctx, FIXED_TEXT_COLOR);
   graphics_fill_circle(ctx, center, 7);
