@@ -126,7 +126,7 @@
 #define PERSIST_ICONS           0
 #define PERSIST_TEMP_C          24
 #define PERSIST_TEMP_F          25
-#define PERSIST_SETTINGS        28
+#define PERSIST_SETTINGS        29
 
 #define SHAKE_DISPLAY_MS        30000
 #define APP_MSG_INBOX_SIZE      512
@@ -253,7 +253,7 @@ static void settings_set_defaults(Settings *s) {
   s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
   s->seconds_hand_color          = GColorWhite;
-  s->seconds_hand_mode           = SECONDS_MODE_ALWAYS;
+  s->seconds_hand_mode           = SECONDS_MODE_SHAKE;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
