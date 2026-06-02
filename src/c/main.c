@@ -1107,6 +1107,10 @@ static void init(void) {
   if (persist_exists(PERSIST_TEMP_C)) s_temp_c = (int16_t)persist_read_int(PERSIST_TEMP_C);
   if (persist_exists(PERSIST_TEMP_F)) s_temp_f = (int16_t)persist_read_int(PERSIST_TEMP_F);
 
+  // Read battery state BEFORE window creation to ensure correct initial state
+  s_battery_pct = battery_state_service_peek().charge_percent;
+  s_battery_handler_initialized = true;  // Mark as initialized so first handler call won't redraw
+
   time_t now = time(NULL);
   s_tick_tm = *localtime(&now);
 
@@ -1126,7 +1130,6 @@ static void init(void) {
   }
   accel_tap_service_subscribe(accel_tap_handler);
 
-  s_battery_pct = battery_state_service_peek().charge_percent;
   battery_state_service_subscribe(battery_handler);
 
   s_bt_connected = connection_service_peek_pebble_app_connection();
