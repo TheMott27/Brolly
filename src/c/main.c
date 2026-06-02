@@ -630,15 +630,18 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
     dot          = s_settings.hour_hand_outer;
   }
 
-  // Draw order (outside in): battery_ring(r8) → outer_ring(r6) → inner_ring(r4) → dot(r2)
+  // Draw order (outside in):
+  //   battery_ring(r7) → black sep(r6) → inner_ring(r5) → black sep(r2) → dot(r1)
   graphics_context_set_fill_color(ctx, battery_ring);
-  graphics_fill_circle(ctx, center, 8);
-  graphics_context_set_fill_color(ctx, outer_ring);
+  graphics_fill_circle(ctx, center, 7);
+  graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_circle(ctx, center, 6);
   graphics_context_set_fill_color(ctx, inner_ring);
-  graphics_fill_circle(ctx, center, 4);
-  graphics_context_set_fill_color(ctx, dot);
+  graphics_fill_circle(ctx, center, 5);
+  graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_circle(ctx, center, 2);
+  graphics_context_set_fill_color(ctx, dot);
+  graphics_fill_circle(ctx, center, 1);
 }
 
 // ============================================================
