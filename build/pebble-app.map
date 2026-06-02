@@ -1625,10 +1625,10 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
                 0x00000410       0x4c src/c/main.c.49.o
  .text.draw_inittick_hand
                 0x0000045c       0xec src/c/main.c.49.o
- .text.hour_layer_update
-                0x00000548       0x90 src/c/main.c.49.o
  .text.minute_layer_update
-                0x000005d8      0x164 src/c/main.c.49.o
+                0x00000548      0x164 src/c/main.c.49.o
+ .text.hour_layer_update
+                0x000006ac       0x90 src/c/main.c.49.o
  .text.draw_centred_text
                 0x0000073c       0x9a src/c/main.c.49.o
  *fill*         0x000007d6        0x2 

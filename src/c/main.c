@@ -929,6 +929,11 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_bg_layer, bg_layer_update);
   layer_add_child(root, s_bg_layer);
 
+  // Seconds hand is behind hour hand, complication, and minute hand
+  s_seconds_layer = layer_create(bounds);
+  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
+  layer_add_child(root, s_seconds_layer);
+
   s_hour_layer = layer_create(bounds);
   layer_set_update_proc(s_hour_layer, hour_layer_update);
   layer_add_child(root, s_hour_layer);
@@ -940,10 +945,6 @@ static void window_load(Window *window) {
   s_minute_layer = layer_create(bounds);
   layer_set_update_proc(s_minute_layer, minute_layer_update);
   layer_add_child(root, s_minute_layer);
-
-  s_seconds_layer = layer_create(bounds);
-  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
-  layer_add_child(root, s_seconds_layer);
 }
 
 static void window_unload(Window *window) {
