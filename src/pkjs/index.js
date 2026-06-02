@@ -631,17 +631,20 @@ function init() {
   getWeather(null);
 }
 
-Pebble.addEventListener('ready', init);
+// init() is called from the delayed ready handler above to ensure
+// settings are sent before weather fetch. Removed duplicate ready listener.
 
-// When app message connection opens (watch connects to phone),
-// immediately send saved settings so they load even on first install.
-Pebble.addEventListener('appmessage', function(e) {
-  // This fires when the watch sends a message, but we use it as a signal
-  // that the connection is active. Send settings proactively.
-  let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
-  if (Object.keys(configData).length > 0) {
-    sendSavedSettings(configData);
-  }
+// When Pebble app connects, initialize and send saved settings.
+// This ensures settings load even on first install from the app store.
+Pebble.addEventListener('ready', function() {
+  init();
+  // Delay slightly to ensure the watch has opened the app message channel.
+  setTimeout(function() {
+    let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
+    if (Object.keys(configData).length > 0) {
+      sendSavedSettings(configData);
+    }
+  }, 500);
 });
 
 Pebble.addEventListener('showConfiguration', function() {
