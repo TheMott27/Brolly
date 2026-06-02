@@ -708,18 +708,51 @@ static void shake_timer_callback(void *data) {
   layer_mark_dirty(s_complication_layer);
 }
 
+// Forward declaration for tick_handler (used by update_tick_subscription)
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
+
+// Determines whether we need per-second ticks right now.
+static bool needs_second_ticks(void) {
+  return (s_settings.seconds_hand_mode == SECONDS_MODE_ALWAYS) ||
+         (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && s_showing_seconds);
+}
+
+// Switches between SECOND_UNIT and MINUTE_UNIT based on current state.
+static bool s_subscribed_seconds = true;
+static void update_tick_subscription(void) {
+  bool want_seconds = needs_second_ticks();
+  if (want_seconds && !s_subscribed_seconds) {
+    tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+    s_subscribed_seconds = true;
+  } else if (!want_seconds && s_subscribed_seconds) {
+    tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+    s_subscribed_seconds = false;
+  }
+}
+
 static void seconds_timer_callback(void *data) {
   s_seconds_timer = NULL;
   s_showing_seconds = false;
   layer_mark_dirty(s_seconds_layer);
+  update_tick_subscription();  // Drop back to MINUTE_UNIT
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_tick_tm = *tick_time;
-  layer_mark_dirty(s_seconds_layer);
-  layer_mark_dirty(s_hour_layer);
-  layer_mark_dirty(s_minute_layer);
-  layer_mark_dirty(s_complication_layer);
+
+  // Seconds layer: only redraw when seconds are actually visible
+  if (needs_second_ticks()) {
+    layer_mark_dirty(s_seconds_layer);
+  }
+
+  // Minute hand and complication: only on minute boundary
+  if (units_changed & MINUTE_UNIT) {
+    layer_mark_dirty(s_minute_layer);
+    layer_mark_dirty(s_complication_layer);
+    layer_mark_dirty(s_hour_layer);
+  }
+
+  // Background: only on hour boundary
   if ((int8_t)tick_time->tm_hour != s_bg_last_hour) {
     layer_mark_dirty(s_bg_layer);
   }
@@ -731,7 +764,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_complication_layer);
-  
+
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   s_shake_timer = app_timer_register(5000, shake_timer_callback, NULL);
 
@@ -741,6 +774,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
     layer_mark_dirty(s_seconds_layer);
     if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
     s_seconds_timer = app_timer_register((uint32_t)s_settings.seconds_shake_dur * 1000, seconds_timer_callback, NULL);
+    update_tick_subscription();  // Switch to SECOND_UNIT while showing
   }
 }
 
@@ -842,6 +876,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   persist_write_int(PERSIST_TEMP_C, s_temp_c);
   persist_write_int(PERSIST_TEMP_F, s_temp_f);
 
+  // Re-evaluate tick frequency after settings change
+  update_tick_subscription();
+
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_seconds_layer);
@@ -915,7 +952,12 @@ static void init(void) {
   });
   window_stack_push(s_window, true);
 
-  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+  // Subscribe based on current seconds hand mode
+  if (needs_second_ticks()) {
+    tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+  } else {
+    tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  }
   accel_tap_service_subscribe(accel_tap_handler);
 
   s_battery_pct = battery_state_service_peek().charge_percent;
