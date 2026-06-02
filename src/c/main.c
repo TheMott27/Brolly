@@ -885,10 +885,10 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 }
 
 static void battery_handler(BatteryChargeState charge) {
+  if (!s_settings.battery_indicator_enabled) return;
   uint8_t old_pct = s_battery_pct;
   s_battery_pct = charge.charge_percent;
   // Only redraw if battery crossed a visual threshold (50% or 20%)
-  if (!s_settings.battery_indicator_enabled) return;
   bool crossed = (old_pct > FIXED_BATT_PCT_MID) != (s_battery_pct > FIXED_BATT_PCT_MID) ||
                  (old_pct > FIXED_BATT_PCT_LOW) != (s_battery_pct > FIXED_BATT_PCT_LOW);
   if (crossed) layer_mark_dirty(s_minute_layer);
@@ -1098,12 +1098,6 @@ static void init(void) {
   }
   if (persist_exists(PERSIST_TEMP_C)) s_temp_c = (int16_t)persist_read_int(PERSIST_TEMP_C);
   if (persist_exists(PERSIST_TEMP_F)) s_temp_f = (int16_t)persist_read_int(PERSIST_TEMP_F);
-
-  // Initialize sunrise/sunset with default values (will be overwritten by weather data)
-  s_sunrise_hour = 6;
-  s_sunrise_min = 0;
-  s_sunset_hour = 18;
-  s_sunset_min = 0;
 
   time_t now = time(NULL);
   s_tick_tm = *localtime(&now);
