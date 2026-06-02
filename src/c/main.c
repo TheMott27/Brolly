@@ -595,25 +595,25 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   GColor inner_ring, dot;
   
   if (s_settings.battery_indicator_enabled) {
-    // >50%: inner ring and dot use appearance colors
+    // >50%: both ring and dot use normal appearance colours
     if (s_battery_pct > FIXED_BATT_PCT_MID) {
       inner_ring = s_settings.middle_ring_color;
-      dot = s_settings.center_dot_color;
+      dot        = s_settings.center_dot_color;
     }
-    // 50-20%: inner ring uses alert color, dot uses alert color
+    // 50%–20%: ring stays normal, dot turns alert colour
     else if (s_battery_pct > FIXED_BATT_PCT_LOW) {
-      inner_ring = s_settings.middle_ring_20_color;
-      dot = s_settings.center_dot_20_color;
+      inner_ring = s_settings.middle_ring_color;
+      dot        = s_settings.center_dot_50_color;
     }
-    // <20%: both inner ring and dot use alert colors
+    // <20%: both ring and dot turn alert colour
     else {
       inner_ring = s_settings.middle_ring_20_color;
-      dot = s_settings.center_dot_20_color;
+      dot        = s_settings.center_dot_20_color;
     }
   } else {
-    // Battery indicator off: inner ring and dot use appearance colors
+    // Battery indicator off: both use normal appearance colours
     inner_ring = s_settings.middle_ring_color;
-    dot = s_settings.center_dot_color;
+    dot        = s_settings.center_dot_color;
   }
   
   graphics_context_set_fill_color(ctx, GColorWhite);
