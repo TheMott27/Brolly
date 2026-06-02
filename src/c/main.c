@@ -588,13 +588,16 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
     if (!is_top_bottom) {
-      pos.x = (h == 2 || h == 3 || h == 4) ? 119 : 24;
-      if      (h == 2 || h == 4)  pos.x += 4;
-      else if (h == 3)            pos.x += 8;
-      else if (h == 10 || h == 8) pos.x -= 4;
-      else if (h == 9)            pos.x -= 8;
-      if      (h == 2 || h == 10) pos.y += 5;
-      else if (h == 4 || h == 8)  pos.y -= 5;
+      // Align 2,3,4 vertically with 1; align 8,9,10 vertically with 11
+      if (h == 2 || h == 3 || h == 4) {
+        // Right side: align x with position 1
+        GPoint pos1 = square_perimeter_point(center, DEG_TO_TRIGANGLE(1 * 30), 0, 0);
+        pos.x = pos1.x;
+      } else if (h == 8 || h == 9 || h == 10) {
+        // Left side: align x with position 11
+        GPoint pos11 = square_perimeter_point(center, DEG_TO_TRIGANGLE(11 * 30), 0, 0);
+        pos.x = pos11.x;
+      }
     }
 
     if (show_icons) {
