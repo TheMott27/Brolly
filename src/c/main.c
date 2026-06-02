@@ -550,8 +550,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       GPoint base_l = GPoint(tip.x + dx_in + dx_perp, tip.y + dy_in + dy_perp);
       GPoint base_r = GPoint(tip.x + dx_in - dx_perp, tip.y + dy_in - dy_perp);
 
-      // Sunrise = dark orange, sunset = dark/baby blue
-      GColor tri_color = (evt == 0) ? GColorOrange : GColorPictonBlue;
+      // Sunrise = dark orange, sunset = dark blue
+      GColor tri_color = (evt == 0) ? GColorOrange : GColorOxfordBlue;
       graphics_context_set_fill_color(ctx, tri_color);
       GPathInfo tri_path = {
         .num_points = 3,
