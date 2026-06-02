@@ -83,6 +83,9 @@
 #define KEY_HOUR_HAND_INNER      115
 #define KEY_MIN_HAND_OUTER       116
 #define KEY_MIN_HAND_INNER       117
+// Message keys — BT disconnect colours
+#define KEY_BT_DISCONNECT_OUTER_COLOR 136
+#define KEY_BT_DISCONNECT_INNER_COLOR 137
 // Message keys — new colour settings
 #define KEY_BACKGROUND_COLOR     126
 #define KEY_NUMBER_COLOR         127
@@ -120,7 +123,7 @@
 #define APP_MSG_OUTBOX_SIZE     64
 
 // Visual constants
-#define FIXED_MIN_HAND_NOBT      GColorWhite
+// (BT disconnect colours now come from s_settings.bt_disconnect_outer/inner_color)
 #define FIXED_BATT_PCT_MID       50
 #define FIXED_BATT_PCT_LOW       20
 
@@ -143,6 +146,8 @@ typedef struct {
   int8_t temp_visible;
   int8_t temp_unit;
   bool bt_disconnect_min_inner_red;
+  GColor bt_disconnect_outer_color;
+  GColor bt_disconnect_inner_color;
   bool vibrate_bt_disconnect;
   bool vibrate_bt_reconnect;
   GColor hour_hand_outer;
@@ -205,12 +210,14 @@ static void settings_set_defaults(Settings *s) {
   s->temp_visible                = COMPLICATION_ALWAYS;
   s->temp_unit                   = TEMP_UNIT_CELSIUS;
   s->bt_disconnect_min_inner_red = true;
+  s->bt_disconnect_outer_color   = GColorRed;
+  s->bt_disconnect_inner_color   = GColorRed;
   s->vibrate_bt_disconnect       = true;
   s->vibrate_bt_reconnect        = false;
   s->hour_hand_outer             = GColorWhite;
-  s->hour_hand_inner             = GColorRed;
+  s->hour_hand_inner             = GColorBlack;
   s->min_hand_outer              = GColorWhite;
-  s->min_hand_inner              = GColorBlue;
+  s->min_hand_inner              = GColorFromRGB(0, 97, 254);
   s->number_font                 = 3;  // Roboto Condensed 21
   // Colour defaults
   s->background_color            = GColorBlack;
@@ -218,7 +225,7 @@ static void settings_set_defaults(Settings *s) {
   s->icon_color                  = GColorWhite;
   s->hour_marker_color           = GColorWhite;
   s->minute_marker_color         = GColorWhite;
-  s->center_dot_50_color         = GColorWhite;
+  s->center_dot_50_color         = GColorRed;
   s->center_dot_20_color         = GColorRed;
   s->middle_ring_20_color        = GColorRed;
   s->date_color                  = GColorWhite;
@@ -534,9 +541,10 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
   int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_min * 6);
-  GColor outer = s_bt_connected ? s_settings.min_hand_outer : FIXED_MIN_HAND_NOBT;
+  GColor outer = (!s_bt_connected && s_settings.bt_disconnect_min_inner_red)
+                 ? s_settings.bt_disconnect_outer_color : s_settings.min_hand_outer;
   GColor inner = (!s_bt_connected && s_settings.bt_disconnect_min_inner_red)
-                 ? GColorRed : s_settings.min_hand_inner;
+                 ? s_settings.bt_disconnect_inner_color : s_settings.min_hand_inner;
   draw_inittick_hand(ctx, center, polar_to_point(center, angle, radius * 95 / 100),
                      outer, inner);
 
@@ -693,6 +701,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tu) s_settings.temp_unit = (int8_t)tu->value->int32;
   Tuple *btmr = dict_find(iter, MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED);
   if (btmr) s_settings.bt_disconnect_min_inner_red = btmr->value->int32 != 0;
+  Tuple *btoc = dict_find(iter, KEY_BT_DISCONNECT_OUTER_COLOR);
+  if (btoc) s_settings.bt_disconnect_outer_color = rgb_to_gcolor(btoc->value->int32);
+  Tuple *btic = dict_find(iter, KEY_BT_DISCONNECT_INNER_COLOR);
+  if (btic) s_settings.bt_disconnect_inner_color = rgb_to_gcolor(btic->value->int32);
   Tuple *vbt = dict_find(iter, KEY_VIBRATE_BT_DISCONNECT);
   if (vbt) s_settings.vibrate_bt_disconnect = vbt->value->int32 != 0;
   Tuple *vbtr = dict_find(iter, KEY_VIBRATE_BT_RECONNECT);

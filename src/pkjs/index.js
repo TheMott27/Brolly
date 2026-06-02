@@ -598,7 +598,9 @@ function sendSavedSettings(configData) {
     'KEY_CENTER_DOT_20_COLOR':  132,
     'KEY_MIDDLE_RING_20_COLOR': 133,
     'KEY_DATE_COLOR':           134,
-    'KEY_TEMP_COLOR':           135
+    'KEY_TEMP_COLOR':                 135,
+    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
+    'KEY_BT_DISCONNECT_INNER_COLOR':  137
   };
 
   let dict = {};
@@ -710,7 +712,9 @@ Pebble.addEventListener('webviewclosed', function(e) {
     'KEY_CENTER_DOT_20_COLOR':  132,
     'KEY_MIDDLE_RING_20_COLOR': 133,
     'KEY_DATE_COLOR':           134,
-    'KEY_TEMP_COLOR':           135
+    'KEY_TEMP_COLOR':                 135,
+    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
+    'KEY_BT_DISCONNECT_INNER_COLOR':  137
   };
 
   // Build numeric-keyed dict for sendAppMessage
