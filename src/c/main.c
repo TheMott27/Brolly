@@ -100,8 +100,6 @@
 #define KEY_BATTERY_INDICATOR_ENABLED 138
 #define KEY_CENTER_DOT_COLOR     139
 #define KEY_MIDDLE_RING_COLOR    140
-#define KEY_SECONDS_HAND_COLOR   141
-#define KEY_SECONDS_HAND_MODE    142
 
 // Shake mode
 #define SHAKE_MODE_ON_SHAKE     0
@@ -174,7 +172,6 @@ typedef struct {
   GColor date_color;
   GColor temp_color;
   bool battery_indicator_enabled;
-  GColor seconds_hand_color;
 } Settings;
 
 // ============================================================
@@ -185,7 +182,6 @@ static Window *s_window;
 static Layer *s_bg_layer;
 static Layer *s_hour_layer;
 static Layer *s_minute_layer;
-static Layer *s_seconds_layer;
 static Layer *s_complication_layer;
 
 static Settings s_settings;
@@ -244,7 +240,6 @@ static void settings_set_defaults(Settings *s) {
   s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
   s->battery_indicator_enabled   = true;
-  s->seconds_hand_color          = GColorFromRGB(0, 97, 254);
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -606,15 +601,6 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 
 }
 
-static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
-  int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-  GPoint tip = polar_to_point(center, angle, 72);
-  graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, center, tip);
-}
 
 // ============================================================
 // COMPLICATION LAYER — temperature + date
@@ -693,7 +679,6 @@ static void shake_timer_callback(void *data) {
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_tick_tm = *tick_time;
-  layer_mark_dirty(s_seconds_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
   layer_mark_dirty(s_complication_layer);
@@ -799,8 +784,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
   Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
   if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
-  Tuple *shc = dict_find(iter, KEY_SECONDS_HAND_COLOR);
-  if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
 
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
@@ -812,7 +795,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_hour_layer);
   layer_mark_dirty(s_minute_layer);
-  layer_mark_dirty(s_seconds_layer);
   layer_mark_dirty(s_complication_layer);
 }
 
@@ -840,9 +822,6 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_minute_layer, minute_layer_update);
   layer_add_child(root, s_minute_layer);
 
-  s_seconds_layer = layer_create(bounds);
-  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
-  layer_add_child(root, s_seconds_layer);
 }
 
 static void window_unload(Window *window) {
@@ -850,7 +829,6 @@ static void window_unload(Window *window) {
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);
   layer_destroy(s_minute_layer);
-  layer_destroy(s_seconds_layer);
 }
 
 // ============================================================
