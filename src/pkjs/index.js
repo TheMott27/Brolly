@@ -352,6 +352,19 @@ function getDictionaryOM(json) {
     }
   }
 
+  // Parse sunrise/sunset from daily data (format: "2026-06-02T05:23")
+  let sunrise_hour = 6, sunrise_min = 0, sunset_hour = 20, sunset_min = 0;
+  if (json.daily && json.daily.sunrise && json.daily.sunrise.length > 0) {
+    let sr = new Date(json.daily.sunrise[0] + ':00');
+    sunrise_hour = sr.getHours();
+    sunrise_min  = sr.getMinutes();
+  }
+  if (json.daily && json.daily.sunset && json.daily.sunset.length > 0) {
+    let ss = new Date(json.daily.sunset[0] + ':00');
+    sunset_hour = ss.getHours();
+    sunset_min  = ss.getMinutes();
+  }
+
   let dictionary = {
     KEY_WEATHER_CITY: city,
     KEY_TIMEZONE_NAME: json.timezone,
@@ -360,7 +373,11 @@ function getDictionaryOM(json) {
     KEY_PERCENT_ILLUMINATED: percent_illuminated,
     KEY_NORTHERN_HEMISPHERE: northern_hemisphere,
     KEY_TEMP_C: temp_c,
-    KEY_TEMP_F: temp_f
+    KEY_TEMP_F: temp_f,
+    KEY_SUNRISE_HOUR: sunrise_hour,
+    KEY_SUNRISE_MINUTE: sunrise_min,
+    KEY_SUNSET_HOUR: sunset_hour,
+    KEY_SUNSET_MINUTE: sunset_min
   };
 
   for (let i = 0; i < 24; i++) {
@@ -463,6 +480,7 @@ function requestWeather(lat, lon) {
       `&longitude=${lon}` +
       `&hourly=weather_code,is_day` +
       `&current=temperature_2m` +
+      `&daily=sunrise,sunset` +
       `&forecast_days=2` +
       `&timezone=${timezone}`;
   } else {

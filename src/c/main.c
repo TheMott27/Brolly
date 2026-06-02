@@ -108,6 +108,10 @@
 #define KEY_TEMP_COLOR            135
 #define KEY_BT_DISCONNECT_OUTER_COLOR 136
 #define KEY_BT_DISCONNECT_INNER_COLOR 137
+#define KEY_SUNRISE_HOUR          25
+#define KEY_SUNRISE_MINUTE        26
+#define KEY_SUNSET_HOUR           27
+#define KEY_SUNSET_MINUTE         28
 #define KEY_SECONDS_HAND_COLOR    141
 
 // Seconds hand visibility modes
@@ -212,6 +216,12 @@ static bool s_showing_seconds = false;
 static AppTimer *s_test_timer = NULL;
 static bool s_test_battery_active = false;
 static bool s_test_bt_active = false;
+
+// Sunrise/sunset times (hours and minutes in local time)
+static int8_t s_sunrise_hour = -1;  // -1 = not received yet
+static int8_t s_sunrise_min  = 0;
+static int8_t s_sunset_hour  = -1;
+static int8_t s_sunset_min   = 0;
 
 // Shared time snapshot — set once per tick, read by all layer callbacks
 static struct tm s_tick_tm;
@@ -497,6 +507,55 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (dist == 0) continue;
     GPoint inner_pt = GPoint(outer_pt.x + dx / dist, outer_pt.y + dy / dist);
     graphics_draw_line(ctx, inner_pt, outer_pt);
+  }
+
+  // ---- Sunrise / sunset triangles ----
+  // Each triangle is 5x5px, tip pointing toward centre, placed at the screen edge.
+  // Only shown when the event is within the next 12 hours.
+  // Rounding: event time rounded to nearest 12-minute multiple.
+  if (s_sunrise_hour >= 0 || s_sunset_hour >= 0) {
+    int now_min = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
+
+    for (int evt = 0; evt < 2; evt++) {
+      int8_t eh = (evt == 0) ? s_sunrise_hour : s_sunset_hour;
+      int8_t em = (evt == 0) ? s_sunrise_min  : s_sunset_min;
+      if (eh < 0) continue;
+
+      int event_min = (int)eh * 60 + (int)em;
+      int delta = event_min - now_min;
+      if (delta < 0) delta += 1440;  // wrap to next day
+      if (delta > 720) continue;     // more than 12 hours away — skip
+
+      // Round to nearest 12-minute multiple
+      int rounded = ((event_min + 6) / 12) * 12;
+      // Map to 12-hour clock angle (720 min = full revolution)
+      int32_t angle = DEG_TO_TRIGANGLE((rounded % 720) * 360 / 720);
+
+      // Tip at screen edge, base 5px inward
+      GPoint tip  = square_perimeter_point(center, angle, 0, 0);
+      // Perpendicular offset for triangle base (±2px)
+      int32_t sin_a = sin_lookup(angle);
+      int32_t cos_a = cos_lookup(angle);
+      // inward direction unit vector * 5
+      int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
+      int dy_in = (int)( (cos_a * 5) / TRIG_MAX_RATIO);
+      // perpendicular (rotate 90°) * 2
+      int dx_perp = (int)(-(cos_a * 2) / TRIG_MAX_RATIO);
+      int dy_perp = (int)(-(sin_a * 2) / TRIG_MAX_RATIO);
+      GPoint base_l = GPoint(tip.x + dx_in + dx_perp, tip.y + dy_in + dy_perp);
+      GPoint base_r = GPoint(tip.x + dx_in - dx_perp, tip.y + dy_in - dy_perp);
+
+      // Sunrise = dark orange, sunset = dark/baby blue
+      GColor tri_color = (evt == 0) ? GColorOrange : GColorPictonBlue;
+      graphics_context_set_fill_color(ctx, tri_color);
+      GPathInfo tri_path = {
+        .num_points = 3,
+        .points = (GPoint[]) { tip, base_l, base_r }
+      };
+      GPath *tri = gpath_create(&tri_path);
+      gpath_draw_filled(ctx, tri);
+      gpath_destroy(tri);
+    }
   }
 
   // ---- Hour numbers / icons ----
@@ -900,6 +959,16 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
   Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
   if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
+  // Sunrise / sunset
+  Tuple *srh = dict_find(iter, KEY_SUNRISE_HOUR);
+  if (srh) s_sunrise_hour = (int8_t)srh->value->int32;
+  Tuple *srm = dict_find(iter, KEY_SUNRISE_MINUTE);
+  if (srm) s_sunrise_min  = (int8_t)srm->value->int32;
+  Tuple *ssh = dict_find(iter, KEY_SUNSET_HOUR);
+  if (ssh) s_sunset_hour  = (int8_t)ssh->value->int32;
+  Tuple *ssm = dict_find(iter, KEY_SUNSET_MINUTE);
+  if (ssm) s_sunset_min   = (int8_t)ssm->value->int32;
+
   Tuple *shc = dict_find(iter, KEY_SECONDS_HAND_COLOR);
   if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
   Tuple *shm = dict_find(iter, KEY_SECONDS_HAND_MODE);
