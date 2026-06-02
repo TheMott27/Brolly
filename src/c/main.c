@@ -228,6 +228,9 @@ static AppTimer *s_test_timer = NULL;
 static bool s_test_battery_active = false;
 static bool s_test_bt_active = false;
 
+// Skip first battery handler call to avoid false threshold crossing on startup
+static bool s_battery_handler_initialized = false;
+
 // Sunrise/sunset times (hours and minutes in local time)
 static int8_t s_sunrise_hour = -1;  // -1 = not received yet
 static int8_t s_sunrise_min  = 0;
@@ -888,6 +891,11 @@ static void battery_handler(BatteryChargeState charge) {
   if (!s_settings.battery_indicator_enabled) return;
   uint8_t old_pct = s_battery_pct;
   s_battery_pct = charge.charge_percent;
+  // Skip first call to avoid false threshold crossing on startup
+  if (!s_battery_handler_initialized) {
+    s_battery_handler_initialized = true;
+    return;
+  }
   // Only redraw if battery crossed a visual threshold (50% or 20%)
   bool crossed = (old_pct > FIXED_BATT_PCT_MID) != (s_battery_pct > FIXED_BATT_PCT_MID) ||
                  (old_pct > FIXED_BATT_PCT_LOW) != (s_battery_pct > FIXED_BATT_PCT_LOW);
