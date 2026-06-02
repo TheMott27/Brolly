@@ -557,11 +557,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Draw a 5x5px square at the screen edge
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       
-      // Perpendicular direction (rotate 90 degrees from radial)
+      // Perpendicular direction (rotate 90 degrees from radial) — ±2.5 for 5px total width
       int32_t sin_a = sin_lookup(angle);
       int32_t cos_a = cos_lookup(angle);
-      int dx_perp = (int)(-(cos_a * 2) / TRIG_MAX_RATIO);  // ±2 for 5px width
-      int dy_perp = (int)(-(sin_a * 2) / TRIG_MAX_RATIO);
+      int dx_perp = (int)(-(cos_a * 5) / TRIG_MAX_RATIO / 2);
+      int dy_perp = (int)(-(sin_a * 5) / TRIG_MAX_RATIO / 2);
       
       // Inward direction (toward center) — 5px deep
       int dx_in = (int)(-(sin_a * 5) / TRIG_MAX_RATIO);
