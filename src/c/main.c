@@ -779,6 +779,10 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 
   // Also show seconds hand on shake if in shake mode
   if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE) {
+    // Refresh time snapshot so seconds hand appears at the correct position immediately,
+    // not at the stale position from the last minute-boundary tick.
+    time_t now = time(NULL);
+    s_tick_tm = *localtime(&now);
     s_showing_seconds = true;
     layer_mark_dirty(s_bg_layer);
     if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
