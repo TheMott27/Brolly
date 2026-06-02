@@ -664,7 +664,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tv) s_settings.temp_visible = (int8_t)tv->value->int32;
   Tuple *tu = dict_find(iter, KEY_TEMP_UNIT);
   if (tu) s_settings.temp_unit = (int8_t)tu->value->int32;
-  Tuple *btmr = dict_find(iter, KEY_BT_DISCONNECT_MIN_INNER_RED);
+  Tuple *btmr = dict_find(iter, MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED);
   if (btmr) s_settings.bt_disconnect_min_inner_red = btmr->value->int32 != 0;
   Tuple *vbt = dict_find(iter, KEY_VIBRATE_BT_DISCONNECT);
   if (vbt) s_settings.vibrate_bt_disconnect = vbt->value->int32 != 0;
