@@ -113,6 +113,14 @@
 #define KEY_SUNSET_HOUR           27
 #define KEY_SUNSET_MINUTE         28
 #define KEY_SECONDS_HAND_COLOR    141
+#define KEY_SUNRISE_MARKER_VISIBLE 147
+#define KEY_SUNRISE_MARKER_COLOR   148
+#define KEY_SUNSET_MARKER_COLOR    149
+
+// Sunrise/sunset marker visibility modes
+#define SUNRISE_MARKER_ALWAYS       0
+#define SUNRISE_MARKER_WITH_WEATHER 1
+#define SUNRISE_MARKER_OFF          2
 
 // Seconds hand visibility modes
 #define SECONDS_MODE_ALWAYS      1
@@ -189,6 +197,9 @@ typedef struct {
   GColor seconds_hand_color;
   int8_t seconds_hand_mode; // 0=never, 1=always, 2=shake only
   int8_t seconds_shake_dur; // seconds to show on shake: 5, 10, 20, 30
+  int8_t sunrise_marker_visible; // 0=always, 1=with weather icons, 2=off
+  GColor sunrise_marker_color;
+  GColor sunset_marker_color;
 } Settings;
 
 // ============================================================
@@ -269,6 +280,9 @@ static void settings_set_defaults(Settings *s) {
   s->seconds_hand_color          = GColorWhite;
   s->seconds_hand_mode           = SECONDS_MODE_SHAKE;
   s->seconds_shake_dur           = 10;
+  s->sunrise_marker_visible      = SUNRISE_MARKER_ALWAYS;
+  s->sunrise_marker_color        = GColorOrange;
+  s->sunset_marker_color         = GColorOxfordBlue;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -510,11 +524,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Sunrise / sunset highlighted minute markers ----
-  // The minute marker at the event's clock position is drawn 3px wide and 10px long.
-  // Sunrise = GColorOrange, sunset = GColorOxfordBlue.
-  // Only shown when the event is within the next 12 hours.
+  // The minute marker at the event's clock position is drawn 3px wide and 5px long.
+  // Sunrise = sunrise_marker_color, sunset = sunset_marker_color (user-configurable).
+  // Visibility: always, with weather icons, or off.
   // Position formula: marker = (hour%12)*5 + round(minutes/12), angle = marker*6°
-  if (s_sunrise_hour >= 0 || s_sunset_hour >= 0) {
+  bool show_sr_ss = false;
+  switch (s_settings.sunrise_marker_visible) {
+    case SUNRISE_MARKER_ALWAYS:       show_sr_ss = true;            break;
+    case SUNRISE_MARKER_WITH_WEATHER: show_sr_ss = show_icons;      break;
+    case SUNRISE_MARKER_OFF:          show_sr_ss = false;           break;
+  }
+  if (show_sr_ss && (s_sunrise_hour >= 0 || s_sunset_hour >= 0)) {
     int now_min = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
 
     for (int evt = 0; evt < 2; evt++) {
@@ -534,7 +554,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int marker = hour12 * 5 + rounded_min / 12;  // 0-59
       int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-      // Draw a 3px wide, 10px long marker from the screen edge inward
+      // Draw a 3px wide, 5px long marker from the screen edge inward
       GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
@@ -542,11 +562,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int ady = dy < 0 ? -dy : dy;
       int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
       if (dist == 0) continue;
-      // Step 10px inward along the inward direction
-      GPoint inner_pt = GPoint(outer_pt.x + dx * 10 / dist,
-                               outer_pt.y + dy * 10 / dist);
+      // Step 5px inward along the inward direction
+      GPoint inner_pt = GPoint(outer_pt.x + dx * 5 / dist,
+                               outer_pt.y + dy * 5 / dist);
 
-      GColor marker_color = (evt == 0) ? GColorOrange : GColorOxfordBlue;
+      GColor marker_color = (evt == 0) ? s_settings.sunrise_marker_color : s_settings.sunset_marker_color;
       graphics_context_set_stroke_color(ctx, marker_color);
       graphics_context_set_stroke_width(ctx, 3);
       graphics_draw_line(ctx, inner_pt, outer_pt);
@@ -970,6 +990,13 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
   Tuple *ssd = dict_find(iter, KEY_SECONDS_SHAKE_DUR);
   if (ssd) s_settings.seconds_shake_dur = (int8_t)ssd->value->int32;
+  // Sunrise / sunset marker settings
+  Tuple *smv = dict_find(iter, KEY_SUNRISE_MARKER_VISIBLE);
+  if (smv) s_settings.sunrise_marker_visible = (int8_t)smv->value->int32;
+  Tuple *smc = dict_find(iter, KEY_SUNRISE_MARKER_COLOR);
+  if (smc) s_settings.sunrise_marker_color = rgb_to_gcolor(smc->value->int32);
+  Tuple *ssmc = dict_find(iter, KEY_SUNSET_MARKER_COLOR);
+  if (ssmc) s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32);
 
   // Test battery 50%-20% alert: temporarily set battery to 35% for 5 seconds
   Tuple *tb50 = dict_find(iter, KEY_TEST_BATTERY_50);

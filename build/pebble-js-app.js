@@ -155,6 +155,9 @@
 	const KEY_JS_READY            = 99;
 	const KEY_CUSTOM_LOCATION     = 113;
 	const KEY_ICON_STYLE          = 127;
+	const KEY_SUNRISE_MARKER_VISIBLE = 147;
+	const KEY_SUNRISE_MARKER_COLOR   = 148;
+	const KEY_SUNSET_MARKER_COLOR    = 149;
 	
 	const MOON_DEFAULT_PERCENT = 20;
 	
