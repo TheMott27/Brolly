@@ -452,7 +452,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       !(s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds)) {
     int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
     GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
-    GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), 8);
+    GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), 18);
     graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
     graphics_context_set_stroke_width(ctx, 1);
     graphics_draw_line(ctx, sec_tail, sec_tip);
