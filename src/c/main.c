@@ -594,40 +594,35 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
                      outer, inner);
 
   // Centre cap colour derivation:
-  //   outer_ring   = seconds hand colour (or white if always hidden)
-  //   battery_ring = white normally; alert colour at 50% / 20% thresholds
-  //   inner_ring   = minute hand inner stripe
-  //   dot          = hour hand outer colour (no battery function)
+  //   Normal:   battery_ring=white, outer_ring=sec colour, inner_ring=min inner, dot=hour outer
+  //   50%-20%:  battery_ring turns center_dot_50_color
+  //   <20%:     ALL four elements turn center_dot_20_color (single alert colour)
   GColor sec_color = (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER)
                      ? GColorWhite : s_settings.seconds_hand_color;
-  GColor outer_ring = sec_color;
-  GColor battery_ring, inner_ring;
+  GColor battery_ring, outer_ring, inner_ring, dot;
 
-  if (s_settings.battery_indicator_enabled) {
-    // >50%: battery ring is white (normal)
-    if (s_battery_pct > FIXED_BATT_PCT_MID) {
-      battery_ring = GColorWhite;
-      inner_ring   = s_settings.min_hand_inner;
-    }
-    // 50%–20%: battery ring turns alert colour
-    else if (s_battery_pct > FIXED_BATT_PCT_LOW) {
-      battery_ring = s_settings.center_dot_50_color;
-      inner_ring   = s_settings.min_hand_inner;
-    }
-    // <20%: battery ring and inner ring both turn alert colour
-    else {
-      battery_ring = s_settings.center_dot_20_color;
-      inner_ring   = s_settings.middle_ring_20_color;
-    }
-  } else {
-    // Battery indicator off: battery ring is white
-    battery_ring = GColorWhite;
+  if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_LOW) {
+    // <20%: all cap elements turn the low-battery alert colour
+    GColor alert = s_settings.center_dot_20_color;
+    battery_ring = alert;
+    outer_ring   = alert;
+    inner_ring   = alert;
+    dot          = alert;
+  } else if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_MID) {
+    // 50%-20%: only battery ring changes
+    battery_ring = s_settings.center_dot_50_color;
+    outer_ring   = sec_color;
     inner_ring   = s_settings.min_hand_inner;
+    dot          = s_settings.hour_hand_outer;
+  } else {
+    // >50% or indicator off: all use normal hand-derived colours
+    battery_ring = GColorWhite;
+    outer_ring   = sec_color;
+    inner_ring   = s_settings.min_hand_inner;
+    dot          = s_settings.hour_hand_outer;
   }
 
-  // Draw order (outside in): battery_ring → outer_ring → inner_ring → black sep → dot
-  // battery_ring at r6 is drawn first so outer_ring at r5 sits on top of it,
-  // leaving a 1px visible ring of battery_ring colour around the outer_ring.
+  // Draw order (outside in): battery_ring(r6) → outer_ring(r5) → inner_ring(r3) → black(r2) → dot(r1)
   graphics_context_set_fill_color(ctx, battery_ring);
   graphics_fill_circle(ctx, center, 6);
   graphics_context_set_fill_color(ctx, outer_ring);
@@ -636,7 +631,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, 3);
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_circle(ctx, center, 2);
-  graphics_context_set_fill_color(ctx, s_settings.hour_hand_outer);
+  graphics_context_set_fill_color(ctx, dot);
   graphics_fill_circle(ctx, center, 1);
 }
 
