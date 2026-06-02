@@ -11,11 +11,16 @@
  * - User-configurable hand colours, font, and complication visibility
  *
  * Battery optimisations:
+ * - Dynamic tick subscription: MINUTE_UNIT when seconds hand hidden, SECOND_UNIT only when needed
+ * - Conditional layer redraws: hour/minute/complication only on minute boundary
  * - bg_layer only redrawn on hour boundary, show_icons toggle, or new data
+ * - Complication layer skipped entirely when both complications are off
+ * - Battery handler only redraws on visual threshold crossings (50%, 20%)
  * - time()/localtime() called once per tick; shared via s_tick_tm
  * - App message inbox sized to actual usage, not the SDK maximum
  * - Marker inward direction uses integer alpha-max+beta-min (no sqrt/float)
- * - GPath alloc/free eliminated: paths drawn with a pre-offset origin point
+ * - Zero heap allocation in icon drawing: manual point translation on stack
+ * - Font pointer cached; resolved once, invalidated only on settings change
  * - Single icon_code_to_gpath() replaces two-stage slot indirection
  */
 
@@ -365,19 +370,22 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz)
       path_count = UNKNOWN_PATH_COUNT;            paths = UNKNOWN_PATHS;            break;
   }
 
-  // Offset origin so icon is centred on `center`.
-  // We pass a modified GPathInfo with translated points rather than allocating
-  // a GPath object, avoiding heap alloc/free on every icon draw.
+  // Draw icon paths without heap allocation: translate points on the stack.
   int half = sz / 2;
-  GPoint origin = GPoint(center.x - half, center.y - half);
+  int ox = center.x - half;
+  int oy = center.y - half;
 
   graphics_context_set_stroke_color(ctx, s_settings.icon_color);
   graphics_context_set_stroke_width(ctx, 1);
   for (int i = 0; i < path_count; i++) {
-    GPath *path_ptr = gpath_create(&paths[i]);
-    gpath_move_to(path_ptr, origin);
-    gpath_draw_outline(ctx, path_ptr);
-    gpath_destroy(path_ptr);
+    int npts = paths[i].num_points;
+    if (npts < 2) continue;
+    for (int j = 0; j < npts; j++) {
+      GPoint a = GPoint(paths[i].points[j].x + ox, paths[i].points[j].y + oy);
+      GPoint b = GPoint(paths[i].points[(j + 1) % npts].x + ox,
+                        paths[i].points[(j + 1) % npts].y + oy);
+      graphics_draw_line(ctx, a, b);
+    }
   }
 }
 
@@ -385,8 +393,11 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz)
 // HOUR NUMBER DRAWING
 // ============================================================
 
-static GFont get_number_font(void) {
-  switch (s_settings.number_font) {
+// Cached font pointer — updated when settings change.
+static GFont s_cached_number_font = NULL;
+
+static GFont resolve_number_font(int8_t id) {
+  switch (id) {
     case 1:  return fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
     case 2:  return fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
     case 3:  return fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
@@ -394,6 +405,13 @@ static GFont get_number_font(void) {
     case 5:  return fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
     default: return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
   }
+}
+
+static GFont get_number_font(void) {
+  if (!s_cached_number_font) {
+    s_cached_number_font = resolve_number_font(s_settings.number_font);
+  }
+  return s_cached_number_font;
 }
 
 static void draw_hour_number(GContext *ctx, int hour, GPoint center) {
@@ -748,8 +766,12 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // Minute hand and complication: only on minute boundary
   if (units_changed & MINUTE_UNIT) {
     layer_mark_dirty(s_minute_layer);
-    layer_mark_dirty(s_complication_layer);
     layer_mark_dirty(s_hour_layer);
+    // Only dirty complication layer if at least one complication is visible
+    if (s_settings.date_visible != COMPLICATION_OFF ||
+        s_settings.temp_visible != COMPLICATION_OFF) {
+      layer_mark_dirty(s_complication_layer);
+    }
   }
 
   // Background: only on hour boundary
@@ -779,8 +801,13 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 }
 
 static void battery_handler(BatteryChargeState charge) {
+  uint8_t old_pct = s_battery_pct;
   s_battery_pct = charge.charge_percent;
-  layer_mark_dirty(s_minute_layer);
+  // Only redraw if battery crossed a visual threshold (50% or 20%)
+  if (!s_settings.battery_indicator_enabled) return;
+  bool crossed = (old_pct > FIXED_BATT_PCT_MID) != (s_battery_pct > FIXED_BATT_PCT_MID) ||
+                 (old_pct > FIXED_BATT_PCT_LOW) != (s_battery_pct > FIXED_BATT_PCT_LOW);
+  if (crossed) layer_mark_dirty(s_minute_layer);
 }
 
 static void bt_handler(bool connected) {
@@ -837,7 +864,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *mhi = dict_find(iter, KEY_MIN_HAND_INNER);
   if (mhi) s_settings.min_hand_inner  = rgb_to_gcolor(mhi->value->int32);
   Tuple *nf = dict_find(iter, KEY_NUMBER_FONT);
-  if (nf) s_settings.number_font = (int8_t)nf->value->int32;
+  if (nf) {
+    s_settings.number_font = (int8_t)nf->value->int32;
+    s_cached_number_font = NULL;  // Invalidate font cache
+  }
   Tuple *bgc = dict_find(iter, KEY_BACKGROUND_COLOR);
   if (bgc) s_settings.background_color = rgb_to_gcolor(bgc->value->int32);
   Tuple *nc = dict_find(iter, KEY_NUMBER_COLOR);
