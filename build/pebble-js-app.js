@@ -663,67 +663,67 @@
 	  }
 	}
 	
-	// Re-sends all saved settings from localStorage to the watch.
-	// Called on ready so the watch always has the user's last config,
-	// even after a watchface reinstall that cleared persist storage.
-	function sendSavedSettings(configData) {
-	  const KEY_MAP = {
-	    'KEY_DISPLAY_HOUR_MARKERS':   40,
-	    'KEY_DISPLAY_MINOR_MARKERS':  41,
-	    'KEY_SHAKE_MODE':            107,
-	    'KEY_DATE_VISIBLE':          118,
-	    'KEY_TEMP_VISIBLE':          119,
-	    'KEY_TEMP_UNIT':             110,
-	    'KEY_WEATHER_SERVICE':       120,
-	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
-	    'KEY_VIBRATE_BT_DISCONNECT':  54,
-	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           121,
-	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
-	    'KEY_SECONDS_HAND_MODE':     142,
-	    'KEY_SECONDS_SHAKE_DUR':     143
-	  };
-	  const COLOR_MAP = {
-	    'KEY_HOUR_HAND_OUTER':      114,
-	    'KEY_HOUR_HAND_INNER':      115,
-	    'KEY_MIN_HAND_OUTER':       116,
-	    'KEY_MIN_HAND_INNER':       117,
-	    'KEY_BACKGROUND_COLOR':     126,
-	    'KEY_NUMBER_COLOR':         127,
-	    'KEY_ICON_COLOR':           128,
-	    'KEY_HOUR_MARKER_COLOR':    129,
-	    'KEY_MINUTE_MARKER_COLOR':  130,
-	    'KEY_CENTER_DOT_50_COLOR':  131,
-	    'KEY_CENTER_DOT_20_COLOR':  132,
-	    'KEY_MIDDLE_RING_20_COLOR': 133,
-	    'KEY_DATE_COLOR':           134,
-	    'KEY_TEMP_COLOR':                 135,
-	    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
-	    'KEY_BT_DISCONNECT_INNER_COLOR':  137,
-	    'KEY_CENTER_DOT_COLOR':       139,
-	    'KEY_MIDDLE_RING_COLOR':      140,
-	    'KEY_SECONDS_HAND_COLOR':     141
-	  };
+	// Settings key maps — defined once, used by sendSavedSettings and webviewclosed.
+	const SETTINGS_KEY_MAP = {
+	  'KEY_DISPLAY_HOUR_MARKERS':        40,
+	  'KEY_DISPLAY_MINOR_MARKERS':       41,
+	  'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
+	  'KEY_VIBRATE_BT_DISCONNECT':       54,
+	  'KEY_VIBRATE_BT_RECONNECT':        55,
+	  'KEY_SHAKE_MODE':                 107,
+	  'KEY_TEMP_UNIT':                  110,
+	  'KEY_DATE_VISIBLE':               118,
+	  'KEY_TEMP_VISIBLE':               119,
+	  'KEY_WEATHER_SERVICE':            120,
+	  'KEY_NUMBER_FONT':                121,
+	  'KEY_BATTERY_INDICATOR_ENABLED':  138,
+	  'KEY_SECONDS_HAND_MODE':          142,
+	  'KEY_SECONDS_SHAKE_DUR':          143
+	};
 	
+	const SETTINGS_COLOR_MAP = {
+	  'KEY_HOUR_HAND_OUTER':            114,
+	  'KEY_HOUR_HAND_INNER':            115,
+	  'KEY_MIN_HAND_OUTER':             116,
+	  'KEY_MIN_HAND_INNER':             117,
+	  'KEY_BACKGROUND_COLOR':           126,
+	  'KEY_NUMBER_COLOR':               127,
+	  'KEY_ICON_COLOR':                 128,
+	  'KEY_HOUR_MARKER_COLOR':          129,
+	  'KEY_MINUTE_MARKER_COLOR':        130,
+	  'KEY_CENTER_DOT_50_COLOR':        131,
+	  'KEY_CENTER_DOT_20_COLOR':        132,
+	  'KEY_MIDDLE_RING_20_COLOR':       133,
+	  'KEY_DATE_COLOR':                 134,
+	  'KEY_TEMP_COLOR':                 135,
+	  'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
+	  'KEY_BT_DISCONNECT_INNER_COLOR':  137,
+	  'KEY_CENTER_DOT_COLOR':           139,
+	  'KEY_MIDDLE_RING_COLOR':          140,
+	  'KEY_SECONDS_HAND_COLOR':         141
+	};
+	
+	// Re-sends all saved settings from localStorage to the watch.
+	function sendSavedSettings(configData) {
 	  let dict = {};
 	  let hasAny = false;
 	
-	  Object.keys(KEY_MAP).forEach(function(name) {
+	  Object.keys(SETTINGS_KEY_MAP).forEach(function(name) {
 	    if (configData.hasOwnProperty(name)) {
-	      dict[KEY_MAP[name]] = parseInt(configData[name]);
+	      dict[SETTINGS_KEY_MAP[name]] = parseInt(configData[name]);
 	      hasAny = true;
 	    }
 	  });
-	  Object.keys(COLOR_MAP).forEach(function(name) {
+	  Object.keys(SETTINGS_COLOR_MAP).forEach(function(name) {
 	    if (configData.hasOwnProperty(name)) {
-	      dict[COLOR_MAP[name]] = parseInt(configData[name]);
+	      dict[SETTINGS_COLOR_MAP[name]] = parseInt(configData[name]);
 	      hasAny = true;
 	    }
 	  });
 	
 	  if (hasAny) {
 	    Pebble.sendAppMessage(dict,
-	      function(e) { console.log('AWW2: Saved settings restored to watch'); },
+	      function() { console.log('AWW2: Saved settings restored to watch'); },
 	      function(e) { console.log('AWW2: Failed to restore settings: ' + JSON.stringify(e)); }
 	    );
 	  }
@@ -784,64 +784,21 @@
 	
 	  let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
 	
-	  // Map Brolly setting names -> numeric message keys (must match main.c and package.json)
-	  const KEY_MAP = {
-	    'KEY_DISPLAY_HOUR_MARKERS':   40,
-	    'KEY_DISPLAY_MINOR_MARKERS':  41,
-	    'KEY_SHAKE_MODE':            107,
-	    'KEY_DATE_VISIBLE':          118,
-	    'KEY_TEMP_VISIBLE':          119,
-	    'KEY_TEMP_UNIT':             110,
-	    'KEY_WEATHER_SERVICE':       120,
-	    'KEY_BT_DISCONNECT_MIN_INNER_RED': 53,
-	    'KEY_VIBRATE_BT_DISCONNECT':  54,
-	    'KEY_VIBRATE_BT_RECONNECT':   55,
-	    'KEY_NUMBER_FONT':           121,
-	    'KEY_BATTERY_INDICATOR_ENABLED': 138,
-	    'KEY_SECONDS_HAND_MODE':     142,
-	    'KEY_SECONDS_SHAKE_DUR':     143
-	  };
-	
-	  // Colour keys — sent as 0xRRGGBB integers
-	  const COLOR_MAP = {
-	    'KEY_HOUR_HAND_OUTER':      114,
-	    'KEY_HOUR_HAND_INNER':      115,
-	    'KEY_MIN_HAND_OUTER':       116,
-	    'KEY_MIN_HAND_INNER':       117,
-	    'KEY_BACKGROUND_COLOR':     126,
-	    'KEY_NUMBER_COLOR':         127,
-	    'KEY_ICON_COLOR':           128,
-	    'KEY_HOUR_MARKER_COLOR':    129,
-	    'KEY_MINUTE_MARKER_COLOR':  130,
-	    'KEY_CENTER_DOT_50_COLOR':  131,
-	    'KEY_CENTER_DOT_20_COLOR':  132,
-	    'KEY_MIDDLE_RING_20_COLOR': 133,
-	    'KEY_DATE_COLOR':           134,
-	    'KEY_TEMP_COLOR':                 135,
-	    'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
-	    'KEY_BT_DISCONNECT_INNER_COLOR':  137,
-	    'KEY_CENTER_DOT_COLOR':       139,
-	    'KEY_MIDDLE_RING_COLOR':      140,
-	    'KEY_SECONDS_HAND_COLOR':     141
-	  };
-	
 	  // Build numeric-keyed dict for sendAppMessage
 	  let dict = {};
 	
-	  Object.keys(KEY_MAP).forEach(function(name) {
+	  Object.keys(SETTINGS_KEY_MAP).forEach(function(name) {
 	    if (response.hasOwnProperty(name)) {
 	      let val = parseInt(response[name]);
-	      dict[KEY_MAP[name]] = val;
-	      // Persist each setting by name so sendSavedSettings can restore it on next load
+	      dict[SETTINGS_KEY_MAP[name]] = val;
 	      configData[name] = val;
 	    }
 	  });
 	
-	  Object.keys(COLOR_MAP).forEach(function(name) {
+	  Object.keys(SETTINGS_COLOR_MAP).forEach(function(name) {
 	    if (response.hasOwnProperty(name)) {
 	      let val = parseInt(response[name]);
-	      // -1 = transparent sentinel — pass through as-is
-	      dict[COLOR_MAP[name]] = val;
+	      dict[SETTINGS_COLOR_MAP[name]] = val;
 	      configData[name] = val;
 	    }
 	  });

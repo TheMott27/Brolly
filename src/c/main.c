@@ -65,44 +65,44 @@
 #define ICON_HAZE_N             33
 
 // Message keys — weather data
-#define KEY_ICON_0               0   // icons 0–23 occupy keys 0–23
-#define KEY_TEMP_C              58
-#define KEY_TEMP_F              59
+#define KEY_ICON_0                  0  // icons 0–23 occupy keys 0–23
+#define KEY_TEMP_C                 58
+#define KEY_TEMP_F                 59
 
-// Message keys — settings
-#define KEY_DISPLAY_HOUR_MARKERS  40
-#define KEY_DISPLAY_MINOR_MARKERS 41
-#define KEY_SHAKE_MODE           107
-#define KEY_DATE_VISIBLE         118
-#define KEY_TEMP_VISIBLE         119
-#define KEY_TEMP_UNIT            110
-#define KEY_NUMBER_FONT          121
-#define KEY_VIBRATE_BT_DISCONNECT 54
-#define KEY_VIBRATE_BT_RECONNECT  55
-#define KEY_HOUR_HAND_OUTER      114
-#define KEY_HOUR_HAND_INNER      115
-#define KEY_MIN_HAND_OUTER       116
-#define KEY_MIN_HAND_INNER       117
-// Message keys — BT disconnect colours
+// Message keys — boolean/enum settings
+#define KEY_DISPLAY_HOUR_MARKERS   40
+#define KEY_DISPLAY_MINOR_MARKERS  41
+#define KEY_VIBRATE_BT_DISCONNECT  54
+#define KEY_VIBRATE_BT_RECONNECT   55
+#define KEY_SHAKE_MODE            107
+#define KEY_TEMP_UNIT             110
+#define KEY_DATE_VISIBLE          118
+#define KEY_TEMP_VISIBLE          119
+#define KEY_NUMBER_FONT           121
+#define KEY_BATTERY_INDICATOR_ENABLED 138
+#define KEY_SECONDS_HAND_MODE     142
+#define KEY_SECONDS_SHAKE_DUR     143
+
+// Message keys — colour settings (sent as 0xRRGGBB)
+#define KEY_HOUR_HAND_OUTER       114
+#define KEY_HOUR_HAND_INNER       115
+#define KEY_MIN_HAND_OUTER        116
+#define KEY_MIN_HAND_INNER        117
+#define KEY_BACKGROUND_COLOR      126
+#define KEY_NUMBER_COLOR          127
+#define KEY_ICON_COLOR            128
+#define KEY_HOUR_MARKER_COLOR     129
+#define KEY_MINUTE_MARKER_COLOR   130
+#define KEY_CENTER_DOT_50_COLOR   131
+#define KEY_CENTER_DOT_20_COLOR   132
+#define KEY_MIDDLE_RING_20_COLOR  133
+#define KEY_DATE_COLOR            134
+#define KEY_TEMP_COLOR            135
 #define KEY_BT_DISCONNECT_OUTER_COLOR 136
 #define KEY_BT_DISCONNECT_INNER_COLOR 137
-// Message keys — new colour settings
-#define KEY_BACKGROUND_COLOR     126
-#define KEY_NUMBER_COLOR         127
-#define KEY_ICON_COLOR           128
-#define KEY_HOUR_MARKER_COLOR    129
-#define KEY_MINUTE_MARKER_COLOR  130
-#define KEY_CENTER_DOT_50_COLOR  131
-#define KEY_CENTER_DOT_20_COLOR  132
-#define KEY_MIDDLE_RING_20_COLOR 133
-#define KEY_DATE_COLOR           134
-#define KEY_TEMP_COLOR_KEY       135
-#define KEY_BATTERY_INDICATOR_ENABLED 138
-#define KEY_CENTER_DOT_COLOR     139
-#define KEY_MIDDLE_RING_COLOR    140
-#define KEY_SECONDS_HAND_COLOR   141
-#define KEY_SECONDS_HAND_MODE    142
-#define KEY_SECONDS_SHAKE_DUR    143
+#define KEY_CENTER_DOT_COLOR      139
+#define KEY_MIDDLE_RING_COLOR     140
+#define KEY_SECONDS_HAND_COLOR    141
 
 // Seconds hand visibility modes
 #define SECONDS_MODE_ALWAYS      1
@@ -133,8 +133,6 @@
 #define APP_MSG_INBOX_SIZE      512
 #define APP_MSG_OUTBOX_SIZE     64
 
-// Visual constants
-// (BT disconnect colours now come from s_settings.bt_disconnect_outer/inner_color)
 #define FIXED_BATT_PCT_MID       50
 #define FIXED_BATT_PCT_LOW       20
 
@@ -207,7 +205,6 @@ static AppTimer *s_seconds_timer = NULL;
 static bool s_showing_seconds = false;
 static Layer *s_seconds_layer;
 
-
 // Shared time snapshot — set once per tick, read by all layer callbacks
 static struct tm s_tick_tm;
 
@@ -240,7 +237,6 @@ static void settings_set_defaults(Settings *s) {
   s->min_hand_outer              = GColorBlack;
   s->min_hand_inner              = GColorFromRGB(0, 97, 254);
   s->number_font                 = 3;  // Roboto Condensed 21
-  // Colour defaults
   s->background_color            = GColorBlack;
   s->number_color                = GColorWhite;
   s->icon_color                  = GColorWhite;
@@ -614,10 +610,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, 2);
   graphics_context_set_fill_color(ctx, dot);
   graphics_fill_circle(ctx, center, 1);
-
-
 }
-
 
 // ============================================================
 // SECONDS LAYER
@@ -714,7 +707,6 @@ static void shake_timer_callback(void *data) {
   layer_mark_dirty(s_bg_layer);
   layer_mark_dirty(s_complication_layer);
 }
-
 
 static void seconds_timer_callback(void *data) {
   s_seconds_timer = NULL;
@@ -834,7 +826,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (mrc) s_settings.middle_ring_color = rgb_to_gcolor(mrc->value->int32);
   Tuple *dc = dict_find(iter, KEY_DATE_COLOR);
   if (dc) s_settings.date_color = rgb_to_gcolor(dc->value->int32);
-  Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR_KEY);
+  Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR);
   if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
   Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
   if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
