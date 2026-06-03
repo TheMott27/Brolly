@@ -495,12 +495,34 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Minute markers (60 × 1px dot) ----
+  // Use margin_x=0, margin_y=0 so markers are flush on all sides.
+  // Per-side offsets applied after to correct for screen boundary differences.
   if (s_settings.display_minor_markers) {
     graphics_context_set_stroke_color(ctx, s_settings.minute_marker_color);
     graphics_context_set_stroke_width(ctx, 1);
     for (int i = 0; i < 60; i++) {
       int32_t angle = DEG_TO_TRIGANGLE(i * 6);
-      GPoint outer_pt = square_perimeter_point(center, angle, 1, 0);
+      // Determine which side this marker is on (by angle quadrant)
+      // Top: i=45..59 and i=0..14 (315°..360° and 0°..90°-ish)
+      // Right: i=7..22  (42°..132°)
+      // Bottom: i=22..37 (132°..222°)
+      // Left: i=37..52  (222°..312°)
+      // Use margin_x/y per side to make all markers flush with screen edge
+      int mx = 0, my = 0;
+      // Determine dominant side from angle
+      int32_t sin_a = sin_lookup(angle);
+      int32_t cos_a = cos_lookup(angle);
+      int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
+      int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
+      // If abs_sin > abs_cos: left or right side; else: top or bottom
+      if (abs_sin > abs_cos) {
+        // Left or right side — apply x margin to match bottom flush
+        mx = (sin_a > 0) ? 1 : 1;  // both left and right need +1 to match bottom
+      } else {
+        // Top or bottom side — apply y margin
+        my = (cos_a > 0) ? 0 : 1;  // bottom flush (my=0), top needs +1
+      }
+      GPoint outer_pt = square_perimeter_point(center, angle, mx, my);
       int dx = center.x - outer_pt.x;
       int dy = center.y - outer_pt.y;
       int adx = dx < 0 ? -dx : dx;
