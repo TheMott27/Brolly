@@ -160,6 +160,7 @@
 #define FIXED_HAND_INNER_WIDTH   2
 #define FIXED_HAND_BASE_PX      20
 #define FIXED_ICON_SIZE          24
+#define FIXED_HOUR_MARKER_LENGTH 10  // Depth of hour tick marks (used for icon spacing)
 
 // ============================================================
 // SETTINGS STRUCTURE
@@ -617,16 +618,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          pos.y = 0;  // Top numbers centered at top edge
+          // Top icons: move down by (icon_height/2 + marker_length + 2px)
+          pos.y = (FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          pos.y = SCREEN_H;  // Bottom numbers centered at bottom edge
+          // Bottom icons: move up by (icon_height/2 + marker_length + 2px)
+          pos.y = SCREEN_H - (FIXED_ICON_SIZE / 2) - FIXED_HOUR_MARKER_LENGTH - 2;
         }
       } else {
-        // Left and right numbers
+        // Left and right icons
         if (h == 8 || h == 9 || h == 10) {
-          pos.x = 0;  // Left numbers centered at left edge
+          // Left icons: move right by (icon_width/2 + marker_length + 2px)
+          pos.x = (FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          pos.x = SCREEN_W;  // Right numbers centered at right edge
+          // Right icons: move left by (icon_width/2 + marker_length + 2px)
+          pos.x = SCREEN_W - (FIXED_ICON_SIZE / 2) - FIXED_HOUR_MARKER_LENGTH - 2;
         }
       }
       int clock_num = (h == 0) ? 12 : h;
