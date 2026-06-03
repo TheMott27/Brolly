@@ -617,7 +617,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          pos.y = num_half + 2;  // Top numbers touch top edge
+          pos.y = 0;  // Top numbers touch top edge (accounting for text centering and padding)
         } else {
           pos.y -= num_half;
         }
