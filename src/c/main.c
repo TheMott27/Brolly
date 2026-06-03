@@ -167,7 +167,7 @@
 #define FIXED_HAND_BASE_PX      20
 #define FIXED_ICON_SIZE          24
 #define FIXED_HOUR_MARKER_LENGTH 1   // Actual depth of hour tick marks (1px line with 3px stroke width)
-#define FIXED_ICON_EDGE_MARGIN    4   // Gap between icon edge and screen edge (marker + visual breathing room)
+#define FIXED_ICON_EDGE_MARGIN    9   // Gap between icon edge and screen edge (marker + visual breathing room)
 
 // ============================================================
 // SETTINGS STRUCTURE
