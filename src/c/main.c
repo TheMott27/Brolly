@@ -597,15 +597,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         // Top/bottom icons: keep original x, adjust y
-        if (h == 0) {
-          // Icon 12: keep x, place at top
+        if (h == 0 || h == 1 || h == 11) {
+          // Top icons (12, 1, 11): keep x, place at top
           pos.y = 0;
-        } else if (h == 1 || h == 11) {
-          // Top icons (1, 11): keep x, offset from top
-          pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Bottom icons (5, 6, 7): keep x, offset from bottom
-          pos.y = SCREEN_H - (FIXED_HOUR_MARKER_LENGTH + 2);
+          // Bottom icons (5, 6, 7): keep x, place at bottom
+          pos.y = SCREEN_H;
         }
       } else {
         // Left/right icons: keep original y, adjust x
