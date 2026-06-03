@@ -648,8 +648,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       } else {
         // Keep original y (clock perimeter position), adjust x by actual width
         if (h == 10) {
-          // Icon 10: left edge at x=0, center at bounds.w/2
-          icon_center.x = bounds.w / 2;
+          // Icon 10: left edge offset by marker length from x=0
+          icon_center.x = bounds.w / 2 + FIXED_HOUR_MARKER_LENGTH;
         } else if (h == 2) {
           // Icon 2: center at right edge (x=SCREEN_W)
           icon_center.x = SCREEN_W;

@@ -2228,9 +2228,9 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_abbrev  0x000006c0       0x4a src/message_keys.auto.c.49.o
 
 .debug_loclists
-                0x00000000     0x211f
+                0x00000000     0x2104
  .debug_loclists
-                0x00000000     0x211f src/c/main.c.49.o
+                0x00000000     0x2104 src/c/main.c.49.o
 
 .debug_aranges  0x00000000      0x110
  .debug_aranges
@@ -2247,11 +2247,11 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_rnglists
                 0x00000000      0x22b src/c/main.c.49.o
 
-.debug_line     0x00000000     0x2207
- .debug_line    0x00000000     0x1e81 src/c/main.c.49.o
- .debug_line    0x00001e81      0x165 aplite/appinfo.auto.c.49.o
- .debug_line    0x00001fe6      0x114 aplite/src/resource_ids.auto.c.49.o
- .debug_line    0x000020fa      0x10d src/message_keys.auto.c.49.o
+.debug_line     0x00000000     0x220b
+ .debug_line    0x00000000     0x1e85 src/c/main.c.49.o
+ .debug_line    0x00001e85      0x165 aplite/appinfo.auto.c.49.o
+ .debug_line    0x00001fea      0x114 aplite/src/resource_ids.auto.c.49.o
+ .debug_line    0x000020fe      0x10d src/message_keys.auto.c.49.o
 
 .debug_str      0x00000000     0x269a
  .debug_str     0x00000000     0x269a src/c/main.c.49.o
