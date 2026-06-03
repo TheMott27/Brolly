@@ -592,58 +592,32 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // pos is already set to the correct position from square_perimeter_point above
 
     if (show_icons) {
-      // Move icons to actual screen edge
-      // Adjust positions to touch screen boundaries (top, bottom, left, right)
-      int dx = pos.x - center.x;
-      int dy = pos.y - center.y;
-      int adx = dx < 0 ? -dx : dx;
-      int ady = dy < 0 ? -dy : dy;
-      
-      // Determine which edge is closest and push icon to that edge
-      if (adx > ady) {
-        // Left or right edge is closer
-        if (dx > 0) {
-          pos.x = SCREEN_W - icon_half - 2;  // Right edge
-        } else {
-          pos.x = icon_half + 2;  // Left edge
-        }
-      } else {
-        // Top or bottom edge is closer
-        if (dy > 0) {
-          pos.y = SCREEN_H - icon_half - 2;  // Bottom edge
-        } else {
-          pos.y = icon_half + 2;  // Top edge
-        }
-      }
+      // Store original position from clock perimeter
+      GPoint orig_pos = pos;
       
       if (is_top_bottom) {
+        // Top/bottom icons: keep original x, adjust y
         if (h == 0) {
-          // Icon 12: top-left
-          pos.x = 0;
+          // Icon 12: keep x, place at top
           pos.y = 0;
         } else if (h == 1 || h == 11) {
-          // Top icons (1, 11): left edge
-          pos.x = 0;
+          // Top icons (1, 11): keep x, offset from top
           pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Bottom icons (5, 6, 7): right edge
-          pos.x = SCREEN_W;
+          // Bottom icons (5, 6, 7): keep x, offset from bottom
           pos.y = SCREEN_H - (FIXED_HOUR_MARKER_LENGTH + 2);
         }
       } else {
-        // Left and right icons
+        // Left/right icons: keep original y, adjust x
         if (h == 9) {
-          // Icon 9: left-center
+          // Icon 9: place at left-center
           pos.x = 0;
-          pos.y = SCREEN_H / 2;
         } else if (h == 8 || h == 10) {
-          // Left icons (8, 10): left edge
+          // Left icons (8, 10): keep y, place at left edge
           pos.x = 0;
-          pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Right icons (2, 3, 4): right edge
+          // Right icons (2, 3, 4): keep y, place at right edge
           pos.x = SCREEN_W;
-          pos.y = SCREEN_H - (FIXED_HOUR_MARKER_LENGTH + 2);
         }
       }
       int clock_num = (h == 0) ? 12 : h;
