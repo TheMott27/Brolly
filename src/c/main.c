@@ -588,32 +588,32 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
     if (!is_top_bottom) {
-      // Right side: 2,3,4 evenly spaced between 1 (top) and 5 (bottom), x-aligned with 1
+      // Right side: 2,3,4 evenly spaced between 1 (top) and 4 (bottom), x-aligned with 1
       if (h == 2 || h == 3 || h == 4) {
         GPoint pos1 = square_perimeter_point(center, DEG_TO_TRIGANGLE(1 * 30), 0, 0);
-        GPoint pos5 = square_perimeter_point(center, DEG_TO_TRIGANGLE(5 * 30), 0, 0);
+        GPoint pos4 = square_perimeter_point(center, DEG_TO_TRIGANGLE(4 * 30), 0, 0);
         pos.x = pos1.x;  // x-aligned with 1
-        // Evenly space: 2 is 1/3 down, 3 is 2/3 down, 4 is at 5
+        // Evenly space: 2 is 1/3 down, 3 is 2/3 down, 4 is at pos4
         if (h == 2) {
-          pos.y = pos1.y + (pos5.y - pos1.y) * 1 / 3;
+          pos.y = pos1.y + (pos4.y - pos1.y) * 1 / 3;
         } else if (h == 3) {
-          pos.y = pos1.y + (pos5.y - pos1.y) * 2 / 3;
+          pos.y = pos1.y + (pos4.y - pos1.y) * 2 / 3;
         } else if (h == 4) {
-          pos.y = pos5.y;
+          pos.y = pos4.y;
         }
       }
-      // Left side: 10,9,8 evenly spaced between 11 (top) and 7 (bottom), x-aligned with 11
+      // Left side: 10,9,8 evenly spaced between 11 (top) and 8 (bottom), x-aligned with 11
       else if (h == 8 || h == 9 || h == 10) {
         GPoint pos11 = square_perimeter_point(center, DEG_TO_TRIGANGLE(11 * 30), 0, 0);
-        GPoint pos7 = square_perimeter_point(center, DEG_TO_TRIGANGLE(7 * 30), 0, 0);
+        GPoint pos8 = square_perimeter_point(center, DEG_TO_TRIGANGLE(8 * 30), 0, 0);
         pos.x = pos11.x;  // x-aligned with 11
-        // Evenly space: 10 is 1/3 down, 9 is 2/3 down, 8 is at 7
+        // Evenly space: 10 is 1/3 down, 9 is 2/3 down, 8 is at pos8
         if (h == 10) {
-          pos.y = pos11.y + (pos7.y - pos11.y) * 1 / 3;
+          pos.y = pos11.y + (pos8.y - pos11.y) * 1 / 3;
         } else if (h == 9) {
-          pos.y = pos11.y + (pos7.y - pos11.y) * 2 / 3;
+          pos.y = pos11.y + (pos8.y - pos11.y) * 2 / 3;
         } else if (h == 8) {
-          pos.y = pos7.y;
+          pos.y = pos8.y;
         }
       }
     }
