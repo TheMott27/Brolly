@@ -617,8 +617,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       }
       
       if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) {
-          // Top icons: center at (marker_length + 2px) from top
+        if (h == 0) {
+          // Icon 12: fixed position at top-center
+          pos.x = SCREEN_W / 2;
+          pos.y = 0;
+        } else if (h == 1 || h == 11) {
+          // Top icons (1, 11): center at (marker_length + 2px) from top
           pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
           // Bottom icons: center at (marker_length + 2px) from bottom
@@ -626,8 +630,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       } else {
         // Left and right icons
-        if (h == 8 || h == 9 || h == 10) {
-          // Left icons: center at (marker_length + 2px) from left
+        if (h == 9) {
+          // Icon 9: fixed position at left-center
+          pos.x = 0;
+          pos.y = SCREEN_H / 2;
+        } else if (h == 8 || h == 10) {
+          // Left icons (8, 10): center at (marker_length + 2px) from left
           pos.x = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
           // Right icons: center at (marker_length + 2px) from right
