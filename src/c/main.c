@@ -676,27 +676,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
         }
       } else {
-        // Left icons (8,9,10): x fixed by edge margin, y evenly spaced between icon 11 (y=0) and icon 7 (y=SCREEN_H)
-        // Icon 10 = 25%, Icon 9 = 50%, Icon 8 = 75%
-        // Right icons (2,3,4): x fixed by edge margin, y from clock perimeter
+        // Corner icon adjusted y positions (accounting for edge margin + half icon height):
+        //   Icon 11 / Icon 1  top center_y  = bounds.h/2 + FIXED_ICON_EDGE_MARGIN
+        //   Icon  7 / Icon 5  bot center_y  = SCREEN_H - bounds.h/2 - FIXED_ICON_EDGE_MARGIN
+        // 25/50/75% are calculated between these actual rendered positions.
+        int top_y = bounds.h / 2 + FIXED_ICON_EDGE_MARGIN;
+        int bot_y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
         if (h == 10) {
           icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 1 / 4;  // 25% between icon 11 (y=0) and icon 7 (y=SCREEN_H)
+          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
         } else if (h == 9) {
           icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 2 / 4;  // 50%
+          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
         } else if (h == 8) {
           icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 3 / 4;  // 75%
+          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
         } else if (h == 2) {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 1 / 4;  // 25% between icon 1 (y=0) and icon 5 (y=SCREEN_H)
+          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
         } else if (h == 3) {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 2 / 4;  // 50%
+          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
         } else if (h == 4) {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = SCREEN_H * 3 / 4;  // 75%
+          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
         } else {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
         }
