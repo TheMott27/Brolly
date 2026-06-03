@@ -516,11 +516,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
       // If abs_sin > abs_cos: left or right side; else: top or bottom
       if (abs_sin > abs_cos) {
-        // Left or right side — apply x margin to match bottom flush
-        mx = (sin_a > 0) ? 1 : 1;  // both left and right need +1 to match bottom
+        // Left or right side — flush to screen edge
+        mx = 0;
       } else {
-        // Top or bottom side — apply y margin
-        my = (cos_a > 0) ? 0 : 1;  // bottom flush (my=0), top needs +1
+        // Top or bottom side — flush to screen edge
+        my = (cos_a > 0) ? -1 : 0;  // bottom: -1 (1px outward), top: 0
       }
       GPoint outer_pt = square_perimeter_point(center, angle, mx, my);
       int dx = center.x - outer_pt.x;
