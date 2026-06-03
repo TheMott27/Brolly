@@ -535,7 +535,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int ady = dy < 0 ? -dy : dy;
       int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
       if (dist == 0) continue;
-      GPoint inner_pt = GPoint(outer_pt.x + dx / dist, outer_pt.y + dy / dist);
+      GPoint inner_pt = GPoint(outer_pt.x + dx * 2 / dist, outer_pt.y + dy * 2 / dist);
       graphics_draw_line(ctx, inner_pt, outer_pt);
     }
   }
