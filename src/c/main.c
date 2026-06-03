@@ -517,10 +517,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // If abs_sin > abs_cos: left or right side; else: top or bottom
       if (abs_sin > abs_cos) {
         // Left or right side — left side gets extra -1px outward
-        mx = (sin_a < 0) ? 1 : 0;  // left: x=1 (first visible pixel), right: x=SCREEN_W-1
+        mx = (sin_a < 0) ? 4 : 3;  // left: +3 inward from x=1, right: +3 inward from x=SCREEN_W-1
       } else {
-        // Top or bottom side — flush to screen edge
-        my = (cos_a > 0) ? -1 : 0;  // bottom: -1 (1px outward), top: 0
+        // Top or bottom side — 3px inward from edge
+        my = (cos_a > 0) ? 2 : 3;  // bottom: -1+3=2, top: 0+3=3
       }
       GPoint outer_pt = square_perimeter_point(center, angle, mx, my);
       int dx = center.x - outer_pt.x;
