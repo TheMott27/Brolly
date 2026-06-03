@@ -594,7 +594,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         GPoint pos5 = square_perimeter_point(center, DEG_TO_TRIGANGLE(5 * 30), 0, 0);
         pos.x = pos1.x;  // x-aligned with 1
         // Evenly space on y-axis: 1 at 0%, 2 at 25%, 3 at 50%, 4 at 75%, 5 at 100%
-        pos.y = pos1.y + (pos5.y - pos1.y) * (h - 1) / 4;
+        // Add num_half to compensate for text centering in draw_hour_number
+        pos.y = pos1.y + (pos5.y - pos1.y) * (h - 1) / 4 + num_half;
       }
       // Left side: 11,10,9,8,7 evenly spaced on y-axis, x-aligned with 11
       else if (h == 7 || h == 8 || h == 9 || h == 10 || h == 11) {
@@ -602,7 +603,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         GPoint pos7 = square_perimeter_point(center, DEG_TO_TRIGANGLE(7 * 30), 0, 0);
         pos.x = pos11.x;  // x-aligned with 11
         // Evenly space on y-axis: 11 at 0%, 10 at 25%, 9 at 50%, 8 at 75%, 7 at 100%
-        pos.y = pos11.y + (pos7.y - pos11.y) * (11 - h) / 4;
+        // Add num_half to compensate for text centering in draw_hour_number
+        pos.y = pos11.y + (pos7.y - pos11.y) * (11 - h) / 4 + num_half;
       }
     }
 
