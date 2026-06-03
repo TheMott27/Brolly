@@ -588,41 +588,21 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
     if (!is_top_bottom) {
-      // Right side: 1,2,3,4,5 evenly spaced vertically, x-aligned with 1
+      // Right side: 1,2,3,4,5 use their actual circular positions, x-aligned with 1
       if (h == 1 || h == 2 || h == 3 || h == 4 || h == 5) {
-        GPoint pos1 = square_perimeter_point(center, DEG_TO_TRIGANGLE(1 * 30), 0, 0);
-        GPoint pos5 = square_perimeter_point(center, DEG_TO_TRIGANGLE(5 * 30), 0, 0);
-        pos.x = pos1.x;  // x-aligned with 1
-        // Evenly space all 5 numbers: 1 at 0%, 2 at 25%, 3 at 50%, 4 at 75%, 5 at 100%
-        if (h == 1) {
-          pos.y = pos1.y;
-        } else if (h == 2) {
-          pos.y = pos1.y + (pos5.y - pos1.y) * 1 / 4;
-        } else if (h == 3) {
-          pos.y = pos1.y + (pos5.y - pos1.y) * 2 / 4;
-        } else if (h == 4) {
-          pos.y = pos1.y + (pos5.y - pos1.y) * 3 / 4;
-        } else if (h == 5) {
-          pos.y = pos5.y;
-        }
+        GPoint pos_ref = square_perimeter_point(center, DEG_TO_TRIGANGLE(1 * 30), 0, 0);
+        pos.x = pos_ref.x;  // x-aligned with 1
+        // Use actual circular position for y
+        GPoint pos_h = square_perimeter_point(center, DEG_TO_TRIGANGLE(h * 30), 0, 0);
+        pos.y = pos_h.y;
       }
-      // Left side: 11,10,9,8,7 evenly spaced vertically, x-aligned with 11
+      // Left side: 11,10,9,8,7 use their actual circular positions, x-aligned with 11
       else if (h == 7 || h == 8 || h == 9 || h == 10 || h == 11) {
-        GPoint pos11 = square_perimeter_point(center, DEG_TO_TRIGANGLE(11 * 30), 0, 0);
-        GPoint pos7 = square_perimeter_point(center, DEG_TO_TRIGANGLE(7 * 30), 0, 0);
-        pos.x = pos11.x;  // x-aligned with 11
-        // Evenly space all 5 numbers: 11 at 0%, 10 at 25%, 9 at 50%, 8 at 75%, 7 at 100%
-        if (h == 11) {
-          pos.y = pos11.y;
-        } else if (h == 10) {
-          pos.y = pos11.y + (pos7.y - pos11.y) * 1 / 4;
-        } else if (h == 9) {
-          pos.y = pos11.y + (pos7.y - pos11.y) * 2 / 4;
-        } else if (h == 8) {
-          pos.y = pos11.y + (pos7.y - pos11.y) * 3 / 4;
-        } else if (h == 7) {
-          pos.y = pos7.y;
-        }
+        GPoint pos_ref = square_perimeter_point(center, DEG_TO_TRIGANGLE(11 * 30), 0, 0);
+        pos.x = pos_ref.x;  // x-aligned with 11
+        // Use actual circular position for y
+        GPoint pos_h = square_perimeter_point(center, DEG_TO_TRIGANGLE(h * 30), 0, 0);
+        pos.y = pos_h.y;
       }
     }
 
