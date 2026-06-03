@@ -591,16 +591,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // pos is already set to the correct position from square_perimeter_point above
 
     if (show_icons) {
-      // Move icons inward (toward center) to avoid overlapping markers and being cut off
+      // Position icons so outer edge touches screen edge, with 12px margin for hour markers
+      // (10px marker length + 2px gap)
       int dx = center.x - pos.x;
       int dy = center.y - pos.y;
       int adx = dx < 0 ? -dx : dx;
       int ady = dy < 0 ? -dy : dy;
       int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
       if (dist > 0) {
-        // Move icons 25px inward
-        pos.x = pos.x + dx * 25 / dist;
-        pos.y = pos.y + dy * 25 / dist;
+        // Position at perimeter minus 12px margin (icon_half + 12px)
+        pos.x = pos.x + dx * 12 / dist;
+        pos.y = pos.y + dy * 12 / dist;
       }
       
       if (is_top_bottom) {
