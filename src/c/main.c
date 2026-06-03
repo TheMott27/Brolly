@@ -618,20 +618,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          // Top icons: move down by (icon_height/2 + marker_length + 2px)
+          // Top icons: center at offset distance from top
           pos.y = (FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Bottom icons: move up by (icon_height/2 + marker_length + 2px)
-          pos.y = SCREEN_H - (FIXED_ICON_SIZE / 2) - FIXED_HOUR_MARKER_LENGTH - 2;
+          // Bottom icons: center at offset distance from bottom
+          pos.y = SCREEN_H - ((FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2);
         }
       } else {
         // Left and right icons
         if (h == 8 || h == 9 || h == 10) {
-          // Left icons: move right by (icon_width/2 + marker_length + 2px)
+          // Left icons: center at offset distance from left
           pos.x = (FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Right icons: move left by (icon_width/2 + marker_length + 2px)
-          pos.x = SCREEN_W - (FIXED_ICON_SIZE / 2) - FIXED_HOUR_MARKER_LENGTH - 2;
+          // Right icons: center at offset distance from right
+          pos.x = SCREEN_W - ((FIXED_ICON_SIZE / 2) + FIXED_HOUR_MARKER_LENGTH + 2);
         }
       }
       int clock_num = (h == 0) ? 12 : h;
