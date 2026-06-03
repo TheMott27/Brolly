@@ -517,7 +517,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // If abs_sin > abs_cos: left or right side; else: top or bottom
       if (abs_sin > abs_cos) {
         // Left or right side — left side gets extra -1px outward
-        mx = (sin_a < 0) ? -1 : 0;  // left: -1 (1px outward), right: 0
+        mx = (sin_a < 0) ? -2 : 0;  // left: -2 (2px outward), right: 0
       } else {
         // Top or bottom side — flush to screen edge
         my = (cos_a > 0) ? -1 : 0;  // bottom: -1 (1px outward), top: 0
