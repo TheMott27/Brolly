@@ -627,27 +627,33 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (icon < 0) icon = ICON_UNKNOWN;
 
       // Use pre-calculated bounding box for accurate positioning
+      // Bounds reflect the actual visible drawn area of the current icon,
+      // so positioning updates automatically when the forecast changes.
       int gpath_id = icon_code_to_gpath(icon);
       GPathBounds bounds = GPATH_BOUNDS[gpath_id];
-      // Offset pos so the icon's visible area is centered on the edge
-      // For top/bottom: shift x by half-width offset, y is already at edge
-      // For left/right: shift y by half-height offset, x is already at edge
+
+      // icon center = edge offset + half of visible drawn dimension + marker clearance
+      // top:    center_y = bounds.h/2 + FIXED_HOUR_MARKER_LENGTH + 2
+      // bottom: center_y = SCREEN_H - bounds.h/2 - FIXED_HOUR_MARKER_LENGTH - 2
+      // left:   center_x = bounds.w/2 + FIXED_HOUR_MARKER_LENGTH + 2
+      // right:  center_x = SCREEN_W - bounds.w/2 - FIXED_HOUR_MARKER_LENGTH - 2
+      GPoint icon_center = pos;
       if (is_top_bottom) {
-        pos.x = pos.x - bounds.w / 2;
+        // Keep original x (clock perimeter position), adjust y by actual height
         if (h == 0 || h == 1 || h == 11) {
-          pos.y = 0 - (FIXED_ICON_SIZE - bounds.h) / 2;
+          icon_center.y = bounds.h / 2 + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          pos.y = SCREEN_H - bounds.h + (FIXED_ICON_SIZE - bounds.h) / 2;
+          icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_HOUR_MARKER_LENGTH - 2;
         }
       } else {
-        pos.y = pos.y - bounds.h / 2;
-        if (h == 9 || h == 8 || h == 10) {
-          pos.x = 0 - (FIXED_ICON_SIZE - bounds.w) / 2;
+        // Keep original y (clock perimeter position), adjust x by actual width
+        if (h == 8 || h == 9 || h == 10) {
+          icon_center.x = bounds.w / 2 + FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          pos.x = SCREEN_W - bounds.w + (FIXED_ICON_SIZE - bounds.w) / 2;
+          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_HOUR_MARKER_LENGTH - 2;
         }
       }
-      draw_weather_icon(ctx, icon, GPoint(pos.x + FIXED_ICON_SIZE/2, pos.y + FIXED_ICON_SIZE/2), FIXED_ICON_SIZE);
+      draw_weather_icon(ctx, icon, icon_center, FIXED_ICON_SIZE);
 
     } else if (s_settings.display_hour_markers) {
       if (is_top_bottom) {
