@@ -160,7 +160,8 @@
 #define FIXED_HAND_INNER_WIDTH   2
 #define FIXED_HAND_BASE_PX      20
 #define FIXED_ICON_SIZE          24
-#define FIXED_HOUR_MARKER_LENGTH 10  // Depth of hour tick marks (used for icon spacing)
+#define FIXED_HOUR_MARKER_LENGTH 1   // Actual depth of hour tick marks (1px line with 3px stroke width)
+#define FIXED_ICON_EDGE_MARGIN    4   // Gap between icon edge and screen edge (marker + visual breathing room)
 
 // ============================================================
 // SETTINGS STRUCTURE
@@ -632,31 +633,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int gpath_id = icon_code_to_gpath(icon);
       GPathBounds bounds = GPATH_BOUNDS[gpath_id];
 
-      // icon center = edge offset + half of visible drawn dimension + marker clearance
-      // top:    center_y = bounds.h/2 + FIXED_HOUR_MARKER_LENGTH + 2
-      // bottom: center_y = SCREEN_H - bounds.h/2 - FIXED_HOUR_MARKER_LENGTH - 2
-      // left:   center_x = bounds.w/2 + FIXED_HOUR_MARKER_LENGTH + 2
-      // right:  center_x = SCREEN_W - bounds.w/2 - FIXED_HOUR_MARKER_LENGTH - 2
+      // icon center = edge + half of visible drawn dimension + FIXED_ICON_EDGE_MARGIN
+      // FIXED_ICON_EDGE_MARGIN = gap between icon edge and screen edge (independent of marker size)
+      // top:    center_y = bounds.h/2 + FIXED_ICON_EDGE_MARGIN
+      // bottom: center_y = SCREEN_H - bounds.h/2 - FIXED_ICON_EDGE_MARGIN
+      // left:   center_x = bounds.w/2 + FIXED_ICON_EDGE_MARGIN
+      // right:  center_x = SCREEN_W - bounds.w/2 - FIXED_ICON_EDGE_MARGIN
       GPoint icon_center = pos;
       if (is_top_bottom) {
         // Keep original x (clock perimeter position), adjust y by actual height
         if (h == 0 || h == 1 || h == 11) {
-          icon_center.y = bounds.h / 2 + FIXED_HOUR_MARKER_LENGTH + 2;
+          icon_center.y = bounds.h / 2 + FIXED_ICON_EDGE_MARGIN;
         } else {
-          icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_HOUR_MARKER_LENGTH - 2;
+          icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
         }
       } else {
         // Keep original y (clock perimeter position), adjust x by actual width
         if (h == 10) {
-          // Icon 10: left edge offset by marker length from x=0
-          icon_center.x = bounds.w / 2 + FIXED_HOUR_MARKER_LENGTH;
+          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
         } else if (h == 2) {
-          // Icon 2: center at right edge (x=SCREEN_W)
-          icon_center.x = SCREEN_W;
+          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
         } else if (h == 8 || h == 9) {
-          icon_center.x = bounds.w / 2 + FIXED_HOUR_MARKER_LENGTH + 2;
+          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
         } else {
-          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_HOUR_MARKER_LENGTH - 2;
+          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
         }
       }
       draw_weather_icon(ctx, icon, icon_center, FIXED_ICON_SIZE);
