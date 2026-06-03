@@ -32,6 +32,12 @@
 
 #define SCREEN_W 144
 #define SCREEN_H 168
+// Confirmed drawable boundary — aligned with minute markers sitting on first/last visible pixels
+// Left=0, Right=143 (SCREEN_W-1), Top=0, Bottom=167 (SCREEN_H-1)
+#define SCREEN_LEFT   0
+#define SCREEN_RIGHT  (SCREEN_W - 1)
+#define SCREEN_TOP    0
+#define SCREEN_BOTTOM (SCREEN_H - 1)
 
 // Weather condition codes (match JS side)
 #define ICON_UNKNOWN            0

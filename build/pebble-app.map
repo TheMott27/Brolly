@@ -2215,17 +2215,17 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
 
-.debug_info     0x00000000     0x4735
- .debug_info    0x00000000     0x3cbd src/c/main.c.49.o
- .debug_info    0x00003cbd      0x33e aplite/appinfo.auto.c.49.o
- .debug_info    0x00003ffb      0x10d aplite/src/resource_ids.auto.c.49.o
- .debug_info    0x00004108      0x62d src/message_keys.auto.c.49.o
+.debug_info     0x00000000     0x4734
+ .debug_info    0x00000000     0x3cbc src/c/main.c.49.o
+ .debug_info    0x00003cbc      0x33e aplite/appinfo.auto.c.49.o
+ .debug_info    0x00003ffa      0x10d aplite/src/resource_ids.auto.c.49.o
+ .debug_info    0x00004107      0x62d src/message_keys.auto.c.49.o
 
-.debug_abbrev   0x00000000      0x6f9
- .debug_abbrev  0x00000000      0x5ac src/c/main.c.49.o
- .debug_abbrev  0x000005ac       0xb9 aplite/appinfo.auto.c.49.o
- .debug_abbrev  0x00000665       0x4a aplite/src/resource_ids.auto.c.49.o
- .debug_abbrev  0x000006af       0x4a src/message_keys.auto.c.49.o
+.debug_abbrev   0x00000000      0x6ca
+ .debug_abbrev  0x00000000      0x57d src/c/main.c.49.o
+ .debug_abbrev  0x0000057d       0xb9 aplite/appinfo.auto.c.49.o
+ .debug_abbrev  0x00000636       0x4a aplite/src/resource_ids.auto.c.49.o
+ .debug_abbrev  0x00000680       0x4a src/message_keys.auto.c.49.o
 
 .debug_loclists
                 0x00000000     0x21e3
