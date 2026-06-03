@@ -676,13 +676,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
         }
       } else {
-        // Keep original y (clock perimeter position), adjust x by actual width
+        // Left icons (8,9,10): x fixed by edge margin, y evenly spaced between icon 11 (y=0) and icon 7 (y=SCREEN_H)
+        // Icon 10 = 25%, Icon 9 = 50%, Icon 8 = 75%
+        // Right icons (2,3,4): x fixed by edge margin, y from clock perimeter
         if (h == 10) {
           icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 1 / 4;  // 25% between icon 11 (y=0) and icon 7 (y=SCREEN_H)
+        } else if (h == 9) {
+          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 2 / 4;  // 50%
+        } else if (h == 8) {
+          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 3 / 4;  // 75%
         } else if (h == 2) {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-        } else if (h == 8 || h == 9) {
-          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
         } else {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
         }
