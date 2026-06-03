@@ -618,28 +618,32 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         if (h == 0) {
-          // Icon 12: fixed position at top-center
-          pos.x = SCREEN_W / 2;
+          // Icon 12: top-left
+          pos.x = 0;
           pos.y = 0;
         } else if (h == 1 || h == 11) {
-          // Top icons (1, 11): center at (marker_length + 2px) from top
+          // Top icons (1, 11): left edge
+          pos.x = 0;
           pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Bottom icons: center at (marker_length + 2px) from bottom
+          // Bottom icons (5, 6, 7): right edge
+          pos.x = SCREEN_W;
           pos.y = SCREEN_H - (FIXED_HOUR_MARKER_LENGTH + 2);
         }
       } else {
         // Left and right icons
         if (h == 9) {
-          // Icon 9: fixed position at left-center
+          // Icon 9: left-center
           pos.x = 0;
           pos.y = SCREEN_H / 2;
         } else if (h == 8 || h == 10) {
-          // Left icons (8, 10): center at (marker_length + 2px) from left
-          pos.x = FIXED_HOUR_MARKER_LENGTH + 2;
+          // Left icons (8, 10): left edge
+          pos.x = 0;
+          pos.y = FIXED_HOUR_MARKER_LENGTH + 2;
         } else {
-          // Right icons: center at (marker_length + 2px) from right
-          pos.x = SCREEN_W - (FIXED_HOUR_MARKER_LENGTH + 2);
+          // Right icons (2, 3, 4): right edge
+          pos.x = SCREEN_W;
+          pos.y = SCREEN_H - (FIXED_HOUR_MARKER_LENGTH + 2);
         }
       }
       int clock_num = (h == 0) ? 12 : h;
