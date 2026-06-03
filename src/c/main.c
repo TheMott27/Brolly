@@ -591,8 +591,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // pos is already set to the correct position from square_perimeter_point above
 
     if (show_icons) {
-      // Move icons to screen edge (perimeter position, no inward adjustment)
-      // pos is already at the perimeter from square_perimeter_point
+      // Move icons to actual screen edge
+      // Adjust positions to touch screen boundaries (top, bottom, left, right)
+      int dx = pos.x - center.x;
+      int dy = pos.y - center.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      
+      // Determine which edge is closest and push icon to that edge
+      if (adx > ady) {
+        // Left or right edge is closer
+        if (dx > 0) {
+          pos.x = SCREEN_W - icon_half - 2;  // Right edge
+        } else {
+          pos.x = icon_half + 2;  // Left edge
+        }
+      } else {
+        // Top or bottom edge is closer
+        if (dy > 0) {
+          pos.y = SCREEN_H - icon_half - 2;  // Bottom edge
+        } else {
+          pos.y = icon_half + 2;  // Top edge
+        }
+      }
+      
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) pos.y += icon_half + 5;
         else                              pos.y -= icon_half + 5;
