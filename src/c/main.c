@@ -591,7 +591,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // pos is already set to the correct position from square_perimeter_point above
 
     if (show_icons) {
-      // Icons use same position as numbers (no custom positioning)
+      // Move icons to screen edge (perimeter position, no inward adjustment)
+      // pos is already at the perimeter from square_perimeter_point
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) pos.y += icon_half + 5;
         else                              pos.y -= icon_half + 5;
