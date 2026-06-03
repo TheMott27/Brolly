@@ -617,9 +617,16 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          pos.y = 0;  // Top numbers touch top edge (accounting for text centering and padding)
+          pos.y = 0;  // Top numbers centered at top edge
         } else {
-          pos.y -= num_half;
+          pos.y = SCREEN_H;  // Bottom numbers centered at bottom edge
+        }
+      } else {
+        // Left and right numbers
+        if (h == 8 || h == 9 || h == 10) {
+          pos.x = 0;  // Left numbers centered at left edge
+        } else {
+          pos.x = SCREEN_W;  // Right numbers centered at right edge
         }
       }
       int clock_num = (h == 0) ? 12 : h;
