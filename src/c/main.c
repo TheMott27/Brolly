@@ -593,10 +593,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // Right side: align x with position 1
         GPoint pos1 = square_perimeter_point(center, DEG_TO_TRIGANGLE(1 * 30), 0, 0);
         pos.x = pos1.x;
+        pos.y = pos1.y;  // Also align y to remove any vertical offset
       } else if (h == 8 || h == 9 || h == 10) {
         // Left side: align x with position 11
         GPoint pos11 = square_perimeter_point(center, DEG_TO_TRIGANGLE(11 * 30), 0, 0);
         pos.x = pos11.x;
+        pos.y = pos11.y;  // Also align y to remove any vertical offset
       }
     }
 
