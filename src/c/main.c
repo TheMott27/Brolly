@@ -591,19 +591,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // pos is already set to the correct position from square_perimeter_point above
 
     if (show_icons) {
-      // Position icons so outer edge touches screen edge, with 12px margin for hour markers
-      // (10px marker length + 2px gap)
-      int dx = center.x - pos.x;
-      int dy = center.y - pos.y;
-      int adx = dx < 0 ? -dx : dx;
-      int ady = dy < 0 ? -dy : dy;
-      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-      if (dist > 0) {
-        // Position at perimeter minus 12px margin (icon_half + 12px)
-        pos.x = pos.x + dx * 12 / dist;
-        pos.y = pos.y + dy * 12 / dist;
-      }
-      
+      // Icons use same position as numbers (no custom positioning)
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) pos.y += icon_half + 5;
         else                              pos.y -= icon_half + 5;
