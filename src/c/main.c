@@ -616,8 +616,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       }
       
       if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) pos.y += icon_half + 5;
-        else                              pos.y -= icon_half + 5;
+        if (h == 0 || h == 1 || h == 11) {
+          pos.y = num_half + 2;  // Top numbers touch top edge
+        } else {
+          pos.y -= num_half;
+        }
       }
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
