@@ -625,7 +625,29 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-      draw_weather_icon(ctx, icon, pos, FIXED_ICON_SIZE);
+
+      // Use pre-calculated bounding box for accurate positioning
+      int gpath_id = icon_code_to_gpath(icon);
+      GPathBounds bounds = GPATH_BOUNDS[gpath_id];
+      // Offset pos so the icon's visible area is centered on the edge
+      // For top/bottom: shift x by half-width offset, y is already at edge
+      // For left/right: shift y by half-height offset, x is already at edge
+      if (is_top_bottom) {
+        pos.x = pos.x - bounds.w / 2;
+        if (h == 0 || h == 1 || h == 11) {
+          pos.y = 0 - (FIXED_ICON_SIZE - bounds.h) / 2;
+        } else {
+          pos.y = SCREEN_H - bounds.h + (FIXED_ICON_SIZE - bounds.h) / 2;
+        }
+      } else {
+        pos.y = pos.y - bounds.h / 2;
+        if (h == 9 || h == 8 || h == 10) {
+          pos.x = 0 - (FIXED_ICON_SIZE - bounds.w) / 2;
+        } else {
+          pos.x = SCREEN_W - bounds.w + (FIXED_ICON_SIZE - bounds.w) / 2;
+        }
+      }
+      draw_weather_icon(ctx, icon, GPoint(pos.x + FIXED_ICON_SIZE/2, pos.y + FIXED_ICON_SIZE/2), FIXED_ICON_SIZE);
 
     } else if (s_settings.display_hour_markers) {
       if (is_top_bottom) {

@@ -19,6 +19,26 @@ enum WEATHER_GPATH_ID {
   GPATH_WEATHER_UNKNOWN,
 };
 
+// Pre-calculated bounding boxes: { width, height } of the visible drawn area
+// Used for accurate icon positioning (e.g. centering on screen edges)
+typedef struct { int16_t w; int16_t h; } GPathBounds;
+static const GPathBounds GPATH_BOUNDS[] = {
+  [GPATH_CLOUDY_DAY]           = { 24, 15 },
+  [GPATH_HEAVY_RAIN]           = { 24, 23 },
+  [GPATH_HEAVY_SNOW]           = { 24, 24 },
+  [GPATH_LIGHT_RAIN]           = { 24, 24 },
+  [GPATH_LIGHT_SNOW]           = { 24, 24 },
+  [GPATH_PARTLY_CLOUDY]        = { 24, 25 },
+  [GPATH_RAINING_AND_SNOWING]  = { 24, 24 },
+  [GPATH_TIMELINE_SUN]         = { 23, 24 },
+  [GPATH_TIMELINE_MOON]        = { 16, 23 },
+  [GPATH_PARTLY_CLOUDY_NIGHT]  = { 24, 24 },
+  [GPATH_THUNDERSTORM]         = { 24, 19 },
+  [GPATH_UNKNOWN]              = { 23, 23 },
+  [GPATH_TIMELINE_WEATHER]     = { 24, 24 },
+  [GPATH_WEATHER_UNKNOWN]      = { 24, 24 },
+};
+
 // CLOUDY_DAY (single cloud, resized to fill canvas)
 static const int CLOUDY_DAY_PATH_COUNT = 2;
 static const struct GPathInfo CLOUDY_DAY_PATHS[] = {
