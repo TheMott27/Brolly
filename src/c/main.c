@@ -690,6 +690,13 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.y = SCREEN_H * 3 / 4;  // 75%
         } else if (h == 2) {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 1 / 4;  // 25% between icon 1 (y=0) and icon 5 (y=SCREEN_H)
+        } else if (h == 3) {
+          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 2 / 4;  // 50%
+        } else if (h == 4) {
+          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = SCREEN_H * 3 / 4;  // 75%
         } else {
           icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
         }
