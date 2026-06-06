@@ -773,10 +773,28 @@ Pebble.addEventListener('webviewclosed', function(e) {
     }
   });
 
-  // Custom location — store for weather fetch, not sent to watch directly
+  // Update all location/service variables from the new response so getWeather
+  // uses the correct values (custom location, lat/lon, useOM) immediately.
+  getConfigValues(response);
+
+  // Persist location fields that getConfigValues may have updated
   if (response.hasOwnProperty('KEY_CUSTOM_LOCATION')) {
     customLocation = response['KEY_CUSTOM_LOCATION'] || '';
     configData.customLocation = customLocation;
+    // If a custom location is provided, disable useLatLon so getWeather uses it
+    if (customLocation.trim().length > 0) {
+      useLatLon = false;
+      configData.useLatLon = false;
+    }
+  }
+  if (response.hasOwnProperty('useLatLon')) {
+    configData.useLatLon = useLatLon;
+  }
+  if (response.hasOwnProperty('latitude')) {
+    configData.latitude = latitude;
+  }
+  if (response.hasOwnProperty('longitude')) {
+    configData.longitude = longitude;
   }
 
   // Weather service — update useOM flag (KEY_USE_OM = 34)

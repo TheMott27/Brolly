@@ -11,8 +11,15 @@
  * - User-configurable hand colours, font, and complication visibility
  *
  * Battery optimisations:
+ * - Dedicated seconds layer: only a 1px line redraws per second (not the full bg)
  * - Dynamic tick subscription: MINUTE_UNIT when seconds hand hidden, SECOND_UNIT only when needed
- * - Conditional layer redraws: hour/minute/complication only on minute boundary
+ * - Hour hand angle tracking: skip redraw when angle hasn't changed (moves every 2 min)
+ * - Pre-computed marker positions: 60 minute + 12 hour marker points cached in static arrays
+ * - Pre-measured number sizes: text dimensions cached, invalidated only on font change
+ * - Pre-formatted number strings: static array avoids snprintf in draw loop
+ * - Selective layer dirtying in inbox handler: only affected layers redraw on settings change
+ * - Conditional accel subscription: unsubscribed when shake is irrelevant
+ * - Pre-computed sunrise/sunset marker angles: recalculated only on data arrival
  * - bg_layer only redrawn on hour boundary, show_icons toggle, or new data
  * - Complication layer skipped entirely when both complications are off
  * - Battery handler only redraws on visual threshold crossings (50%, 20%)
@@ -30,14 +37,14 @@
 // CONSTANTS
 // ============================================================
 
-#define SCREEN_W 144
-#define SCREEN_H 168
-// Confirmed drawable boundary — aligned with minute markers sitting on first/last visible pixels
-// Left=0, Right=143 (SCREEN_W-1), Top=0, Bottom=167 (SCREEN_H-1)
-#define SCREEN_LEFT   0
-#define SCREEN_RIGHT  (SCREEN_W - 1)
-#define SCREEN_TOP    0
-#define SCREEN_BOTTOM (SCREEN_H - 1)
+#define DESIGN_W 144
+#define DESIGN_H 168
+
+static int s_screen_w = 144;
+static int s_screen_h = 168;
+
+#define POS_X(px) ((px) * s_screen_w / DESIGN_W)
+#define POS_Y(py) ((py) * s_screen_h / DESIGN_H)
 
 // Weather condition codes (match JS side)
 #define ICON_UNKNOWN            0
@@ -76,7 +83,7 @@
 #define ICON_HAZE_N             33
 
 // Message keys — weather data
-#define KEY_ICON_0                  0  // icons 0–23 occupy keys 0–23
+#define KEY_ICON_0                  0
 #define KEY_TEMP_C                 58
 #define KEY_TEMP_F                 59
 
@@ -90,6 +97,10 @@
 #define KEY_DATE_VISIBLE          118
 #define KEY_TEMP_VISIBLE          119
 #define KEY_NUMBER_FONT           121
+#define KEY_NUMBER_SIZE           150
+#define KEY_ICON_SIZE             151
+#define KEY_NUMBER_COLOR_MODE     152
+#define KEY_ICON_COLOR_MODE       153
 #define KEY_BATTERY_INDICATOR_ENABLED 138
 #define KEY_SECONDS_HAND_MODE     142
 #define KEY_SECONDS_SHAKE_DUR     143
@@ -153,7 +164,7 @@
 #define PERSIST_TEMP_F          25
 #define PERSIST_SETTINGS        30
 
-#define SHAKE_DISPLAY_MS        30000
+#define SHAKE_DISPLAY_MS        5000
 #define APP_MSG_INBOX_SIZE      512
 #define APP_MSG_OUTBOX_SIZE     64
 
@@ -166,8 +177,9 @@
 #define FIXED_HAND_INNER_WIDTH   2
 #define FIXED_HAND_BASE_PX      20
 #define FIXED_ICON_SIZE          24
-#define FIXED_HOUR_MARKER_LENGTH 1   // Actual depth of hour tick marks (1px line with 3px stroke width)
-#define FIXED_ICON_EDGE_MARGIN    9   // Gap between icon edge and screen edge (marker + visual breathing room)
+#define FIXED_HOUR_MARKER_LENGTH 1
+
+#define FIXED_ICON_EDGE_MARGIN    9
 
 // ============================================================
 // SETTINGS STRUCTURE
@@ -189,8 +201,11 @@ typedef struct {
   GColor hour_hand_inner;
   GColor min_hand_outer;
   GColor min_hand_inner;
-  int8_t number_font;  // 0=LECO28, 1=Bitham30Black, 2=Gothic24Bold, 3=RobotoCondensed21, 4=DroidSerif28Bold, 5=Bitham42Light
-  // Colour settings
+  int8_t number_font;
+  int8_t number_size;  // 0=small (12px), 1=medium (24px), 2=large (32px)
+  int8_t icon_size;    // 0=small (75%), 1=medium (100%), 2=large (125%)
+  int8_t number_color_mode;  // 0=single color, 1=rainbow
+  int8_t icon_color_mode;    // 0=single color, 1=rainbow
   GColor background_color;
   GColor number_color;
   GColor icon_color;
@@ -203,9 +218,9 @@ typedef struct {
   GColor temp_color;
   bool battery_indicator_enabled;
   GColor seconds_hand_color;
-  int8_t seconds_hand_mode; // 0=never, 1=always, 2=shake only
-  int8_t seconds_shake_dur; // seconds to show on shake: 5, 10, 20, 30
-  int8_t sunrise_marker_visible; // 0=always, 1=with weather icons, 2=off
+  int8_t seconds_hand_mode;
+  int8_t seconds_shake_dur;
+  int8_t sunrise_marker_visible;
   GColor sunrise_marker_color;
   GColor sunset_marker_color;
 } Settings;
@@ -216,6 +231,7 @@ typedef struct {
 
 static Window *s_window;
 static Layer *s_bg_layer;
+static Layer *s_seconds_layer;  // Dedicated layer for seconds hand (lightweight redraw)
 static Layer *s_hour_layer;
 static Layer *s_minute_layer;
 static Layer *s_complication_layer;
@@ -229,27 +245,63 @@ static uint8_t s_battery_pct = 100;
 static bool s_showing_icons = false;
 static AppTimer *s_shake_timer = NULL;
 static AppTimer *s_seconds_timer = NULL;
+static AppTimer *s_numbers_timer = NULL;
 static bool s_showing_seconds = false;
 
-// Test mode: temporarily override battery/BT state for settings preview
+// Test mode
 static AppTimer *s_test_timer = NULL;
 static bool s_test_battery_active = false;
 static bool s_test_bt_active = false;
 
-// Skip first battery handler call to avoid false threshold crossing on startup
 static bool s_battery_handler_initialized = false;
 
-// Sunrise/sunset times (hours and minutes in local time)
-static int8_t s_sunrise_hour = -1;  // -1 = not received yet
+// Sunrise/sunset times (defaults: 6:00 AM and 6:00 PM)
+static int8_t s_sunrise_hour = 6;
 static int8_t s_sunrise_min  = 0;
-static int8_t s_sunset_hour  = -1;
+static int8_t s_sunset_hour  = 18;
 static int8_t s_sunset_min   = 0;
 
-// Shared time snapshot — set once per tick, read by all layer callbacks
+// Forward declaration
+static void cache_sunrise_sunset_markers(void);
+
+// Shared time snapshot
 static struct tm s_tick_tm;
 
-// Last hour at which bg_layer was drawn (avoids redundant redraws)
+// Last hour at which bg_layer was drawn
 static int8_t s_bg_last_hour = -1;
+
+// Hour hand angle tracking — skip redraw if unchanged
+static int32_t s_last_hour_angle = -1;
+
+// ============================================================
+// CACHED MARKER POSITIONS (computed once, reused every redraw)
+// ============================================================
+
+// Minute markers: outer and inner points for all 60 markers
+static GPoint s_min_marker_outer[60];
+static GPoint s_min_marker_inner[60];
+static bool s_markers_cached = false;
+
+// Hour tick marks: outer and inner points for all 12
+static GPoint s_hour_marker_outer[12];
+static GPoint s_hour_marker_inner[12];
+
+// Pre-formatted number strings
+static const char *s_num_strings[12] = {
+  "12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"
+};
+
+// Cached number text sizes (invalidated on font change)
+static GSize s_num_sizes[12];
+static bool s_num_sizes_cached = false;
+
+// Pre-computed sunrise/sunset marker data (recalculated on data arrival)
+static bool s_sr_marker_valid = false;
+static GPoint s_sr_marker_outer;
+static GPoint s_sr_marker_inner;
+static bool s_ss_marker_valid = false;
+static GPoint s_ss_marker_outer;
+static GPoint s_ss_marker_inner;
 
 // ============================================================
 // HELPERS
@@ -259,6 +311,36 @@ static GColor rgb_to_gcolor(int32_t rgb) {
   if (rgb == -1) return GColorClear;
   return GColorFromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 }
+
+// Generate rainbow color based on hour position (0-11)
+// Hue cycles through the spectrum: Red -> Orange -> Yellow -> Green -> Cyan -> Blue -> Magenta -> Red
+static GColor hour_to_rainbow_color(int h) {
+  // Map hour (0-11) to hue (0-360 degrees)
+  int hue = (h * 30) % 360;  // 12 hours * 30 = 360 degrees
+  
+  // Convert HSV to RGB with S=100%, V=100% for vibrant colors
+  int r, g, b;
+  int h_sector = hue / 60;
+  int remainder = (hue % 60) * 255 / 60;
+  
+  switch (h_sector) {
+    case 0:  r = 255; g = remainder; b = 0; break;      // Red -> Yellow
+    case 1:  r = 255 - remainder; g = 255; b = 0; break; // Yellow -> Green
+    case 2:  r = 0; g = 255; b = remainder; break;       // Green -> Cyan
+    case 3:  r = 0; g = 255 - remainder; b = 255; break; // Cyan -> Blue
+    case 4:  r = remainder; g = 0; b = 255; break;       // Blue -> Magenta
+    case 5:  r = 255; g = 0; b = 255 - remainder; break; // Magenta -> Red
+    default: r = 255; g = 0; b = 0; break;              // Fallback to Red
+  }
+  
+  return GColorFromRGB(r, g, b);
+}
+
+#if defined(PBL_PLATFORM_APLITE) || defined(PBL_PLATFORM_DIORITE) || defined(PBL_PLATFORM_FLINT)
+  #define MONO_COLOR(c) (gcolor_equal((c), GColorBlack) ? GColorBlack : GColorWhite)
+#else
+  #define MONO_COLOR(c) (c)
+#endif
 
 static void settings_set_defaults(Settings *s) {
   s->display_hour_markers        = true;
@@ -276,7 +358,11 @@ static void settings_set_defaults(Settings *s) {
   s->hour_hand_inner             = GColorBlack;
   s->min_hand_outer              = GColorBlack;
   s->min_hand_inner              = GColorFromRGB(0, 97, 254);
-  s->number_font                 = 3;  // Roboto Condensed 21
+  s->number_font                 = 3;
+  s->number_size                 = 1;  // medium
+  s->icon_size                   = 1;  // medium
+  s->number_color_mode           = 0;  // single color
+  s->icon_color_mode             = 0;  // single color
   s->background_color            = GColorBlack;
   s->number_color                = GColorWhite;
   s->icon_color                  = GColorWhite;
@@ -285,15 +371,18 @@ static void settings_set_defaults(Settings *s) {
   s->center_dot_50_color         = GColorRed;
   s->center_dot_20_color         = GColorRed;
   s->middle_ring_20_color        = GColorRed;
-  s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
-  s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85); // #858585
+  s->date_color                  = GColorFromRGB(0x85, 0x85, 0x85);
+  s->temp_color                  = GColorFromRGB(0x85, 0x85, 0x85);
   s->battery_indicator_enabled   = true;
   s->seconds_hand_color          = GColorWhite;
   s->seconds_hand_mode           = SECONDS_MODE_SHAKE;
   s->seconds_shake_dur           = 10;
-  s->sunrise_marker_visible      = SUNRISE_MARKER_ALWAYS;
-  s->sunrise_marker_color        = GColorOrange;
-  s->sunset_marker_color         = GColorOxfordBlue;
+    s->sunrise_marker_visible          = SUNRISE_MARKER_ALWAYS;
+  s->sunrise_marker_color            = GColorOrange;
+  s->sunset_marker_color             = GColorOxfordBlue;
+  
+  // Cache sunrise/sunset markers with default times
+  cache_sunrise_sunset_markers();
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -303,17 +392,20 @@ static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
   );
 }
 
-// Maps a clock angle to a point on the rectangular screen perimeter.
 static GPoint square_perimeter_point(GPoint center, int32_t angle,
                                      int margin_x, int margin_y) {
   int32_t sin_a = sin_lookup(angle);
   int32_t cos_a = cos_lookup(angle);
-  int hw = center.x - margin_x;
-  int hh = center.y - margin_y;
-  if (hw < 1) hw = 1;
-  if (hh < 1) hh = 1;
   int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
   int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
+  int left   = center.x - margin_x;
+  int right  = (s_screen_w - 1 - margin_x) - center.x;
+  int top    = center.y - margin_y;
+  int bottom = (s_screen_h - 1 - margin_y) - center.y;
+  int hw = (sin_a > 0) ? right : left;
+  int hh = (cos_a > 0) ? top   : bottom;
+  if (hw < 0) hw = 0;
+  if (hh < 0) hh = 0;
   int32_t t;
   if (abs_sin == 0 && abs_cos == 0) {
     t = TRIG_MAX_RATIO;
@@ -326,10 +418,98 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
     int32_t t_h = (int32_t)((int64_t)hh * TRIG_MAX_RATIO / abs_cos);
     t = t_w < t_h ? t_w : t_h;
   }
-  return GPoint(
+  GPoint pt = GPoint(
     center.x + (int)((int64_t)sin_a * t / TRIG_MAX_RATIO),
     center.y - (int)((int64_t)cos_a * t / TRIG_MAX_RATIO)
   );
+  // Snap edge coordinate to exact boundary pixel
+  if (abs_sin >= abs_cos) {
+    pt.x = (sin_a > 0) ? (s_screen_w - 1 - margin_x) : margin_x;
+  } else {
+    pt.y = (cos_a > 0) ? margin_y : (s_screen_h - 1 - margin_y);
+  }
+  return pt;
+}
+
+// Compute and cache all marker positions
+static void cache_marker_positions(void) {
+  GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
+
+  // Minute markers
+  for (int i = 0; i < 60; i++) {
+    int32_t angle = DEG_TO_TRIGANGLE(i * 6);
+    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+    int dx = center.x - outer_pt.x;
+    int dy = center.y - outer_pt.y;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+    int marker_len = 2;
+#if defined(PBL_PLATFORM_BASALT)
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 4;
+#endif
+    s_min_marker_outer[i] = outer_pt;
+    if (dist > 0) {
+      s_min_marker_inner[i] = GPoint(outer_pt.x + dx * marker_len / dist,
+                                     outer_pt.y + dy * marker_len / dist);
+    } else {
+      s_min_marker_inner[i] = outer_pt;
+    }
+  }
+
+  // Hour tick marks
+  for (int h = 0; h < 12; h++) {
+    int32_t angle = DEG_TO_TRIGANGLE(h * 30);
+    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
+    int dx = center.x - outer_pt.x;
+    int dy = center.y - outer_pt.y;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+    s_hour_marker_outer[h] = outer_pt;
+    if (dist > 0) {
+      s_hour_marker_inner[h] = GPoint(outer_pt.x + dx / dist, outer_pt.y + dy / dist);
+    } else {
+      s_hour_marker_inner[h] = outer_pt;
+    }
+  }
+
+  s_markers_cached = true;
+}
+
+// Pre-compute sunrise/sunset marker geometry from current data
+static void cache_sunrise_sunset_markers(void) {
+  GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
+
+  for (int evt = 0; evt < 2; evt++) {
+    int8_t eh = (evt == 0) ? s_sunrise_hour : s_sunset_hour;
+    int8_t em = (evt == 0) ? s_sunrise_min  : s_sunset_min;
+    bool *valid = (evt == 0) ? &s_sr_marker_valid : &s_ss_marker_valid;
+    GPoint *outer = (evt == 0) ? &s_sr_marker_outer : &s_ss_marker_outer;
+    GPoint *inner = (evt == 0) ? &s_sr_marker_inner : &s_ss_marker_inner;
+
+    if (eh < 0) { *valid = false; continue; }
+
+    int hour12 = (int)eh % 12;
+    int rounded_min = (((int)em + 6) / 12) * 12;
+    if (rounded_min >= 60) { hour12 = (hour12 + 1) % 12; rounded_min = 0; }
+    int marker = hour12 * 5 + rounded_min / 12;
+    int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
+
+    GPoint opt = square_perimeter_point(center, angle, 0, 0);
+    int dx = center.x - opt.x;
+    int dy = center.y - opt.y;
+    int adx = dx < 0 ? -dx : dx;
+    int ady = dy < 0 ? -dy : dy;
+    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+    *outer = opt;
+    if (dist > 0) {
+      *inner = GPoint(opt.x + dx * 5 / dist, opt.y + dy * 5 / dist);
+    } else {
+      *inner = opt;
+    }
+    *valid = true;
+  }
 }
 
 // ============================================================
@@ -338,7 +518,6 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
 
 #include "gpath_weather.h"
 
-// Maps icon condition code directly to gpath ID — no intermediate slot integer.
 static int icon_code_to_gpath(int icon) {
   switch (icon) {
     case ICON_CLEAR:
@@ -377,9 +556,8 @@ static int icon_code_to_gpath(int icon) {
   }
 }
 
-static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz) {
+static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
   int gpath_id = icon_code_to_gpath(icon);
-
   int path_count = 0;
   const GPathInfo *paths = NULL;
 
@@ -406,12 +584,16 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz)
       path_count = UNKNOWN_PATH_COUNT;            paths = UNKNOWN_PATHS;            break;
   }
 
-  // Draw icon paths without heap allocation: translate points on the stack.
   int half = sz / 2;
   int ox = center.x - half;
   int oy = center.y - half;
 
-  graphics_context_set_stroke_color(ctx, s_settings.icon_color);
+  // Choose color based on mode: rainbow or single
+  GColor icon_color = (s_settings.icon_color_mode == 1) 
+    ? hour_to_rainbow_color(h) 
+    : s_settings.icon_color;
+
+  graphics_context_set_stroke_color(ctx, MONO_COLOR(icon_color));
   graphics_context_set_stroke_width(ctx, 1);
   for (int i = 0; i < path_count; i++) {
     int npts = paths[i].num_points;
@@ -429,17 +611,34 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz)
 // HOUR NUMBER DRAWING
 // ============================================================
 
-// Cached font pointer — updated when settings change.
+// Helper to get scaled icon size (0=75%, 1=100%, 2=125%)
+static int get_icon_size(void) {
+  switch (s_settings.icon_size) {
+    case 0:  return (FIXED_ICON_SIZE * 3) / 4;  // 75%
+    case 2:  return (FIXED_ICON_SIZE * 5) / 4;  // 125%
+    case 1:
+    default: return FIXED_ICON_SIZE;             // 100%
+  }
+}
+
 static GFont s_cached_number_font = NULL;
 
 static GFont resolve_number_font(int8_t id) {
+  GFont base_font;
   switch (id) {
-    case 1:  return fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK);
-    case 2:  return fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
-    case 3:  return fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21);
-    case 4:  return fonts_get_system_font(FONT_KEY_DROID_SERIF_28_BOLD);
-    case 5:  return fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
-    default: return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+    case 1:  base_font = fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK); break;
+    case 2:  base_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD); break;
+    case 3:  base_font = fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21); break;
+    case 4:  base_font = fonts_get_system_font(FONT_KEY_DROID_SERIF_28_BOLD); break;
+    case 5:  base_font = fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT); break;
+    default: base_font = fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS); break;
+  }
+  
+  switch (s_settings.number_size) {
+    case 0:  return fonts_get_system_font(FONT_KEY_GOTHIC_14);
+    case 2:  return fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);
+    case 1:
+    default: return base_font;
   }
 }
 
@@ -450,24 +649,55 @@ static GFont get_number_font(void) {
   return s_cached_number_font;
 }
 
-static void draw_hour_number(GContext *ctx, int hour, GPoint center) {
-  if (hour == 0) hour = 12;
-  char buf[3];
-  snprintf(buf, sizeof(buf), "%d", hour);
+// Cache text sizes for all 12 numbers
+static void cache_number_sizes(void) {
   GFont font = get_number_font();
-  GSize ts = graphics_text_layout_get_content_size(buf, font,
-    GRect(0, 0, 40, 40), GTextOverflowModeWordWrap, GTextAlignmentCenter);
-  int tw = ts.w + 4;
-  int th = ts.h + 4;
+  for (int h = 0; h < 12; h++) {
+    GSize sz = graphics_text_layout_get_content_size(s_num_strings[h], font,
+      GRect(0, 0, 40, 40), GTextOverflowModeWordWrap, GTextAlignmentCenter);
+    s_num_sizes[h] = GSize(sz.w + 4, sz.h + 4);
+  }
+  s_num_sizes_cached = true;
+}
+
+static void draw_hour_number(GContext *ctx, int h, GPoint center, GFont font) {
+  const char *buf = s_num_strings[h];
+  if (!s_num_sizes_cached) cache_number_sizes();
+  int tw = s_num_sizes[h].w;
+  int th = s_num_sizes[h].h;
   int tx = center.x - tw / 2;
   int ty = center.y - th / 2;
   if (tx < 2) tx = 2;
   if (ty < 2) ty = 2;
-  if (tx + tw > SCREEN_W - 2) tx = SCREEN_W - 2 - tw;
-  if (ty + th > SCREEN_H - 2) ty = SCREEN_H - 2 - th;
-  graphics_context_set_text_color(ctx, s_settings.number_color);
+  if (tx + tw > s_screen_w - 2) tx = s_screen_w - 2 - tw;
+  if (ty + th > s_screen_h - 2) ty = s_screen_h - 2 - th;
+  
+  // Choose color based on mode: rainbow or single
+  GColor text_color = (s_settings.number_color_mode == 1) 
+    ? hour_to_rainbow_color(h) 
+    : s_settings.number_color;
+  
+  graphics_context_set_text_color(ctx, MONO_COLOR(text_color));
   graphics_draw_text(ctx, buf, font, GRect(tx, ty, tw, th),
     GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+}
+
+// ============================================================
+// SECONDS LAYER — lightweight per-second redraw
+// ============================================================
+
+static void seconds_layer_update(Layer *layer, GContext *ctx) {
+  if (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER) return;
+  if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds) return;
+
+  GRect bounds = layer_get_bounds(layer);
+  GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
+  int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
+  GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+  GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), POS_Y(18));
+  graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_line(ctx, sec_tail, sec_tip);
 }
 
 // ============================================================
@@ -477,21 +707,15 @@ static void draw_hour_number(GContext *ctx, int hour, GPoint center) {
 
 static void bg_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  s_screen_w = bounds.size.w;
+  s_screen_h = bounds.size.h;
+  GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
 
-  graphics_context_set_fill_color(ctx, s_settings.background_color);
+  // Ensure marker positions are cached
+  if (!s_markers_cached) cache_marker_positions();
+
+  graphics_context_set_fill_color(ctx, MONO_COLOR(s_settings.background_color));
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-
-  // ---- Seconds hand (drawn after fill, before markers/numbers so it sits behind them) ----
-  if (s_settings.seconds_hand_mode != SECONDS_MODE_NEVER &&
-      !(s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && !s_showing_seconds)) {
-    int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
-    GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), 18);
-    graphics_context_set_stroke_color(ctx, s_settings.seconds_hand_color);
-    graphics_context_set_stroke_width(ctx, 1);
-    graphics_draw_line(ctx, sec_tail, sec_tip);
-  }
 
   bool show_icons = false;
   switch (s_settings.shake_mode) {
@@ -501,114 +725,57 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // ---- Minute markers (60 × 1px dot) ----
-  // Use margin_x=0, margin_y=0 so markers are flush on all sides.
-  // Per-side offsets applied after to correct for screen boundary differences.
   if (s_settings.display_minor_markers) {
-    graphics_context_set_stroke_color(ctx, s_settings.minute_marker_color);
+    graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.minute_marker_color));
     graphics_context_set_stroke_width(ctx, 1);
     for (int i = 0; i < 60; i++) {
-      int32_t angle = DEG_TO_TRIGANGLE(i * 6);
-      // Determine which side this marker is on (by angle quadrant)
-      // Top: i=45..59 and i=0..14 (315°..360° and 0°..90°-ish)
-      // Right: i=7..22  (42°..132°)
-      // Bottom: i=22..37 (132°..222°)
-      // Left: i=37..52  (222°..312°)
-      // Use margin_x/y per side to make all markers flush with screen edge
-      int mx = 0, my = 0;
-      // Determine dominant side from angle
-      int32_t sin_a = sin_lookup(angle);
-      int32_t cos_a = cos_lookup(angle);
-      int32_t abs_sin = sin_a < 0 ? -sin_a : sin_a;
-      int32_t abs_cos = cos_a < 0 ? -cos_a : cos_a;
-      // If abs_sin > abs_cos: left or right side; else: top or bottom
-      if (abs_sin > abs_cos) {
-        // Left or right side — left side gets extra -1px outward
-        mx = (sin_a < 0) ? -1 : 0;  // left: x=-1 (1px beyond left edge), right: x=SCREEN_W-1
-      } else {
-        // Top or bottom side — flush to screen edge
-        my = (cos_a > 0) ? -1 : 0;  // bottom: -1 (1px outward), top: 0
-      }
-      GPoint outer_pt = square_perimeter_point(center, angle, mx, my);
-      int dx = center.x - outer_pt.x;
-      int dy = center.y - outer_pt.y;
-      int adx = dx < 0 ? -dx : dx;
-      int ady = dy < 0 ? -dy : dy;
-      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-      if (dist == 0) continue;
-      GPoint inner_pt = GPoint(outer_pt.x + dx * 2 / dist, outer_pt.y + dy * 2 / dist);
-      graphics_draw_line(ctx, inner_pt, outer_pt);
+      graphics_draw_line(ctx, s_min_marker_inner[i], s_min_marker_outer[i]);
     }
   }
 
   // ---- Hour tick marks (12 × 3px wide, 1px deep) ----
-  graphics_context_set_stroke_color(ctx, s_settings.hour_marker_color);
+  graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.hour_marker_color));
   graphics_context_set_stroke_width(ctx, 3);
   for (int h = 0; h < 12; h++) {
-    int32_t angle = DEG_TO_TRIGANGLE(h * 30);
-    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-    int dx = center.x - outer_pt.x;
-    int dy = center.y - outer_pt.y;
-    int adx = dx < 0 ? -dx : dx;
-    int ady = dy < 0 ? -dy : dy;
-    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-    if (dist == 0) continue;
-    GPoint inner_pt = GPoint(outer_pt.x + dx / dist, outer_pt.y + dy / dist);
-    graphics_draw_line(ctx, inner_pt, outer_pt);
+    graphics_draw_line(ctx, s_hour_marker_inner[h], s_hour_marker_outer[h]);
   }
 
   // ---- Sunrise / sunset markers ----
-  // 5x5px filled square at the event's clock position.
-  // Sunrise = sunrise_marker_color, sunset = sunset_marker_color (user-configurable).
-  // Visibility: always, with weather icons, or off.
-  // Position formula: marker = (hour%12)*5 + round(minutes/12), angle = marker*6°
   bool show_sr_ss = false;
   switch (s_settings.sunrise_marker_visible) {
     case SUNRISE_MARKER_ALWAYS:       show_sr_ss = true;            break;
     case SUNRISE_MARKER_WITH_WEATHER: show_sr_ss = show_icons;      break;
     case SUNRISE_MARKER_OFF:          show_sr_ss = false;           break;
   }
-  if (show_sr_ss && (s_sunrise_hour >= 0 || s_sunset_hour >= 0)) {
+  if (show_sr_ss) {
     int now_min = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
 
-    for (int evt = 0; evt < 2; evt++) {
-      int8_t eh = (evt == 0) ? s_sunrise_hour : s_sunset_hour;
-      int8_t em = (evt == 0) ? s_sunrise_min  : s_sunset_min;
-      if (eh < 0) continue;
-
-      int event_min = (int)eh * 60 + (int)em;
+    if (s_sr_marker_valid) {
+      int event_min = (int)s_sunrise_hour * 60 + (int)s_sunrise_min;
       int delta = event_min - now_min;
-      if (delta < 0) delta += 1440;  // wrap to next day
-      if (delta > 720) continue;     // more than 12 hours away — skip
-
-      // Map event time to nearest minute marker (0-59)
-      int hour12 = (int)eh % 12;
-      int rounded_min = (((int)em + 6) / 12) * 12;  // round to nearest 12
-      if (rounded_min >= 60) { hour12 = (hour12 + 1) % 12; rounded_min = 0; }
-      int marker = hour12 * 5 + rounded_min / 12;  // 0-59
-      int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
-
-      // Draw a 3px wide, 5px long marker from the screen edge inward
-      GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-      int dx = center.x - outer_pt.x;
-      int dy = center.y - outer_pt.y;
-      int adx = dx < 0 ? -dx : dx;
-      int ady = dy < 0 ? -dy : dy;
-      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-      if (dist == 0) continue;
-      // Step 5px inward along the inward direction
-      GPoint inner_pt = GPoint(outer_pt.x + dx * 5 / dist,
-                               outer_pt.y + dy * 5 / dist);
-
-      GColor marker_color = (evt == 0) ? s_settings.sunrise_marker_color : s_settings.sunset_marker_color;
-      graphics_context_set_stroke_color(ctx, marker_color);
-      graphics_context_set_stroke_width(ctx, 3);
-      graphics_draw_line(ctx, inner_pt, outer_pt);
+      if (delta < 0) delta += 1440;
+      if (delta <= 720) {
+        graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunrise_marker_color));
+        graphics_context_set_stroke_width(ctx, 3);
+        graphics_draw_line(ctx, s_sr_marker_inner, s_sr_marker_outer);
+      }
+    }
+    if (s_ss_marker_valid) {
+      int event_min = (int)s_sunset_hour * 60 + (int)s_sunset_min;
+      int delta = event_min - now_min;
+      if (delta < 0) delta += 1440;
+      if (delta <= 720) {
+        graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunset_marker_color));
+        graphics_context_set_stroke_width(ctx, 3);
+        graphics_draw_line(ctx, s_ss_marker_inner, s_ss_marker_outer);
+      }
     }
   }
 
   // ---- Hour numbers / icons ----
-  const int icon_half = FIXED_ICON_SIZE / 2;
-  const int num_half  = 14;
+  const int NUM_GAP = 2;
+  GFont num_font = get_number_font();
+  if (!s_num_sizes_cached) cache_number_sizes();
   int cur_hour = s_tick_tm.tm_hour;
   int cur_min  = s_tick_tm.tm_min;
 
@@ -617,33 +784,18 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     bool is_top_bottom = (h == 0 || h == 1 || h == 5 || h == 6 || h == 7 || h == 11);
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
-    // No custom positioning — use original clock positions for all numbers
-    // pos is already set to the correct position from square_perimeter_point above
-
     if (show_icons) {
-      // Store original position from clock perimeter
-      GPoint orig_pos = pos;
-      
       if (is_top_bottom) {
-        // Top/bottom icons: keep original x, adjust y
         if (h == 0 || h == 1 || h == 11) {
-          // Top icons (12, 1, 11): keep x, place at top
           pos.y = 0;
         } else {
-          // Bottom icons (5, 6, 7): keep x, place at bottom
-          pos.y = SCREEN_H;
+          pos.y = s_screen_h - 1;
         }
       } else {
-        // Left/right icons: keep original y, adjust x
-        if (h == 9) {
-          // Icon 9: place at left-center
-          pos.x = 0;
-        } else if (h == 8 || h == 10) {
-          // Left icons (8, 10): keep y, place at left edge
+        if (h == 9 || h == 8 || h == 10) {
           pos.x = 0;
         } else {
-          // Right icons (2, 3, 4): keep y, place at right edge
-          pos.x = SCREEN_W;
+          pos.x = s_screen_w - 1;
         }
       }
       int clock_num = (h == 0) ? 12 : h;
@@ -655,63 +807,61 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
 
-      // Use pre-calculated bounding box for accurate positioning
-      // Bounds reflect the actual visible drawn area of the current icon,
-      // so positioning updates automatically when the forecast changes.
       int gpath_id = icon_code_to_gpath(icon);
       GPathBounds bounds = GPATH_BOUNDS[gpath_id];
 
-      // icon center = edge + half of visible drawn dimension + FIXED_ICON_EDGE_MARGIN
-      // FIXED_ICON_EDGE_MARGIN = gap between icon edge and screen edge (independent of marker size)
-      // top:    center_y = bounds.h/2 + FIXED_ICON_EDGE_MARGIN
-      // bottom: center_y = SCREEN_H - bounds.h/2 - FIXED_ICON_EDGE_MARGIN
-      // left:   center_x = bounds.w/2 + FIXED_ICON_EDGE_MARGIN
-      // right:  center_x = SCREEN_W - bounds.w/2 - FIXED_ICON_EDGE_MARGIN
+      int edge_margin = POS_X(FIXED_ICON_EDGE_MARGIN);
       GPoint icon_center = pos;
       if (is_top_bottom) {
-        // Keep original x (clock perimeter position), adjust y by actual height
         if (h == 0 || h == 1 || h == 11) {
-          icon_center.y = bounds.h / 2 + FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = bounds.h / 2 + edge_margin;
         } else {
-          icon_center.y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
+          icon_center.y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
         }
       } else {
-        // Corner icon adjusted y positions (accounting for edge margin + half icon height):
-        //   Icon 11 / Icon 1  top center_y  = bounds.h/2 + FIXED_ICON_EDGE_MARGIN
-        //   Icon  7 / Icon 5  bot center_y  = SCREEN_H - bounds.h/2 - FIXED_ICON_EDGE_MARGIN
-        // 25/50/75% are calculated between these actual rendered positions.
-        int top_y = bounds.h / 2 + FIXED_ICON_EDGE_MARGIN;
-        int bot_y = SCREEN_H - bounds.h / 2 - FIXED_ICON_EDGE_MARGIN;
+        int top_y = bounds.h / 2 + edge_margin;
+        int bot_y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
         if (h == 10) {
-          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
+          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;
         } else if (h == 9) {
-          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
+          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;
         } else if (h == 8) {
-          icon_center.x = bounds.w / 2 + FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
+          icon_center.x = bounds.w / 2 + edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;
         } else if (h == 2) {
-          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;  // 25%
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;
         } else if (h == 3) {
-          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;  // 50%
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;
         } else if (h == 4) {
-          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
-          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;  // 75%
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
+          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;
         } else {
-          icon_center.x = SCREEN_W - bounds.w / 2 - FIXED_ICON_EDGE_MARGIN;
+          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
         }
       }
-      draw_weather_icon(ctx, icon, icon_center, FIXED_ICON_SIZE);
+      draw_weather_icon(ctx, icon, icon_center, get_icon_size(), h);
 
     } else if (s_settings.display_hour_markers) {
+      int ntw = s_num_sizes[h].w;
+      int nth = s_num_sizes[h].h;
       if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) pos.y += num_half;
-        else                              pos.y -= num_half;
+        if (h == 0 || h == 1 || h == 11) {
+          pos.y = NUM_GAP + nth / 2;
+        } else {
+          pos.y = (s_screen_h - 1) - NUM_GAP - nth / 2;
+        }
+      } else {
+        if (h == 8 || h == 9 || h == 10) {
+          pos.x = NUM_GAP + ntw / 2;
+        } else {
+          pos.x = (s_screen_w - 1) - NUM_GAP - ntw / 2;
+        }
       }
-      draw_hour_number(ctx, h, pos);
+      draw_hour_number(ctx, h, pos, num_font);
     }
   }
 
@@ -730,9 +880,10 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
   int ady = dy < 0 ? -dy : dy;
   int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
   if (dist == 0) return;
+  int hand_base_pos = POS_Y(FIXED_HAND_BASE_PX);
   GPoint base_pt = {
-    .x = center.x + dx * FIXED_HAND_BASE_PX / dist,
-    .y = center.y + dy * FIXED_HAND_BASE_PX / dist,
+    .x = center.x + dx * hand_base_pos / dist,
+    .y = center.y + dy * hand_base_pos / dist,
   };
   graphics_context_set_stroke_color(ctx, outer_color);
   graphics_context_set_stroke_width(ctx, FIXED_HAND_BASE_WIDTH);
@@ -752,64 +903,60 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
 
 static void hour_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
   int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(
     (s_tick_tm.tm_hour % 12) * 30 + s_tick_tm.tm_min / 2);
   draw_inittick_hand(ctx, center, polar_to_point(center, angle, radius * 60 / 100),
-                     s_settings.hour_hand_outer, s_settings.hour_hand_inner);
+                     MONO_COLOR(s_settings.hour_hand_outer), MONO_COLOR(s_settings.hour_hand_inner));
 }
 
 static void minute_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
-  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
   int radius = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
   int32_t angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_min * 6);
   GColor outer = (!s_bt_connected && s_settings.bt_disconnect_min_inner_red)
                  ? s_settings.bt_disconnect_outer_color : s_settings.min_hand_outer;
   GColor inner = (!s_bt_connected && s_settings.bt_disconnect_min_inner_red)
                  ? s_settings.bt_disconnect_inner_color : s_settings.min_hand_inner;
+  outer = MONO_COLOR(outer);
+  inner = MONO_COLOR(inner);
   draw_inittick_hand(ctx, center, polar_to_point(center, angle, radius * 95 / 100),
                      outer, inner);
 
-  // Centre cap colour derivation:
-  //   Normal:   battery_ring=white, outer_ring=sec colour, inner_ring=min inner, dot=hour outer
-  //   50%-20%:  battery_ring turns center_dot_50_color
-  //   <20%:     ALL four elements turn center_dot_20_color (single alert colour)
-  GColor sec_color = (s_settings.seconds_hand_mode == SECONDS_MODE_NEVER)
-                     ? GColorWhite : s_settings.seconds_hand_color;
+  // Centre cap
   GColor battery_ring, inner_ring, dot;
-
   if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_LOW) {
-    // <20%: all cap elements turn the low-battery alert colour
-    GColor alert = s_settings.center_dot_20_color;
+    GColor alert = MONO_COLOR(s_settings.center_dot_20_color);
     battery_ring = alert;
     inner_ring   = alert;
     dot          = alert;
   } else if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_MID) {
-    // 50%-20%: only battery ring changes
-    battery_ring = s_settings.center_dot_50_color;
-    inner_ring   = s_settings.min_hand_inner;
-    dot          = s_settings.hour_hand_outer;
+    battery_ring = MONO_COLOR(s_settings.center_dot_50_color);
+    inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
+    dot          = MONO_COLOR(s_settings.hour_hand_outer);
   } else {
-    // >50% or indicator off: all use normal hand-derived colours
     battery_ring = GColorWhite;
-    inner_ring   = s_settings.min_hand_inner;
-    dot          = s_settings.hour_hand_outer;
+    inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
+    dot          = MONO_COLOR(s_settings.hour_hand_outer);
   }
 
-  // Draw order (outside in):
-  //   battery_ring(r7) → black sep(r5) → inner_ring(r4) → black sep(r2) → dot(r1)
+  int r5 = POS_X(7);
+  int r4 = POS_X(5);
+  int r3 = POS_X(4);
+  int r2 = POS_X(2);
+  int r1 = POS_X(1);
   graphics_context_set_fill_color(ctx, battery_ring);
-  graphics_fill_circle(ctx, center, 7);
+  graphics_fill_circle(ctx, center, r5);
   graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_fill_circle(ctx, center, 5);
+  graphics_fill_circle(ctx, center, r4);
   graphics_context_set_fill_color(ctx, inner_ring);
-  graphics_fill_circle(ctx, center, 4);
+  graphics_fill_circle(ctx, center, r3);
   graphics_context_set_fill_color(ctx, GColorBlack);
-  graphics_fill_circle(ctx, center, 2);
+  graphics_fill_circle(ctx, center, r2);
   graphics_context_set_fill_color(ctx, dot);
-  graphics_fill_circle(ctx, center, 1);
+  graphics_fill_circle(ctx, center, r1);
 }
 
 // ============================================================
@@ -825,8 +972,8 @@ static void draw_centred_text(GContext *ctx, const char *str, GFont font,
   int rh = ts.h + 6;
   int rx = cx - rw / 2;
   int ry = y  - rh / 2;
-  if (rx < 2) rx = 2;
-  if (ry < 2) ry = 2;
+  if (rx < 0) rx = 0;
+  if (ry < 0) ry = 0;
   graphics_context_set_text_color(ctx, color);
   graphics_draw_text(ctx, str, font, GRect(rx, ry, rw, rh),
     GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
@@ -849,8 +996,8 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   }
   if (!show_temp && !show_date) return;
 
-  int cx = bounds.size.w / 2;
-  int comp_y = (s_tick_tm.tm_min >= 20 && s_tick_tm.tm_min <= 40) ? 45 : 105;
+  int cx = (bounds.size.w - 1) / 2;
+  int comp_y = (s_tick_tm.tm_min >= 20 && s_tick_tm.tm_min <= 40) ? POS_Y(45) : POS_Y(105);
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
 
   if (show_temp) {
@@ -860,7 +1007,7 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     } else {
       snprintf(temp_str, sizeof(temp_str), "%d\xc2\xb0" "C", (int)s_temp_c);
     }
-    draw_centred_text(ctx, temp_str, font, cx, comp_y, bounds.size.w, s_settings.temp_color);
+    draw_centred_text(ctx, temp_str, font, cx, comp_y, bounds.size.w, MONO_COLOR(s_settings.temp_color));
   }
 
   if (show_date) {
@@ -869,14 +1016,26 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     snprintf(date_str, sizeof(date_str), "%s %d",
              day_names[s_tick_tm.tm_wday], s_tick_tm.tm_mday);
     draw_centred_text(ctx, date_str, font, cx,
-                      show_temp ? comp_y + 18 : comp_y,
-                      bounds.size.w, s_settings.date_color);
+                      show_temp ? comp_y + POS_Y(18) : comp_y,
+                      bounds.size.w, MONO_COLOR(s_settings.date_color));
   }
 }
 
 // ============================================================
 // EVENT HANDLERS
 // ============================================================
+
+static void shake_timer_callback(void *data);
+
+static void numbers_timer_callback(void *data) {
+  s_numbers_timer = NULL;
+  s_showing_icons = true;
+  s_bg_last_hour = -1;
+  layer_mark_dirty(s_bg_layer);
+  layer_mark_dirty(s_complication_layer);
+  if (s_shake_timer) app_timer_cancel(s_shake_timer);
+  s_shake_timer = app_timer_register(SHAKE_DISPLAY_MS, shake_timer_callback, NULL);
+}
 
 static void shake_timer_callback(void *data) {
   s_shake_timer = NULL;
@@ -886,17 +1045,14 @@ static void shake_timer_callback(void *data) {
   layer_mark_dirty(s_complication_layer);
 }
 
-// Forward declaration for tick_handler (used by update_tick_subscription)
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 
-// Determines whether we need per-second ticks right now.
 static bool needs_second_ticks(void) {
   return (s_settings.seconds_hand_mode == SECONDS_MODE_ALWAYS) ||
          (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE && s_showing_seconds);
 }
 
-// Switches between SECOND_UNIT and MINUTE_UNIT based on current state.
-static bool s_subscribed_seconds = false;  // Set correctly in init() after update_tick_subscription()
+static bool s_subscribed_seconds = false;
 static void update_tick_subscription(void) {
   bool want_seconds = needs_second_ticks();
   if (want_seconds && !s_subscribed_seconds) {
@@ -908,26 +1064,50 @@ static void update_tick_subscription(void) {
   }
 }
 
+// Forward declaration for accel_tap_handler (used by update_accel_subscription)
+static void accel_tap_handler(AccelAxisType axis, int32_t direction);
+
+// Manage accel subscription based on whether shake does anything
+static bool s_accel_subscribed = false;
+static void update_accel_subscription(void) {
+  bool need_accel = (s_settings.shake_mode == SHAKE_MODE_ON_SHAKE) ||
+                    (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE);
+  if (need_accel && !s_accel_subscribed) {
+    accel_tap_service_subscribe(accel_tap_handler);
+    s_accel_subscribed = true;
+  } else if (!need_accel && s_accel_subscribed) {
+    accel_tap_service_unsubscribe();
+    s_accel_subscribed = false;
+  }
+}
+
 static void seconds_timer_callback(void *data) {
   s_seconds_timer = NULL;
   s_showing_seconds = false;
-  layer_mark_dirty(s_bg_layer);
-  update_tick_subscription();  // Drop back to MINUTE_UNIT
+  layer_mark_dirty(s_seconds_layer);
+  update_tick_subscription();
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_tick_tm = *tick_time;
 
-  // Seconds layer: only redraw when seconds are actually visible
+  // Seconds hand: only dirty the lightweight seconds layer
   if (needs_second_ticks()) {
-    layer_mark_dirty(s_bg_layer);
+    layer_mark_dirty(s_seconds_layer);
   }
 
   // Minute hand and complication: only on minute boundary
   if (units_changed & MINUTE_UNIT) {
     layer_mark_dirty(s_minute_layer);
-    layer_mark_dirty(s_hour_layer);
-    // Only dirty complication layer if at least one complication is visible
+
+    // Hour hand: only dirty if angle actually changed (moves every 2 min)
+    int32_t hour_angle = DEG_TO_TRIGANGLE(
+      (s_tick_tm.tm_hour % 12) * 30 + s_tick_tm.tm_min / 2);
+    if (hour_angle != s_last_hour_angle) {
+      s_last_hour_angle = hour_angle;
+      layer_mark_dirty(s_hour_layer);
+    }
+
     if (s_settings.date_visible != COMPLICATION_OFF ||
         s_settings.temp_visible != COMPLICATION_OFF) {
       layer_mark_dirty(s_complication_layer);
@@ -943,13 +1123,11 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 static void test_timer_callback(void *context) {
   s_test_timer = NULL;
   if (s_test_battery_active) {
-    // Restore real battery level from the system
     BatteryChargeState charge = battery_state_service_peek();
     s_battery_pct = charge.charge_percent;
     s_test_battery_active = false;
   }
   if (s_test_bt_active) {
-    // Restore real BT state from the system
     s_bt_connected = connection_service_peek_pebble_app_connection();
     s_test_bt_active = false;
   }
@@ -958,26 +1136,32 @@ static void test_timer_callback(void *context) {
 }
 
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
-  if (s_settings.shake_mode != SHAKE_MODE_ON_SHAKE) return;
-  s_showing_icons = true;
-  s_bg_last_hour = -1;
-  layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_complication_layer);
+  if (s_settings.shake_mode == SHAKE_MODE_ON_SHAKE) {
+    // Cancel any in-flight timers
+    if (s_numbers_timer) app_timer_cancel(s_numbers_timer);
+    if (s_shake_timer) app_timer_cancel(s_shake_timer);
 
-  if (s_shake_timer) app_timer_cancel(s_shake_timer);
-  s_shake_timer = app_timer_register(5000, shake_timer_callback, NULL);
+    if (s_showing_icons) {
+      s_shake_timer = app_timer_register(SHAKE_DISPLAY_MS, shake_timer_callback, NULL);
+      // Fall through to seconds hand check below
+    } else {
+      s_showing_icons = false;
+      s_bg_last_hour = -1;
+      layer_mark_dirty(s_bg_layer);
+      layer_mark_dirty(s_complication_layer);
+      s_numbers_timer = app_timer_register(500, numbers_timer_callback, NULL);
+    }
+  }
 
-  // Also show seconds hand on shake if in shake mode
+  // Show seconds hand on shake if in shake mode
   if (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE) {
-    // Refresh time snapshot so seconds hand appears at the correct position immediately,
-    // not at the stale position from the last minute-boundary tick.
     time_t now = time(NULL);
     s_tick_tm = *localtime(&now);
     s_showing_seconds = true;
-    layer_mark_dirty(s_bg_layer);
+    layer_mark_dirty(s_seconds_layer);
     if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
     s_seconds_timer = app_timer_register((uint32_t)s_settings.seconds_shake_dur * 1000, seconds_timer_callback, NULL);
-    update_tick_subscription();  // Switch to SECOND_UNIT while showing
+    update_tick_subscription();
   }
 }
 
@@ -985,12 +1169,10 @@ static void battery_handler(BatteryChargeState charge) {
   if (!s_settings.battery_indicator_enabled) return;
   uint8_t old_pct = s_battery_pct;
   s_battery_pct = charge.charge_percent;
-  // Skip first call to avoid false threshold crossing on startup
   if (!s_battery_handler_initialized) {
     s_battery_handler_initialized = true;
     return;
   }
-  // Only redraw if battery crossed a visual threshold (50% or 20%)
   bool crossed = (old_pct > FIXED_BATT_PCT_MID) != (s_battery_pct > FIXED_BATT_PCT_MID) ||
                  (old_pct > FIXED_BATT_PCT_LOW) != (s_battery_pct > FIXED_BATT_PCT_LOW);
   if (crossed) layer_mark_dirty(s_minute_layer);
@@ -1009,122 +1191,142 @@ static void bt_handler(bool connected) {
 }
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+  // Track which layers need redrawing
+  bool dirty_bg = false;
+  bool dirty_hands = false;
+  bool dirty_complication = false;
+
   for (int i = 0; i < 24; i++) {
     Tuple *t = dict_find(iter, KEY_ICON_0 + i);
-    if (t) s_icons[i] = (int8_t)t->value->int32;
+    if (t) { s_icons[i] = (int8_t)t->value->int32; dirty_bg = true; }
   }
 
   Tuple *tc = dict_find(iter, KEY_TEMP_C);
-  if (tc) s_temp_c = (int16_t)tc->value->int32;
+  if (tc) { s_temp_c = (int16_t)tc->value->int32; dirty_complication = true; }
   Tuple *tf = dict_find(iter, KEY_TEMP_F);
-  if (tf) s_temp_f = (int16_t)tf->value->int32;
+  if (tf) { s_temp_f = (int16_t)tf->value->int32; dirty_complication = true; }
 
   Tuple *dhm = dict_find(iter, KEY_DISPLAY_HOUR_MARKERS);
-  if (dhm) s_settings.display_hour_markers = dhm->value->int32 != 0;
+  if (dhm) { s_settings.display_hour_markers = dhm->value->int32 != 0; dirty_bg = true; }
   Tuple *dmm = dict_find(iter, KEY_DISPLAY_MINOR_MARKERS);
-  if (dmm) s_settings.display_minor_markers = dmm->value->int32 != 0;
+  if (dmm) { s_settings.display_minor_markers = dmm->value->int32 != 0; dirty_bg = true; }
   Tuple *sm = dict_find(iter, KEY_SHAKE_MODE);
-  if (sm) s_settings.shake_mode = (int8_t)sm->value->int32;
+  if (sm) { s_settings.shake_mode = (int8_t)sm->value->int32; dirty_bg = true; }
   Tuple *dv = dict_find(iter, KEY_DATE_VISIBLE);
-  if (dv) s_settings.date_visible = (int8_t)dv->value->int32;
+  if (dv) { s_settings.date_visible = (int8_t)dv->value->int32; dirty_complication = true; }
   Tuple *tv = dict_find(iter, KEY_TEMP_VISIBLE);
-  if (tv) s_settings.temp_visible = (int8_t)tv->value->int32;
+  if (tv) { s_settings.temp_visible = (int8_t)tv->value->int32; dirty_complication = true; }
   Tuple *tu = dict_find(iter, KEY_TEMP_UNIT);
-  if (tu) s_settings.temp_unit = (int8_t)tu->value->int32;
+  if (tu) { s_settings.temp_unit = (int8_t)tu->value->int32; dirty_complication = true; }
   Tuple *btmr = dict_find(iter, MESSAGE_KEY_KEY_BT_DISCONNECT_MIN_INNER_RED);
-  if (btmr) s_settings.bt_disconnect_min_inner_red = btmr->value->int32 != 0;
+  if (btmr) { s_settings.bt_disconnect_min_inner_red = btmr->value->int32 != 0; dirty_hands = true; }
   Tuple *btoc = dict_find(iter, KEY_BT_DISCONNECT_OUTER_COLOR);
-  if (btoc) s_settings.bt_disconnect_outer_color = rgb_to_gcolor(btoc->value->int32);
+  if (btoc) { s_settings.bt_disconnect_outer_color = rgb_to_gcolor(btoc->value->int32); dirty_hands = true; }
   Tuple *btic = dict_find(iter, KEY_BT_DISCONNECT_INNER_COLOR);
-  if (btic) s_settings.bt_disconnect_inner_color = rgb_to_gcolor(btic->value->int32);
+  if (btic) { s_settings.bt_disconnect_inner_color = rgb_to_gcolor(btic->value->int32); dirty_hands = true; }
   Tuple *vbt = dict_find(iter, KEY_VIBRATE_BT_DISCONNECT);
   if (vbt) s_settings.vibrate_bt_disconnect = vbt->value->int32 != 0;
   Tuple *vbtr = dict_find(iter, KEY_VIBRATE_BT_RECONNECT);
   if (vbtr) s_settings.vibrate_bt_reconnect = vbtr->value->int32 != 0;
   Tuple *hho = dict_find(iter, KEY_HOUR_HAND_OUTER);
-  if (hho) s_settings.hour_hand_outer = rgb_to_gcolor(hho->value->int32);
+  if (hho) { s_settings.hour_hand_outer = rgb_to_gcolor(hho->value->int32); dirty_hands = true; }
   Tuple *hhi = dict_find(iter, KEY_HOUR_HAND_INNER);
-  if (hhi) s_settings.hour_hand_inner = rgb_to_gcolor(hhi->value->int32);
+  if (hhi) { s_settings.hour_hand_inner = rgb_to_gcolor(hhi->value->int32); dirty_hands = true; }
   Tuple *mho = dict_find(iter, KEY_MIN_HAND_OUTER);
-  if (mho) s_settings.min_hand_outer  = rgb_to_gcolor(mho->value->int32);
+  if (mho) { s_settings.min_hand_outer = rgb_to_gcolor(mho->value->int32); dirty_hands = true; }
   Tuple *mhi = dict_find(iter, KEY_MIN_HAND_INNER);
-  if (mhi) s_settings.min_hand_inner  = rgb_to_gcolor(mhi->value->int32);
+  if (mhi) { s_settings.min_hand_inner = rgb_to_gcolor(mhi->value->int32); dirty_hands = true; }
   Tuple *nf = dict_find(iter, KEY_NUMBER_FONT);
   if (nf) {
     s_settings.number_font = (int8_t)nf->value->int32;
-    s_cached_number_font = NULL;  // Invalidate font cache
+    s_cached_number_font = NULL;
+    s_num_sizes_cached = false;  // Invalidate cached sizes
+    dirty_bg = true;
   }
+  Tuple *ns = dict_find(iter, KEY_NUMBER_SIZE);
+  if (ns) { s_settings.number_size = (int8_t)ns->value->int32; s_cached_number_font = NULL; s_num_sizes_cached = false; dirty_bg = true; }
+  Tuple *is = dict_find(iter, KEY_ICON_SIZE);
+  if (is) { s_settings.icon_size = (int8_t)is->value->int32; dirty_bg = true; }
+  Tuple *ncm = dict_find(iter, KEY_NUMBER_COLOR_MODE);
+  if (ncm) { s_settings.number_color_mode = (int8_t)ncm->value->int32; dirty_bg = true; }
+  Tuple *icm = dict_find(iter, KEY_ICON_COLOR_MODE);
+  if (icm) { s_settings.icon_color_mode = (int8_t)icm->value->int32; dirty_bg = true; }
   Tuple *bgc = dict_find(iter, KEY_BACKGROUND_COLOR);
-  if (bgc) s_settings.background_color = rgb_to_gcolor(bgc->value->int32);
+  if (bgc) { s_settings.background_color = rgb_to_gcolor(bgc->value->int32); dirty_bg = true; }
   Tuple *nc = dict_find(iter, KEY_NUMBER_COLOR);
-  if (nc) s_settings.number_color = rgb_to_gcolor(nc->value->int32);
+  if (nc) { s_settings.number_color = rgb_to_gcolor(nc->value->int32); dirty_bg = true; }
   Tuple *ic = dict_find(iter, KEY_ICON_COLOR);
-  if (ic) s_settings.icon_color = rgb_to_gcolor(ic->value->int32);
+  if (ic) { s_settings.icon_color = rgb_to_gcolor(ic->value->int32); dirty_bg = true; }
   Tuple *hmc = dict_find(iter, KEY_HOUR_MARKER_COLOR);
-  if (hmc) s_settings.hour_marker_color = rgb_to_gcolor(hmc->value->int32);
+  if (hmc) { s_settings.hour_marker_color = rgb_to_gcolor(hmc->value->int32); dirty_bg = true; }
   Tuple *mmc = dict_find(iter, KEY_MINUTE_MARKER_COLOR);
-  if (mmc) s_settings.minute_marker_color = rgb_to_gcolor(mmc->value->int32);
+  if (mmc) { s_settings.minute_marker_color = rgb_to_gcolor(mmc->value->int32); dirty_bg = true; }
   Tuple *cd50 = dict_find(iter, KEY_CENTER_DOT_50_COLOR);
-  if (cd50) s_settings.center_dot_50_color = rgb_to_gcolor(cd50->value->int32);
+  if (cd50) { s_settings.center_dot_50_color = rgb_to_gcolor(cd50->value->int32); dirty_hands = true; }
   Tuple *cd20 = dict_find(iter, KEY_CENTER_DOT_20_COLOR);
-  if (cd20) s_settings.center_dot_20_color = rgb_to_gcolor(cd20->value->int32);
+  if (cd20) { s_settings.center_dot_20_color = rgb_to_gcolor(cd20->value->int32); dirty_hands = true; }
   Tuple *mr20 = dict_find(iter, KEY_MIDDLE_RING_20_COLOR);
-  if (mr20) s_settings.middle_ring_20_color = rgb_to_gcolor(mr20->value->int32);
+  if (mr20) { s_settings.middle_ring_20_color = rgb_to_gcolor(mr20->value->int32); dirty_hands = true; }
   Tuple *dc = dict_find(iter, KEY_DATE_COLOR);
-  if (dc) s_settings.date_color = rgb_to_gcolor(dc->value->int32);
+  if (dc) { s_settings.date_color = rgb_to_gcolor(dc->value->int32); dirty_complication = true; }
   Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR);
-  if (tpc) s_settings.temp_color = rgb_to_gcolor(tpc->value->int32);
+  if (tpc) { s_settings.temp_color = rgb_to_gcolor(tpc->value->int32); dirty_complication = true; }
   Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
-  if (bie) s_settings.battery_indicator_enabled = (bool)bie->value->int32;
+  if (bie) { s_settings.battery_indicator_enabled = (bool)bie->value->int32; dirty_hands = true; }
+
   // Sunrise / sunset
+  bool sr_ss_changed = false;
   Tuple *srh = dict_find(iter, KEY_SUNRISE_HOUR);
-  if (srh) s_sunrise_hour = (int8_t)srh->value->int32;
+  if (srh) { s_sunrise_hour = (int8_t)srh->value->int32; sr_ss_changed = true; }
   Tuple *srm = dict_find(iter, KEY_SUNRISE_MINUTE);
-  if (srm) s_sunrise_min  = (int8_t)srm->value->int32;
+  if (srm) { s_sunrise_min = (int8_t)srm->value->int32; sr_ss_changed = true; }
   Tuple *ssh = dict_find(iter, KEY_SUNSET_HOUR);
-  if (ssh) s_sunset_hour  = (int8_t)ssh->value->int32;
+  if (ssh) { s_sunset_hour = (int8_t)ssh->value->int32; sr_ss_changed = true; }
   Tuple *ssm = dict_find(iter, KEY_SUNSET_MINUTE);
-  if (ssm) s_sunset_min   = (int8_t)ssm->value->int32;
+  if (ssm) { s_sunset_min = (int8_t)ssm->value->int32; sr_ss_changed = true; }
+  if (sr_ss_changed) {
+    cache_sunrise_sunset_markers();
+    dirty_bg = true;
+  }
 
   Tuple *shc = dict_find(iter, KEY_SECONDS_HAND_COLOR);
-  if (shc) s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32);
+  if (shc) { s_settings.seconds_hand_color = rgb_to_gcolor(shc->value->int32); layer_mark_dirty(s_seconds_layer); }
   Tuple *shm = dict_find(iter, KEY_SECONDS_HAND_MODE);
-  if (shm) s_settings.seconds_hand_mode = (int8_t)shm->value->int32;
+  if (shm) { s_settings.seconds_hand_mode = (int8_t)shm->value->int32; layer_mark_dirty(s_seconds_layer); }
   Tuple *ssd = dict_find(iter, KEY_SECONDS_SHAKE_DUR);
   if (ssd) s_settings.seconds_shake_dur = (int8_t)ssd->value->int32;
-  // Sunrise / sunset marker settings
   Tuple *smv = dict_find(iter, KEY_SUNRISE_MARKER_VISIBLE);
-  if (smv) s_settings.sunrise_marker_visible = (int8_t)smv->value->int32;
+  if (smv) { s_settings.sunrise_marker_visible = (int8_t)smv->value->int32; dirty_bg = true; }
   Tuple *smc = dict_find(iter, KEY_SUNRISE_MARKER_COLOR);
-  if (smc) s_settings.sunrise_marker_color = rgb_to_gcolor(smc->value->int32);
+  if (smc) { s_settings.sunrise_marker_color = rgb_to_gcolor(smc->value->int32); dirty_bg = true; }
   Tuple *ssmc = dict_find(iter, KEY_SUNSET_MARKER_COLOR);
-  if (ssmc) s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32);
+  if (ssmc) { s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32); dirty_bg = true; }
 
-  // Test battery 50%-20% alert: temporarily set battery to 35% for 5 seconds
+  // Test battery 50%-20% alert
   Tuple *tb50 = dict_find(iter, KEY_TEST_BATTERY_50);
   if (tb50 && tb50->value->int32) {
     if (s_test_timer) app_timer_cancel(s_test_timer);
     s_test_battery_active = true;
     s_test_bt_active = false;
-    s_battery_pct = 35;  // Force 50%-20% threshold
+    s_battery_pct = 35;
     layer_mark_dirty(s_minute_layer);
     s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
-    return;  // Don't persist — this is a preview only
+    return;
   }
 
-  // Test battery alert: temporarily set battery to 10% for 5 seconds
+  // Test battery alert
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);
   if (tba && tba->value->int32) {
     if (s_test_timer) app_timer_cancel(s_test_timer);
     s_test_battery_active = true;
     s_test_bt_active = false;
-    s_battery_pct = 10;  // Force <20% threshold
+    s_battery_pct = 10;
     layer_mark_dirty(s_minute_layer);
     s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
-    return;  // Don't persist — this is a preview only
+    return;
   }
 
-  // Test BT disconnect: temporarily simulate disconnect for 5 seconds
+  // Test BT disconnect
   Tuple *tbt = dict_find(iter, KEY_TEST_BT_DISCONNECT);
   if (tbt && tbt->value->int32) {
     if (s_test_timer) app_timer_cancel(s_test_timer);
@@ -1133,7 +1335,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     s_bt_connected = false;
     layer_mark_dirty(s_minute_layer);
     s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
-    return;  // Don't persist — this is a preview only
+    return;
   }
 
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
@@ -1141,15 +1343,14 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   persist_write_int(PERSIST_TEMP_C, s_temp_c);
   persist_write_int(PERSIST_TEMP_F, s_temp_f);
 
-  // Re-evaluate tick frequency after settings change
+  // Re-evaluate subscriptions after settings change
   update_tick_subscription();
+  update_accel_subscription();
 
-  s_bg_last_hour = -1;
-  layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_hour_layer);
-  layer_mark_dirty(s_minute_layer);
-  layer_mark_dirty(s_complication_layer);
+  // Only dirty layers that actually changed
+  if (dirty_bg) { s_bg_last_hour = -1; layer_mark_dirty(s_bg_layer); }
+  if (dirty_hands) { layer_mark_dirty(s_hour_layer); layer_mark_dirty(s_minute_layer); }
+  if (dirty_complication) layer_mark_dirty(s_complication_layer);
 }
 
 // ============================================================
@@ -1163,6 +1364,10 @@ static void window_load(Window *window) {
   s_bg_layer = layer_create(bounds);
   layer_set_update_proc(s_bg_layer, bg_layer_update);
   layer_add_child(root, s_bg_layer);
+
+  s_seconds_layer = layer_create(bounds);
+  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
+  layer_add_child(root, s_seconds_layer);
 
   s_hour_layer = layer_create(bounds);
   layer_set_update_proc(s_hour_layer, hour_layer_update);
@@ -1179,6 +1384,7 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   layer_destroy(s_bg_layer);
+  layer_destroy(s_seconds_layer);
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);
   layer_destroy(s_minute_layer);
@@ -1201,15 +1407,17 @@ static void init(void) {
   if (persist_exists(PERSIST_TEMP_C)) s_temp_c = (int16_t)persist_read_int(PERSIST_TEMP_C);
   if (persist_exists(PERSIST_TEMP_F)) s_temp_f = (int16_t)persist_read_int(PERSIST_TEMP_F);
 
-  // Read battery state BEFORE window creation to ensure correct initial state
   s_battery_pct = battery_state_service_peek().charge_percent;
-  s_battery_handler_initialized = true;  // Mark as initialized so first handler call won't redraw
+  s_battery_handler_initialized = true;
 
   time_t now = time(NULL);
   s_tick_tm = *localtime(&now);
 
+  // Pre-compute sunrise/sunset marker geometry from persisted data
+  cache_sunrise_sunset_markers();
+
   s_window = window_create();
-  window_set_background_color(s_window, s_settings.background_color);
+  window_set_background_color(s_window, MONO_COLOR(s_settings.background_color));
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load   = window_load,
     .unload = window_unload,
@@ -1219,10 +1427,19 @@ static void init(void) {
   // Subscribe based on current seconds hand mode
   if (needs_second_ticks()) {
     tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+    s_subscribed_seconds = true;
   } else {
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+    s_subscribed_seconds = false;
   }
-  accel_tap_service_subscribe(accel_tap_handler);
+
+  // Conditionally subscribe to accelerometer
+  bool need_accel = (s_settings.shake_mode == SHAKE_MODE_ON_SHAKE) ||
+                    (s_settings.seconds_hand_mode == SECONDS_MODE_SHAKE);
+  if (need_accel) {
+    accel_tap_service_subscribe(accel_tap_handler);
+    s_accel_subscribed = true;
+  }
 
   battery_state_service_subscribe(battery_handler);
 
@@ -1237,11 +1454,12 @@ static void init(void) {
 
 static void deinit(void) {
   tick_timer_service_unsubscribe();
-  accel_tap_service_unsubscribe();
+  if (s_accel_subscribed) accel_tap_service_unsubscribe();
   connection_service_unsubscribe();
   battery_state_service_unsubscribe();
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
+  if (s_numbers_timer) app_timer_cancel(s_numbers_timer);
   if (s_test_timer) app_timer_cancel(s_test_timer);
   window_destroy(s_window);
 }

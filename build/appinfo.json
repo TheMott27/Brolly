@@ -6,14 +6,13 @@
     "targetPlatforms": [
         "aplite",
         "basalt",
-        "chalk",
         "diorite",
         "emery",
-        "gabbro"
+        "flint"
     ],
     "capabilities": [
-        "configurable",
-        "location"
+        "location",
+        "configurable"
     ],
     "configureUrl": "https://aww2setts-au3w7dkw.manus.space/",
     "watchapp": {
@@ -169,7 +168,7 @@
     "name": "brolly",
     "shortName": "Brolly - Analogue Weather",
     "longName": "Brolly - Analogue Weather",
-    "versionLabel": "1.0.0",
+    "versionLabel": "1.3.31",
     "companyName": "jRay",
     "appKeys": {
         "KEY_ICON_0": 0,
