@@ -627,6 +627,7 @@ const SETTINGS_KEY_MAP = {
   'KEY_TEMP_VISIBLE':               119,
   'KEY_WEATHER_SERVICE':            120,
   'KEY_NUMBER_FONT':                121,
+  'KEY_NUMBER_WEIGHT':              155,
   'KEY_BATTERY_INDICATOR_ENABLED':  138,
   'KEY_SECONDS_HAND_MODE':          142,
   'KEY_SECONDS_SHAKE_DUR':          143,

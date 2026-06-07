@@ -97,6 +97,7 @@ static int s_screen_h = 168;
 #define KEY_DATE_VISIBLE          118
 #define KEY_TEMP_VISIBLE          119
 #define KEY_NUMBER_FONT           121
+#define KEY_NUMBER_WEIGHT         155
 #define KEY_NUMBER_SIZE           150
 #define KEY_ICON_SIZE             151
 #define KEY_NUMBER_COLOR_MODE     152
@@ -202,6 +203,7 @@ typedef struct {
   GColor min_hand_outer;
   GColor min_hand_inner;
   int8_t number_font;
+  int8_t number_weight;  // 0=slim, 1=regular, 2=bold
   int8_t number_size;  // 0=small (12px), 1=medium (24px), 2=large (32px)
   int8_t icon_size;    // 0=small (75%), 1=medium (100%), 2=large (125%)
   int8_t number_color_mode;  // 0=single color, 1=rainbow
@@ -359,6 +361,7 @@ static void settings_set_defaults(Settings *s) {
   s->min_hand_outer              = GColorBlack;
   s->min_hand_inner              = GColorFromRGB(0, 97, 254);
   s->number_font                 = 3;
+  s->number_weight               = 1;  // regular
   s->number_size                 = 1;  // medium
   s->icon_size                   = 1;  // medium
   s->number_color_mode           = 0;  // single color
@@ -1243,6 +1246,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     s_num_sizes_cached = false;  // Invalidate cached sizes
     dirty_bg = true;
   }
+  Tuple *nw = dict_find(iter, KEY_NUMBER_WEIGHT);
+  if (nw) { s_settings.number_weight = (int8_t)nw->value->int32; s_cached_number_font = NULL; s_num_sizes_cached = false; dirty_bg = true; }
   Tuple *ns = dict_find(iter, KEY_NUMBER_SIZE);
   if (ns) { s_settings.number_size = (int8_t)ns->value->int32; s_cached_number_font = NULL; s_num_sizes_cached = false; dirty_bg = true; }
   Tuple *is = dict_find(iter, KEY_ICON_SIZE);
