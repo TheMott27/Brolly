@@ -114,7 +114,13 @@
         "KEY_TEST_BATTERY_50": 146,
         "KEY_SUNRISE_MARKER_VISIBLE": 147,
         "KEY_SUNRISE_MARKER_COLOR": 148,
-        "KEY_SUNSET_MARKER_COLOR": 149
+        "KEY_SUNSET_MARKER_COLOR": 149,
+        "KEY_NUMBER_SIZE": 150,
+        "KEY_ICON_SIZE": 151,
+        "KEY_NUMBER_COLOR_MODE": 152,
+        "KEY_ICON_COLOR_MODE": 153,
+        "KEY_WU_API_KEY": 154,
+        "KEY_NUMBER_WEIGHT": 155
     },
     "resources": {
         "media": [
@@ -168,7 +174,7 @@
     "name": "brolly",
     "shortName": "Brolly - Analogue Weather",
     "longName": "Brolly - Analogue Weather",
-    "versionLabel": "1.3.35",
+    "versionLabel": "1.3.36",
     "companyName": "jRay",
     "appKeys": {
         "KEY_ICON_0": 0,
@@ -264,6 +270,12 @@
         "KEY_TEST_BATTERY_50": 146,
         "KEY_SUNRISE_MARKER_VISIBLE": 147,
         "KEY_SUNRISE_MARKER_COLOR": 148,
-        "KEY_SUNSET_MARKER_COLOR": 149
+        "KEY_SUNSET_MARKER_COLOR": 149,
+        "KEY_NUMBER_SIZE": 150,
+        "KEY_ICON_SIZE": 151,
+        "KEY_NUMBER_COLOR_MODE": 152,
+        "KEY_ICON_COLOR_MODE": 153,
+        "KEY_WU_API_KEY": 154,
+        "KEY_NUMBER_WEIGHT": 155
     }
 }
