@@ -751,27 +751,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     case SUNRISE_MARKER_OFF:          show_sr_ss = false;           break;
   }
   if (show_sr_ss) {
-    int now_min = s_tick_tm.tm_hour * 60 + s_tick_tm.tm_min;
-
     if (s_sr_marker_valid) {
-      int event_min = (int)s_sunrise_hour * 60 + (int)s_sunrise_min;
-      int delta = event_min - now_min;
-      if (delta < 0) delta += 1440;
-      if (delta <= 720) {
-        graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunrise_marker_color));
-        graphics_context_set_stroke_width(ctx, 3);
-        graphics_draw_line(ctx, s_sr_marker_inner, s_sr_marker_outer);
-      }
+      graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunrise_marker_color));
+      graphics_context_set_stroke_width(ctx, 3);
+      graphics_draw_line(ctx, s_sr_marker_inner, s_sr_marker_outer);
     }
     if (s_ss_marker_valid) {
-      int event_min = (int)s_sunset_hour * 60 + (int)s_sunset_min;
-      int delta = event_min - now_min;
-      if (delta < 0) delta += 1440;
-      if (delta <= 720) {
-        graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunset_marker_color));
-        graphics_context_set_stroke_width(ctx, 3);
-        graphics_draw_line(ctx, s_ss_marker_inner, s_ss_marker_outer);
-      }
+      graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunset_marker_color));
+      graphics_context_set_stroke_width(ctx, 3);
+      graphics_draw_line(ctx, s_ss_marker_inner, s_ss_marker_outer);
     }
   }
 
