@@ -724,7 +724,7 @@ Pebble.addEventListener('showConfiguration', function() {
   // Use the stored URL (which includes all saved settings as query params)
   // so the page reopens pre-populated with the user's last choices.
   // Falls back to the base URL on first open.
-  var baseUrl = 'https://themott27.github.io/brolly-settings/';
+  var baseUrl = 'https://aww2setts-au3w7dkw.manus.space/';
   var stored = null;
   try {
     var cd = JSON.parse(localStorage.getItem('aww2ConfigData'));
