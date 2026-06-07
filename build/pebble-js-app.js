@@ -728,7 +728,15 @@
 	  'KEY_SECONDS_SHAKE_DUR':          143,
 	  'KEY_TEST_BATTERY_ALERT':         144,
 	  'KEY_TEST_BT_DISCONNECT':         145,
-	  'KEY_TEST_BATTERY_50':            146
+	  'KEY_TEST_BATTERY_50':            146,
+	  'KEY_SUNRISE_MARKER_VISIBLE':     147,
+	  'KEY_SUNRISE_MARKER_COLOR':       148,
+	  'KEY_SUNSET_MARKER_COLOR':        149,
+	  'KEY_NUMBER_SIZE':                150,
+	  'KEY_ICON_SIZE':                  151,
+	  'KEY_NUMBER_COLOR_MODE':          152,
+	  'KEY_ICON_COLOR_MODE':            153,
+	  'KEY_WU_API_KEY':                 154
 	};
 	
 	const SETTINGS_COLOR_MAP = {
@@ -748,7 +756,9 @@
 	  'KEY_TEMP_COLOR':                 135,
 	  'KEY_BT_DISCONNECT_OUTER_COLOR':  136,
 	  'KEY_BT_DISCONNECT_INNER_COLOR':  137,
-	  'KEY_SECONDS_HAND_COLOR':         141
+	  'KEY_SECONDS_HAND_COLOR':         141,
+	  'KEY_SUNRISE_MARKER_COLOR':       148,
+	  'KEY_SUNSET_MARKER_COLOR':        149
 	};
 	
 	// Re-sends all saved settings from localStorage to the watch.
