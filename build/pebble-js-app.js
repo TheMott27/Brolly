@@ -500,9 +500,24 @@
 	    KEY_SUNRISE_MINUTE: sunrise_min,
 	    KEY_SUNSET_HOUR: sunset_hour,
 	    KEY_SUNSET_MINUTE: sunset_min,
-	    KEY_SUNRISE_MARKER_VISIBLE: 0,  // Default: always show (user can override in settings)
-	    KEY_SUNRISE_MARKER_COLOR: 0xff9500,  // Orange
-	    KEY_SUNSET_MARKER_COLOR: 0x003d82   // Dark blue
+	    KEY_SUNRISE_MARKER_VISIBLE: (function() {
+	      try {
+	        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
+	        return cd.hasOwnProperty('KEY_SUNRISE_MARKER_VISIBLE') ? parseInt(cd.KEY_SUNRISE_MARKER_VISIBLE) : 0;
+	      } catch(e) { return 0; }
+	    })(),
+	    KEY_SUNRISE_MARKER_COLOR: (function() {
+	      try {
+	        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
+	        return cd.hasOwnProperty('KEY_SUNRISE_MARKER_COLOR') ? parseInt(cd.KEY_SUNRISE_MARKER_COLOR) : 0xff9500;
+	      } catch(e) { return 0xff9500; }
+	    })(),
+	    KEY_SUNSET_MARKER_COLOR: (function() {
+	      try {
+	        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
+	        return cd.hasOwnProperty('KEY_SUNSET_MARKER_COLOR') ? parseInt(cd.KEY_SUNSET_MARKER_COLOR) : 0x003d82;
+	      } catch(e) { return 0x003d82; }
+	    })()
 	  };
 	
 	  for (let i = 0; i < 24; i++) {

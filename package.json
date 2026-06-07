@@ -20,10 +20,8 @@
       "flint"
     ],
     "capabilities": [
-      "location",
-      "configurable"
+      "location"
     ],
-    "configureUrl": "https://aww2setts-au3w7dkw.manus.space/",
     "watchapp": {
       "watchface": true,
       "hiddenApp": false,

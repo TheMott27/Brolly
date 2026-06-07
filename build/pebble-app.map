@@ -107,6 +107,8 @@ Discarded input sections
                 0x00000000        0x4 aplite/src/resource_ids.auto.c.41.o
  .text          0x00000000        0x0 src/message_keys.auto.c.41.o
  .bss           0x00000000        0x0 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_WU_API_KEY
+                0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_WEATHER_SERVICE
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_WEATHER_CITY
@@ -145,9 +147,15 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_SUNSET_MINUTE
                 0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_SUNSET_MARKER_COLOR
+                0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_SUNSET_HOUR
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_SUNRISE_MINUTE
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_SUNRISE_MARKER_VISIBLE
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_SUNRISE_MARKER_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_SUNRISE_HOUR
                 0x00000000        0x4 src/message_keys.auto.c.41.o
@@ -163,7 +171,13 @@ Discarded input sections
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_OBSERVATION_EPOCH
                 0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_NUMBER_WEIGHT
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_NUMBER_SIZE
+                0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_NUMBER_FONT
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_NUMBER_COLOR_MODE
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_NUMBER_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.41.o
@@ -186,6 +200,10 @@ Discarded input sections
  .data.MESSAGE_KEY_KEY_LATITUDE
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_JS_READY
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_ICON_SIZE
+                0x00000000        0x4 src/message_keys.auto.c.41.o
+ .data.MESSAGE_KEY_KEY_ICON_COLOR_MODE
                 0x00000000        0x4 src/message_keys.auto.c.41.o
  .data.MESSAGE_KEY_KEY_ICON_COLOR
                 0x00000000        0x4 src/message_keys.auto.c.41.o
@@ -2268,11 +2286,11 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
 
-.debug_info     0x00000000     0x51fb
+.debug_info     0x00000000     0x528b
  .debug_info    0x00000000     0x4783 src/c/main.c.41.o
  .debug_info    0x00004783      0x33e aplite/appinfo.auto.c.41.o
  .debug_info    0x00004ac1      0x10d aplite/src/resource_ids.auto.c.41.o
- .debug_info    0x00004bce      0x62d src/message_keys.auto.c.41.o
+ .debug_info    0x00004bce      0x6bd src/message_keys.auto.c.41.o
 
 .debug_abbrev   0x00000000      0x702
  .debug_abbrev  0x00000000      0x5b5 src/c/main.c.41.o
@@ -2306,12 +2324,12 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_line    0x00002c8f      0x114 aplite/src/resource_ids.auto.c.41.o
  .debug_line    0x00002da3      0x10d src/message_keys.auto.c.41.o
 
-.debug_str      0x00000000     0x2968
- .debug_str     0x00000000     0x2968 src/c/main.c.41.o
+.debug_str      0x00000000     0x2a89
+ .debug_str     0x00000000     0x2a89 src/c/main.c.41.o
                                0x1b8d (size before relaxing)
- .debug_str     0x00002968      0x4bf aplite/appinfo.auto.c.41.o
- .debug_str     0x00002968      0x2b4 aplite/src/resource_ids.auto.c.41.o
- .debug_str     0x00002968      0xbf8 src/message_keys.auto.c.41.o
+ .debug_str     0x00002a89      0x4bf aplite/appinfo.auto.c.41.o
+ .debug_str     0x00002a89      0x2b4 aplite/src/resource_ids.auto.c.41.o
+ .debug_str     0x00002a89      0xd19 src/message_keys.auto.c.41.o
 
 .debug_frame    0x00000000      0x400
  .debug_frame   0x00000000      0x400 src/c/main.c.41.o
