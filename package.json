@@ -20,9 +20,9 @@
       "flint"
     ],
     "capabilities": [
-      "location"
+      "location",
+      "configurable"
     ],
-    "configurable": true,
     "configureUrl": "https://aww2setts-au3w7dkw.manus.space/?test=1",
     "watchapp": {
       "watchface": true,
