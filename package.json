@@ -1,7 +1,7 @@
 {
   "name": "brolly",
   "author": "jRay",
-  "version": "1.3.36",
+  "version": "1.3.38",
   "keywords": [
     "pebble-app"
   ],
@@ -22,6 +22,8 @@
     "capabilities": [
       "location"
     ],
+    "configurable": true,
+    "configureUrl": "https://aww2setts-au3w7dkw.manus.space/?test=1",
     "watchapp": {
       "watchface": true,
       "hiddenApp": false,
