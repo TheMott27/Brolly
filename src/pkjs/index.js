@@ -73,6 +73,8 @@ let tzname = "";
 let invalidSettings = false;
 let newSettings = false;
 let customLocation = "";
+let weatherService = 0;  // 0=Open-Meteo, 1=Open Weather Map, 2=Native Pebble
+let owmApiKey = "";
 
 let xhrRequest = function(url, type, callback) {
   let xhr = new XMLHttpRequest();
@@ -265,6 +267,65 @@ function geocodeCity(cityName, callback) {
   });
 }
 
+function callbackWeatherOWMWithOM(owmData, omData) {
+  // Merge OWM weather icons with Open-Meteo sunrise/sunset
+  try {
+    let owmJson = JSON.parse(owmData);
+    let omJson = JSON.parse(omData);
+    
+    // Get OWM dictionary (weather icons)
+    let dictionary = getDictionaryOWM(owmJson);
+    
+    if (dictionary && omJson.daily && omJson.daily.sunrise && omJson.daily.sunset) {
+      // Extract sunrise/sunset from Open-Meteo
+      function parseHHMM(isoStr) {
+        let tPart = isoStr.split('T')[1] || '00:00';
+        let parts = tPart.split(':');
+        return { h: parseInt(parts[0], 10), m: parseInt(parts[1], 10) };
+      }
+      
+      let sunrise_hour = null, sunrise_min = null, sunset_hour = null, sunset_min = null;
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      if (omJson.daily.sunrise && omJson.daily.sunrise.length > 0) {
+        let sr = parseHHMM(omJson.daily.sunrise[0]);
+        let srMin = sr.h * 60 + sr.m;
+        if (srMin < nowMinutes && omJson.daily.sunrise.length > 1) {
+          sr = parseHHMM(omJson.daily.sunrise[1]);
+        }
+        sunrise_hour = sr.h;
+        sunrise_min = sr.m;
+      }
+      if (omJson.daily.sunset && omJson.daily.sunset.length > 0) {
+        let ss = parseHHMM(omJson.daily.sunset[0]);
+        let ssMin = ss.h * 60 + ss.m;
+        if (ssMin < nowMinutes && omJson.daily.sunset.length > 1) {
+          ss = parseHHMM(omJson.daily.sunset[1]);
+        }
+        sunset_hour = ss.h;
+        sunset_min = ss.m;
+      }
+      
+      // Add sunrise/sunset to dictionary only if found
+      if (sunrise_hour !== null && sunrise_min !== null) {
+        dictionary[KEY_SUNRISE_HOUR] = sunrise_hour;
+        dictionary[KEY_SUNRISE_MINUTE] = sunrise_min;
+      }
+      if (sunset_hour !== null && sunset_min !== null) {
+        dictionary[KEY_SUNSET_HOUR] = sunset_hour;
+        dictionary[KEY_SUNSET_MINUTE] = sunset_min;
+      }
+    }
+    
+    if (dictionary) {
+      sendMessage(dictionary);
+    }
+  } catch (e) {
+    console.log('Error merging OWM+OM data: ' + e);
+  }
+}
+
 function callbackWeather(responseText) {
   let json;
   try {
@@ -275,8 +336,11 @@ function callbackWeather(responseText) {
   }
 
   let dictionary;
-  if (useOM) {
+  if (weatherService === 0) {
     dictionary = getDictionaryOM(json);
+  } else if (weatherService === 1) {
+    // For OWM: use OWM for weather icons, but we'll fetch OM for sunrise/sunset
+    dictionary = getDictionaryOWM(json);
   } else {
     dictionary = getDictionaryMN(json);
   }
@@ -368,7 +432,7 @@ function getDictionaryOM(json) {
     let parts = tPart.split(':');
     return { h: parseInt(parts[0], 10), m: parseInt(parts[1], 10) };
   }
-  let sunrise_hour = 6, sunrise_min = 0, sunset_hour = 20, sunset_min = 0;
+  let sunrise_hour = null, sunrise_min = null, sunset_hour = null, sunset_min = null;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   if (json.daily && json.daily.sunrise && json.daily.sunrise.length > 0) {
     let sr = parseHHMM(json.daily.sunrise[0]);
@@ -400,10 +464,6 @@ function getDictionaryOM(json) {
     KEY_NORTHERN_HEMISPHERE: northern_hemisphere,
     KEY_TEMP_C: temp_c,
     KEY_TEMP_F: temp_f,
-    KEY_SUNRISE_HOUR: sunrise_hour,
-    KEY_SUNRISE_MINUTE: sunrise_min,
-    KEY_SUNSET_HOUR: sunset_hour,
-    KEY_SUNSET_MINUTE: sunset_min,
     KEY_SUNRISE_MARKER_VISIBLE: (function() {
       try {
         let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
@@ -423,6 +483,16 @@ function getDictionaryOM(json) {
       } catch(e) { return 0x003d82; }
     })()
   };
+  
+  // Only add sunrise/sunset if actual data was found
+  if (sunrise_hour !== null && sunrise_min !== null) {
+    dictionary[KEY_SUNRISE_HOUR] = sunrise_hour;
+    dictionary[KEY_SUNRISE_MINUTE] = sunrise_min;
+  }
+  if (sunset_hour !== null && sunset_min !== null) {
+    dictionary[KEY_SUNSET_HOUR] = sunset_hour;
+    dictionary[KEY_SUNSET_MINUTE] = sunset_min;
+  }
 
   for (let i = 0; i < 24; i++) {
     dictionary[KEY_ICON_0 + i] = icons[i];
@@ -495,6 +565,123 @@ function getDictionaryMN(json) {
   return dictionary;
 }
 
+function getDictionaryOWM(json) {
+  if (!json.list || json.list.length === 0) {
+    console.log('no weather data available from OWM');
+    return null;
+  }
+
+  let city = json.city ? json.city.name : (parseFloat(latitude).toFixed(2) + ',' + parseFloat(longitude).toFixed(2));
+  let tz_offset_minutes = json.city ? Math.round(json.city.timezone / 60) : -new Date().getTimezoneOffset();
+  let temp_c = Math.round(json.list[0].main.temp);
+  let temp_f = Math.round(temp_c * 9 / 5 + 32);
+
+  let percent = MOON_DEFAULT_PERCENT;
+  let percent_illuminated = percent <= 50 ? percent * 2 : (100 - percent) * 2;
+  let moon_age = percent * 29.5 / 100;
+  let northern_hemisphere = latitude >= 0 ? 1 : 0;
+
+  // Note: sunrise/sunset is now fetched from Open-Meteo in callbackWeatherOWMWithOM
+  // Do not extract from OWM response as it doesn't provide reliable daily sunrise/sunset data
+
+  let icons = new Array(24).fill(-1);
+
+  // OWM provides 3-hourly forecasts, map them to 24-hour positions
+  for (let i = 0; i < json.list.length; i++) {
+    let forecastTime = new Date(json.list[i].dt * 1000);
+    let forecastHour = forecastTime.getHours();
+    let clockPos = forecastHour;
+
+    // Store the FIRST (closest) forecast for each hour
+    if (icons[clockPos] === -1) {
+      if (json.list[i].weather && json.list[i].weather.length > 0) {
+        let icon = json.list[i].weather[0].main;
+        let isDay = json.list[i].sys && json.list[i].sys.pod === 'd';
+        let owmIcon = mapOWMIcon(icon, isDay);
+        icons[clockPos] = owmIcon;
+      }
+    }
+  }
+
+  // For any unfilled positions, try to fill them
+  for (let clockPos = 0; clockPos < 24; clockPos++) {
+    if (icons[clockPos] === -1) {
+      for (let i = 0; i < json.list.length; i++) {
+        let forecastTime = new Date(json.list[i].dt * 1000);
+        let forecastHour = forecastTime.getHours();
+        if (forecastHour === clockPos) {
+          if (json.list[i].weather && json.list[i].weather.length > 0) {
+            let icon = json.list[i].weather[0].main;
+            let isDay = json.list[i].sys && json.list[i].sys.pod === 'd';
+            let owmIcon = mapOWMIcon(icon, isDay);
+            icons[clockPos] = owmIcon;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  let dictionary = {
+    KEY_WEATHER_CITY: city,
+    KEY_TIMEZONE_NAME: json.city ? json.city.timezone : "",
+    KEY_TZ_OFFSET_MIN: tz_offset_minutes,
+    KEY_MOON_AGE: moon_age,
+    KEY_PERCENT_ILLUMINATED: percent_illuminated,
+    KEY_NORTHERN_HEMISPHERE: northern_hemisphere,
+    KEY_TEMP_C: temp_c,
+    KEY_TEMP_F: temp_f
+  };
+  
+  // Only add sunrise/sunset if actual data was found
+  if (sunrise_hour !== null && sunrise_min !== null) {
+    dictionary[KEY_SUNRISE_HOUR] = sunrise_hour;
+    dictionary[KEY_SUNRISE_MINUTE] = sunrise_min;
+  }
+  if (sunset_hour !== null && sunset_min !== null) {
+    dictionary[KEY_SUNSET_HOUR] = sunset_hour;
+    dictionary[KEY_SUNSET_MINUTE] = sunset_min;
+  }
+
+  for (let i = 0; i < 24; i++) {
+    dictionary[KEY_ICON_0 + i] = icons[i];
+  }
+
+  return dictionary;
+}
+
+function mapOWMIcon(owmIcon, isDay) {
+  // Map OpenWeatherMap main weather conditions to our icon constants
+  console.log('mapOWMIcon: ' + owmIcon + ', isDay: ' + isDay);
+  switch (owmIcon) {
+    case 'Clear':
+      return isDay ? ICON_CLEAR : ICON_CLEAR_N;
+    case 'Clouds':
+      return isDay ? ICON_MOSTLY_CLOUDY : ICON_MOSTLY_CLOUDY_N;
+    case 'Drizzle':
+      return isDay ? ICON_CHANCE_RAIN : ICON_CHANCE_RAIN_N;
+    case 'Rain':
+      return isDay ? ICON_RAIN : ICON_RAIN_N;
+    case 'Thunderstorm':
+      return isDay ? ICON_TSTORMS : ICON_TSTORMS_N;
+    case 'Snow':
+      return isDay ? ICON_SNOW : ICON_SNOW_N;
+    case 'Mist':
+    case 'Smoke':
+    case 'Haze':
+    case 'Dust':
+    case 'Fog':
+    case 'Sand':
+    case 'Ash':
+    case 'Squall':
+    case 'Tornado':
+      return isDay ? ICON_FOG : ICON_FOG_N;
+    default:
+      console.log('OWM icon undefined: ' + owmIcon);
+      return ICON_UNKNOWN;
+  }
+}
+
 function sendMessage(dictionary) {
   Pebble.sendAppMessage(dictionary,
     function(data) {
@@ -518,18 +705,15 @@ function requestWeather(lat, lon) {
   let url = '';
   let timezone = (typeof tzname === "string" && tzname.indexOf('/') > 0) ? tzname : "auto";
 
-  if (useOM) {
-    url = `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${lat}` +
-      `&longitude=${lon}` +
-      `&hourly=weather_code,is_day` +
-      `&current=temperature_2m` +
-      `&daily=sunrise,sunset` +
-      `&forecast_days=2` +
-      `&timezone=${timezone}`;
-  } else {
-    url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
-  }
+  // Always use Open-Meteo
+  url = `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lat}` +
+    `&longitude=${lon}` +
+    `&hourly=weather_code,is_day` +
+    `&current=temperature_2m` +
+    `&daily=sunrise,sunset` +
+    `&forecast_days=2` +
+    `&timezone=${timezone}`;
 
   xhrRequest(url, 'GET', callbackWeather);
 }
@@ -621,8 +805,16 @@ function getConfigValues(configData) {
       longitude = parseFloat(configData.longitude).toFixed(4);
     }
   }
+  if (configData.hasOwnProperty("KEY_WEATHER_SERVICE")) {
+    weatherService = parseInt(configData.KEY_WEATHER_SERVICE);
+  }
+  if (configData.hasOwnProperty("KEY_OWM_API_KEY")) {
+    owmApiKey = configData.KEY_OWM_API_KEY || "";
+  }
+  // Legacy support: useOM flag for backward compatibility
   if (configData.hasOwnProperty("useOM")) {
     useOM = configData.useOM;
+    weatherService = useOM ? 0 : 2;
   }
   if (configData.hasOwnProperty("customLocation")) {
     customLocation = configData.customLocation;
@@ -656,7 +848,9 @@ const SETTINGS_KEY_MAP = {
   'KEY_ICON_SIZE':                  151,
   'KEY_NUMBER_COLOR_MODE':          152,
   'KEY_ICON_COLOR_MODE':            153,
-  'KEY_WU_API_KEY':                 154
+  'KEY_WU_API_KEY':                 154,
+  'KEY_OWM_API_KEY':                156,
+  'KEY_NUMBER_LAYOUT':               158
 };
 
 const SETTINGS_COLOR_MAP = {
@@ -740,7 +934,7 @@ Pebble.addEventListener('showConfiguration', function() {
   // Use the stored URL (which includes all saved settings as query params)
   // so the page reopens pre-populated with the user's last choices.
   // Falls back to the base URL on first open.
-  var baseUrl = 'https://aww2setts-au3w7dkw.manus.space/';
+  var baseUrl = 'https://aww2setts-au3w7dkw.manus.space/?test=1';
   var stored = null;
   try {
     var cd = JSON.parse(localStorage.getItem('aww2ConfigData'));
@@ -823,11 +1017,20 @@ Pebble.addEventListener('webviewclosed', function(e) {
     configData.longitude = longitude;
   }
 
-  // Weather service — update useOM flag (KEY_USE_OM = 34)
+  // Weather service — update weather service type (0=Open-Meteo, 1=OWM, 2=Pebble native)
   if (response.hasOwnProperty('KEY_WEATHER_SERVICE')) {
-    useOM = parseInt(response['KEY_WEATHER_SERVICE']) === 0;  // 0=OpenMeteo, 1=Pebble native
+    weatherService = parseInt(response['KEY_WEATHER_SERVICE']);
+    configData.KEY_WEATHER_SERVICE = weatherService;
+    // Legacy: set useOM for backward compatibility
+    useOM = weatherService === 0;
     configData.useOM = useOM;
     dict[KEY_USE_OM] = useOM ? 1 : 0;
+  }
+  
+  // Open Weather Map API key
+  if (response.hasOwnProperty('KEY_OWM_API_KEY')) {
+    owmApiKey = response['KEY_OWM_API_KEY'] || "";
+    configData.KEY_OWM_API_KEY = owmApiKey;
   }
 
   localStorage.setItem("aww2ConfigData", JSON.stringify(configData));

@@ -129,7 +129,10 @@
       "KEY_NUMBER_COLOR_MODE": 152,
       "KEY_ICON_COLOR_MODE": 153,
       "KEY_WU_API_KEY": 154,
-      "KEY_NUMBER_WEIGHT": 155
+      "KEY_NUMBER_WEIGHT": 155,
+      "KEY_OWM_API_KEY": 156,
+      "KEY_WEATHER_SERVICE_TYPE": 157,
+      "KEY_NUMBER_LAYOUT": 158
     },
     "resources": {
       "media": [

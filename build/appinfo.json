@@ -11,8 +11,10 @@
         "flint"
     ],
     "capabilities": [
-        "location"
+        "location",
+        "configurable"
     ],
+    "configureUrl": "https://aww2setts-au3w7dkw.manus.space/?test=1",
     "watchapp": {
         "watchface": true,
         "hiddenApp": false,
@@ -118,7 +120,10 @@
         "KEY_NUMBER_COLOR_MODE": 152,
         "KEY_ICON_COLOR_MODE": 153,
         "KEY_WU_API_KEY": 154,
-        "KEY_NUMBER_WEIGHT": 155
+        "KEY_NUMBER_WEIGHT": 155,
+        "KEY_OWM_API_KEY": 156,
+        "KEY_WEATHER_SERVICE_TYPE": 157,
+        "KEY_NUMBER_LAYOUT": 158
     },
     "resources": {
         "media": [
@@ -172,7 +177,7 @@
     "name": "brolly",
     "shortName": "Brolly - Analogue Weather",
     "longName": "Brolly - Analogue Weather",
-    "versionLabel": "1.3.36",
+    "versionLabel": "1.3.38",
     "companyName": "jRay",
     "appKeys": {
         "KEY_ICON_0": 0,
@@ -274,6 +279,9 @@
         "KEY_NUMBER_COLOR_MODE": 152,
         "KEY_ICON_COLOR_MODE": 153,
         "KEY_WU_API_KEY": 154,
-        "KEY_NUMBER_WEIGHT": 155
+        "KEY_NUMBER_WEIGHT": 155,
+        "KEY_OWM_API_KEY": 156,
+        "KEY_WEATHER_SERVICE_TYPE": 157,
+        "KEY_NUMBER_LAYOUT": 158
     }
 }
