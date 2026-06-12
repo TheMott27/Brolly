@@ -635,8 +635,12 @@ static int get_icon_size(void) {
 static GFont s_cached_number_font = NULL;
 
 static GFont resolve_number_font(int8_t id) {
-  // Use only LECO 28 LIGHT
-  return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+  switch (id) {
+    case 0:  return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);      // LECO 28 Light
+    case 1:  return fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);   // Bitham 34 Medium
+    case 2:  return fonts_get_system_font(FONT_KEY_DROID_SERIF_28_BOLD);        // Droid Serif 28 Bold
+    default: return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+  }
 }
 
 static GFont get_number_font(void) {
@@ -813,37 +817,52 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int gpath_id = icon_code_to_gpath(icon);
       GPathBounds bounds = GPATH_BOUNDS[gpath_id];
 
-      int edge_margin = POS_X(FIXED_ICON_EDGE_MARGIN);
+      int edge_margin = 8;  // 8px from screen edge to icon edge
       GPoint icon_center = pos;
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          icon_center.y = bounds.h / 2 + edge_margin;
+          // Top edge: icon top at y=8, so center at y = 8 + bounds.h/2
+          icon_center.y = 8 + bounds.h / 2;
         } else {
-          icon_center.y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
+          // Bottom edge: icon bottom at y=(screen_h-1-8), so center at y = (screen_h-1-8) - bounds.h/2
+          icon_center.y = (s_screen_h - 1 - 8) - bounds.h / 2;
         }
       } else {
-        int top_y = bounds.h / 2 + edge_margin;
-        int bot_y = (s_screen_h - 1) - bounds.h / 2 - edge_margin;
+        // Use sz (uniform icon size) as the reference height so spacing is stable
+        // regardless of which weather icon is shown at each slot.
+        //   y_top = rendered centre of a top-edge icon (h1/h11): 8 + sz/2
+        //   y_mid = screen centre = rendered centre of h3/h9
+        //   y_bot = rendered centre of a bottom-edge icon (h5/h7): (screen_h-1-8) - sz/2
+        // h==2/10: 50% between y_top and y_mid
+        // h==3/9:  y_mid (screen centre)
+        // h==4/8:  50% between y_mid and y_bot
+        int sz = get_icon_size();
+        int y_top = 8 + sz / 2;
+        int y_mid = (s_screen_h - 1) / 2;
+        int y_bot = (s_screen_h - 1 - 8) - sz / 2;
+        int y2 = (y_top + y_mid) / 2;  // 50% between h1 and h3
+        int y3 = y_mid;                // screen centre
+        int y4 = (y_mid + y_bot) / 2;  // 50% between h3 and h5
         if (h == 10) {
-          icon_center.x = bounds.w / 2 + edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;
+          icon_center.x = 8 + bounds.w / 2;
+          icon_center.y = y2;
         } else if (h == 9) {
-          icon_center.x = bounds.w / 2 + edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;
+          icon_center.x = 8 + bounds.w / 2;
+          icon_center.y = y3;
         } else if (h == 8) {
-          icon_center.x = bounds.w / 2 + edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;
+          icon_center.x = 8 + bounds.w / 2;
+          icon_center.y = y4;
         } else if (h == 2) {
-          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 1 / 4;
+          icon_center.x = (s_screen_w - 1 - 8) - bounds.w / 2;
+          icon_center.y = y2;
         } else if (h == 3) {
-          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 2 / 4;
+          icon_center.x = (s_screen_w - 1 - 8) - bounds.w / 2;
+          icon_center.y = y3;
         } else if (h == 4) {
-          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
-          icon_center.y = top_y + (bot_y - top_y) * 3 / 4;
+          icon_center.x = (s_screen_w - 1 - 8) - bounds.w / 2;
+          icon_center.y = y4;
         } else {
-          icon_center.x = (s_screen_w - 1) - bounds.w / 2 - edge_margin;
+          icon_center.x = (s_screen_w - 1 - 8) - bounds.w / 2;
         }
       }
       draw_weather_icon(ctx, icon, icon_center, get_icon_size(), h);
@@ -852,26 +871,44 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int ntw = s_num_sizes[h].w;
       int nth = s_num_sizes[h].h;
       // Actual rendered size offsets from GRect: top 7, bottom 0, left 3, right 3
-      // Position so actual text edge is 4px from screen edge
+      // Position so actual text edge is 6px from screen edge
       // actual_h = nth - 7, actual_w = ntw - 6
       // draw_hour_number centers on actual_h, so pos.y = actual_top + actual_h/2
       int actual_h = nth - 7;
       int actual_w = ntw - 6;
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          // Top of actual text at y=4: pos.y = 4 + actual_h/2
-          pos.y = 4 + actual_h / 2;
+          // Top of actual text at y=6: pos.y = 6 + actual_h/2
+          pos.y = 6 + actual_h / 2;
         } else {
-          // Bottom of actual text at y=(screen_h-1-4): pos.y = (screen_h-1-4) - actual_h/2
-          pos.y = (s_screen_h - 1 - 4) - actual_h / 2;
+          // Bottom of actual text at y=(screen_h-1-6): pos.y = (screen_h-1-6) - actual_h/2
+          pos.y = (s_screen_h - 1 - 6) - actual_h / 2;
         }
       } else {
+        // Rendered centres of the corner/edge anchors:
+        //   h==1 (top):    y_top = 6 + actual_h/2
+        //   h==3 (centre): y_mid = (screen_h-1) / 2  (true screen centre)
+        //   h==5 (bottom): y_bot = (screen_h-1-6) - actual_h/2
+        // h==2/10: 50% between top and centre
+        // h==3/9:  true screen centre
+        // h==4/8:  50% between centre and bottom
+        int y_top = 6 + actual_h / 2;
+        int y_mid = (s_screen_h - 1) / 2;
+        int y_bot = (s_screen_h - 1 - 6) - actual_h / 2;
+        int y2 = (y_top + y_mid) / 2;
+        int y3 = y_mid;
+        int y4 = (y_mid + y_bot) / 2;
         if (h == 8 || h == 9 || h == 10) {
-          // Left of actual text at x=4: pos.x = 4 + actual_w/2
-          pos.x = 4 + actual_w / 2;
+          pos.x = 6 + actual_w / 2;
         } else {
-          // Right of actual text at x=(screen_w-1-4): pos.x = (screen_w-1-4) - actual_w/2
-          pos.x = (s_screen_w - 1 - 4) - actual_w / 2;
+          pos.x = (s_screen_w - 1 - 6) - actual_w / 2;
+        }
+        if (h == 2 || h == 10) {
+          pos.y = y2;
+        } else if (h == 3 || h == 9) {
+          pos.y = y3;
+        } else if (h == 4 || h == 8) {
+          pos.y = y4;
         }
       }
       draw_hour_number(ctx, h, pos, num_font);
