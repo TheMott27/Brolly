@@ -456,11 +456,11 @@ static void cache_marker_positions(void) {
     int adx = dx < 0 ? -dx : dx;
     int ady = dy < 0 ? -dy : dy;
     int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-    int marker_len = 2;
+    int marker_len = 4;  // doubled from 2
 #if defined(PBL_PLATFORM_BASALT)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 4;
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 8;  // doubled from 4
 #elif defined(PBL_PLATFORM_EMERY)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 5;  // +3px from base 2px
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 10;  // doubled from 5
 #endif
     s_min_marker_outer[i] = outer_pt;
     if (dist > 0) {
@@ -482,7 +482,7 @@ static void cache_marker_positions(void) {
     int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
     s_hour_marker_outer[h] = outer_pt;
     if (dist > 0) {
-      s_hour_marker_inner[h] = GPoint(outer_pt.x + dx / dist, outer_pt.y + dy / dist);
+      s_hour_marker_inner[h] = GPoint(outer_pt.x + dx * 2 / dist, outer_pt.y + dy * 2 / dist);  // doubled from 1px
     } else {
       s_hour_marker_inner[h] = outer_pt;
     }
