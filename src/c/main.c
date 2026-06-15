@@ -542,7 +542,7 @@ static void cache_sunrise_sunset_markers(void) {
       int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
       *outer = opt;
       if (dist > 0) {
-        *inner = GPoint(opt.x + dx * 5 / dist, opt.y + dy * 5 / dist);
+        *inner = GPoint(opt.x + dx * (s_screen_w >= 200 ? 8 : 5) / dist, opt.y + dy * (s_screen_w >= 200 ? 8 : 5) / dist);
       } else {
         *inner = opt;
       }
