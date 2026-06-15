@@ -460,7 +460,7 @@ static void cache_marker_positions(void) {
 #if defined(PBL_PLATFORM_BASALT)
     if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 4;
 #elif defined(PBL_PLATFORM_EMERY)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 3;  // +1px from base 2px
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 5;  // +3px from base 2px
 #endif
     s_min_marker_outer[i] = outer_pt;
     if (dist > 0) {
