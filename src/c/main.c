@@ -832,6 +832,18 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           } else {
             icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
           }
+          // Align h=1,5,7,11 x to angular ray intersection, shifted 4px toward centre
+          if (h == 1 || h == 5 || h == 7 || h == 11) {
+            int ray_dx = sin_lookup(angle);
+            int ray_dy = -cos_lookup(angle);
+            int raw_x;
+            if (ray_dy < 0) {
+              raw_x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+            } else {
+              raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+            }
+            icon_center.x = raw_x + (raw_x > center.x ? -4 : 4);
+          }
         } else {
           int y_top = (half + ICON_MARKER_GAP) * 3 / 4;
           int y_mid = (s_screen_h - 1) / 2;
@@ -853,8 +865,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       } else {
         // Basalt: simple inset for top/bottom hours; explicit y for side hours
         icon_center = square_perimeter_point(center, angle, half + 6, half + 6);
-        // Align h=1,5,7,11 x to where their angular ray hits the top/bottom edge
-        // shifted 2px toward centre
+        // Align h=1,5,7,11 x to match their numbers (angular ray + 2px toward centre)
         if (is_top_bottom && (h == 1 || h == 5 || h == 7 || h == 11)) {
           int ray_dx = sin_lookup(angle);
           int ray_dy = -cos_lookup(angle);
