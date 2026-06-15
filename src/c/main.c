@@ -181,7 +181,11 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define FIXED_HAND_OUTER_WIDTH   6
 #define FIXED_HAND_INNER_WIDTH   2
 #define FIXED_HAND_BASE_PX      20
-#define FIXED_ICON_SIZE 50
+#if defined(PBL_PLATFORM_EMERY)
+  #define FIXED_ICON_SIZE 36
+#else
+  #define FIXED_ICON_SIZE 24
+#endif
 #define FIXED_HOUR_MARKER_LENGTH 1
 
 
