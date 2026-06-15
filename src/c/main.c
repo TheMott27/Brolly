@@ -187,8 +187,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
   #define FIXED_ICON_SIZE 24
 #endif
 #define FIXED_HOUR_MARKER_LENGTH 1
-// Gap between icon edge and the innermost marker tick (1px hour marker + 5px clearance)
-#define ICON_MARKER_GAP 6
+// Gap between icon edge and the innermost marker tick (increased to match top icon distance)
+#define ICON_MARKER_GAP 12
 
 
 // ============================================================
