@@ -595,7 +595,16 @@ static int icon_code_to_gpath(int icon) {
   }
 }
 
-static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
+// Edge alignment modes for draw_weather_icon
+typedef enum {
+  ICON_ALIGN_CENTER = 0,
+  ICON_ALIGN_RIGHT,   // right edge of drawn icon aligns to center.x
+  ICON_ALIGN_LEFT,    // left edge of drawn icon aligns to center.x
+  ICON_ALIGN_TOP,     // top edge of drawn icon aligns to center.y
+  ICON_ALIGN_BOTTOM,  // bottom edge of drawn icon aligns to center.y
+} IconAlign;
+
+static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center, int sz, int h, IconAlign align) {
   int gpath_id = icon_code_to_gpath(icon);
   int path_count = 0;
   const GPathInfo *paths = NULL;
@@ -632,6 +641,26 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
   int ox = center.x - half;
   int oy = center.y - half;
 
+  // For edge-aligned modes, shift ox/oy so the actual drawn edge of this
+  // specific icon lands exactly at the requested position.
+  if (align != ICON_ALIGN_CENTER && gpath_id >= 0 && gpath_id < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
+    int drawn_w = (GPATH_BOUNDS[gpath_id].w * scale256) / 256;
+    int drawn_h = (GPATH_BOUNDS[gpath_id].h * scale256) / 256;
+    if (align == ICON_ALIGN_RIGHT) {
+      // right edge of drawn icon = center.x  →  ox = center.x - drawn_w
+      ox = center.x - drawn_w;
+    } else if (align == ICON_ALIGN_LEFT) {
+      // left edge of drawn icon = center.x  →  ox = center.x
+      ox = center.x;
+    } else if (align == ICON_ALIGN_TOP) {
+      // top edge of drawn icon = center.y  →  oy = center.y
+      oy = center.y;
+    } else if (align == ICON_ALIGN_BOTTOM) {
+      // bottom edge of drawn icon = center.y  →  oy = center.y - drawn_h
+      oy = center.y - drawn_h;
+    }
+  }
+
   // Choose color based on mode: rainbow or single
   GColor icon_color = (s_settings.icon_color_mode == 1) 
     ? hour_to_rainbow_color(h) 
@@ -650,6 +679,10 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
       graphics_draw_line(ctx, a, b);
     }
   }
+}
+
+static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
+  draw_weather_icon_aligned(ctx, icon, center, sz, h, ICON_ALIGN_CENTER);
 }
 
 // ============================================================
@@ -878,15 +911,18 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // Chalk: place icons on a circle
         icon_center = polar_to_point(center, angle, chalk_icon_r);
       } else if (s_screen_w >= 200) {
-        // Emery: custom positioning per hour
+        // Emery: icon_center carries the margin boundary for the aligned axis;
+        // draw_weather_icon_aligned will shift ox/oy so the icon edge lands there.
         icon_center = pos;
         if (is_top_bottom) {
+          // top group: icon_center.y = top margin boundary
           if (h == 0 || h == 1 || h == 11) {
-            icon_center.y = half + ICON_MARKER_GAP;
+            icon_center.y = ICON_MARKER_GAP;
           } else {
-            icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+            // bottom group: icon_center.y = bottom margin boundary
+            icon_center.y = (s_screen_h - 1) - ICON_MARKER_GAP;
           }
-          // Align h=1,5,7,11 x to angular ray intersection, shifted 4px toward centre
+          // Align h=1,5,7,11 x to angular ray intersection, shifted 7px toward centre
           if (h == 1 || h == 5 || h == 7 || h == 11) {
             int ray_dx = sin_lookup(angle);
             int ray_dy = -cos_lookup(angle);
@@ -899,14 +935,16 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = raw_x + (raw_x > center.x ? -7 : 7);
           }
         } else {
-          int y_top = half + ICON_MARKER_GAP;
+          int y_top = ICON_MARKER_GAP;
           int y_mid = (s_screen_h - 1) / 2;
           int y_mid_39 = y_mid - 3;
-          int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+          int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;
+          // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
-            icon_center.x = half + ICON_MARKER_GAP;
+            // left group: icon_center.x = left margin boundary
+            icon_center.x = ICON_MARKER_GAP;
           } else {
-            icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
+            icon_center.x = (s_screen_w - 1) - ICON_MARKER_GAP;
           }
           if (h == 2 || h == 10) {
             icon_center.y = (y_top + y_mid_39) / 2;
@@ -958,7 +996,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-      draw_weather_icon(ctx, icon, icon_center, sz, h);
+      // On Emery, align each icon's outer edge to the margin boundary
+      IconAlign align = ICON_ALIGN_CENTER;
+      if (s_screen_w >= 200) {
+        if (h == 0 || h == 1 || h == 11) {
+          align = ICON_ALIGN_TOP;     // top edge to margin
+        } else if (h == 5 || h == 6 || h == 7) {
+          align = ICON_ALIGN_BOTTOM;  // bottom edge to margin
+        } else if (h == 2 || h == 3 || h == 4) {
+          align = ICON_ALIGN_RIGHT;   // right edge to margin
+        } else if (h == 8 || h == 9 || h == 10) {
+          align = ICON_ALIGN_LEFT;    // left edge to margin
+        }
+      }
+      draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
 
     } else if (s_settings.display_hour_markers) {
       if (round_screen) {
