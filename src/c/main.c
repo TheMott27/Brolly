@@ -826,19 +826,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     GPoint pos = square_perimeter_point(center, angle, 0, 0);
 
     if (show_icons) {
-      if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) {
-          pos.y = 0;
-        } else {
-          pos.y = s_screen_h - 1;
-        }
-      } else {
-        if (h == 9 || h == 8 || h == 10) {
-          pos.x = 0;
-        } else {
-          pos.x = s_screen_w - 1;
-        }
-      }
+      int sz = get_icon_size();
+      int half = sz / 2;
+      // Inset icon center from screen edge by half icon size so icon stays fully on-screen
+      GPoint icon_center = square_perimeter_point(center, angle, half, half);
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
       int pm_hour   = (clock_num == 12) ? 12 : clock_num + 12;
@@ -847,11 +838,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-
-      // Icons use the same perimeter positioning as numbers
-      // The pos from square_perimeter_point already places them at screen edges
-      GPoint icon_center = pos;
-      draw_weather_icon(ctx, icon, icon_center, get_icon_size(), h);
+      draw_weather_icon(ctx, icon, icon_center, sz, h);
 
     } else if (s_settings.display_hour_markers) {
       int ntw = s_num_sizes[h].w;
