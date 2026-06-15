@@ -166,7 +166,7 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define PERSIST_SETTINGS        30
 
 #define SHAKE_DISPLAY_MS        5000
-#define APP_MSG_INBOX_SIZE      512
+#define APP_MSG_INBOX_SIZE      256
 #define APP_MSG_OUTBOX_SIZE     64
 
 #define FIXED_BATT_PCT_MID       50
@@ -1072,7 +1072,11 @@ static void numbers_timer_callback(void *data) {
   s_showing_icons = true;
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_complication_layer);
+  // Only redraw complication if it uses shake-dependent visibility
+  if (s_settings.temp_visible == COMPLICATION_SHAKE ||
+      s_settings.date_visible == COMPLICATION_SHAKE) {
+    layer_mark_dirty(s_complication_layer);
+  }
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   s_shake_timer = app_timer_register(SHAKE_DISPLAY_MS, shake_timer_callback, NULL);
 }
@@ -1082,7 +1086,11 @@ static void shake_timer_callback(void *data) {
   s_showing_icons = false;
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
-  layer_mark_dirty(s_complication_layer);
+  // Only redraw complication if it uses shake-dependent visibility
+  if (s_settings.temp_visible == COMPLICATION_SHAKE ||
+      s_settings.date_visible == COMPLICATION_SHAKE) {
+    layer_mark_dirty(s_complication_layer);
+  }
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
@@ -1150,8 +1158,10 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
     // Complication: only dirty when position changes (minute crosses 20 or 40 boundary)
     // or at midnight (date changes). Temp changes are handled by inbox_received.
-    if (s_settings.date_visible != COMPLICATION_OFF ||
-        s_settings.temp_visible != COMPLICATION_OFF) {
+    // Skip entirely if both are off or shake-only (shake handler manages those).
+    bool comp_always = (s_settings.date_visible == COMPLICATION_ALWAYS ||
+                        s_settings.temp_visible == COMPLICATION_ALWAYS);
+    if (comp_always) {
       int prev_min = (s_tick_tm.tm_min == 0) ? 59 : s_tick_tm.tm_min - 1;
       bool pos_changed = (prev_min < 20 && s_tick_tm.tm_min >= 20) ||
                          (prev_min < 40 && s_tick_tm.tm_min >= 40) ||
