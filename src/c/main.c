@@ -665,9 +665,9 @@ static GFont resolve_number_font(int8_t id) {
   // Supported: Basalt (144px) and Emery (200px)
   
   switch (id) {
-    case 0:  // 10% screen width
-      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS);  // Emery: 32px ~16%
-      else return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Basalt: 28px ~19.4%
+    case 0:  // 10% screen width (Digital)
+      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_LECO_32_LIGHT_NUMBERS);  // Emery: 32px light
+      else return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Basalt: 28px light
     case 1:  // 13% screen width
       if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);  // Emery: 42px ~21%
       else return fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);  // Basalt: 34px ~23.6%
