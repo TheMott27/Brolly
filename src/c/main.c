@@ -215,7 +215,7 @@ typedef struct {
   int8_t number_layout;  // 0=Offset (current), 1=Regular (new)
   int8_t number_weight;  // 0=slim, 1=regular, 2=bold
   int8_t number_size;  // 0=small (12px), 1=medium (24px), 2=large (32px)
-  int8_t icon_size;    // 0=small (75%), 1=medium (100%), 2=large (125%)
+  // icon_size removed: fixed per platform
   int8_t number_color_mode;  // 0=single color, 1=rainbow
   int8_t icon_color_mode;    // 0=single color, 1=rainbow
   GColor background_color;
@@ -375,7 +375,7 @@ static void settings_set_defaults(Settings *s) {
   s->number_layout               = 0;  // 0=Offset (default), 1=Regular
   s->number_weight               = 1;  // regular
   s->number_size                 = 1;  // medium
-  s->icon_size                   = 1;  // medium
+  // icon_size: fixed per platform
   s->number_color_mode           = 0;  // single color
   s->icon_color_mode             = 0;  // single color
   s->background_color            = GColorBlack;
@@ -631,14 +631,9 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
 // HOUR NUMBER DRAWING
 // ============================================================
 
-// Helper to get scaled icon size (0=75%, 1=100%, 2=125%)
+// Icon size is fixed per platform, no user configuration
 static int get_icon_size(void) {
-  switch (s_settings.icon_size) {
-    case 0:  return (FIXED_ICON_SIZE * 3) / 4;  // 75%
-    case 2:  return (FIXED_ICON_SIZE * 5) / 4;  // 125%
-    case 1:
-    default: return FIXED_ICON_SIZE;             // 100%
-  }
+  return FIXED_ICON_SIZE;
 }
 
 // Select font based on screen dimensions
@@ -1325,8 +1320,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (nw) { s_settings.number_weight = (int8_t)nw->value->int32; s_cached_number_font = NULL; s_num_sizes_cached = false; dirty_bg = true; }
   Tuple *ns = dict_find(iter, KEY_NUMBER_SIZE);
   if (ns) { s_settings.number_size = (int8_t)ns->value->int32; s_cached_number_font = NULL; s_num_sizes_cached = false; dirty_bg = true; }
-  Tuple *is = dict_find(iter, KEY_ICON_SIZE);
-  if (is) { s_settings.icon_size = (int8_t)is->value->int32; dirty_bg = true; }
+  // KEY_ICON_SIZE ignored: icon size is fixed per platform
   Tuple *ncm = dict_find(iter, KEY_NUMBER_COLOR_MODE);
   if (ncm) { s_settings.number_color_mode = (int8_t)ncm->value->int32; dirty_bg = true; }
   Tuple *icm = dict_find(iter, KEY_ICON_COLOR_MODE);
