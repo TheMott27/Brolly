@@ -358,7 +358,7 @@ static GColor hour_to_rainbow_color(int h) {
 static void settings_set_defaults(Settings *s) {
   s->display_hour_markers        = true;
   s->display_minor_markers       = true;
-  s->shake_mode                  = SHAKE_MODE_ICONS_ONLY;
+  s->shake_mode                  = SHAKE_MODE_ON_SHAKE;
   s->date_visible                = COMPLICATION_ALWAYS;
   s->temp_visible                = COMPLICATION_ALWAYS;
   s->temp_unit                   = TEMP_UNIT_CELSIUS;
