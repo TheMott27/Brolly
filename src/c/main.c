@@ -828,33 +828,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
-      // Mirror the number positioning: icons sit at the same screen positions as their numbers.
-      // Numbers use a 6px inset from the edge; icons use half their size as the inset.
-      GPoint icon_center = pos;  // start from perimeter point, then override below
-      if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) {
-          icon_center.y = half;
-        } else {
-          icon_center.y = s_screen_h - 1 - half;
-        }
-      } else {
-        // Side hours: x pinned to edge, y interpolated like numbers
-        int y_top = half;
-        int y_mid = (s_screen_h - 1) / 2;
-        int y_bot = s_screen_h - 1 - half;
-        if (h == 8 || h == 9 || h == 10) {
-          icon_center.x = half;
-        } else {
-          icon_center.x = s_screen_w - 1 - half;
-        }
-        if (h == 2 || h == 10) {
-          icon_center.y = (y_top + y_mid) / 2;
-        } else if (h == 3 || h == 9) {
-          icon_center.y = y_mid;
-        } else if (h == 4 || h == 8) {
-          icon_center.y = (y_mid + y_bot) / 2;
-        }
-      }
+      // Place icon centre at the perimeter point inset by half the icon size on both axes.
+      // square_perimeter_point with margin=half gives the correct position for every hour,
+      // including corners (h=1,5,7,11) where both x and y must be inset simultaneously.
+      GPoint icon_center = square_perimeter_point(center, angle, half, half);
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
       int pm_hour   = (clock_num == 12) ? 12 : clock_num + 12;
