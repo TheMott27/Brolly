@@ -851,8 +851,26 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           }
         }
       } else {
-        // Basalt: original simple inset via square_perimeter_point
+        // Basalt: simple inset for top/bottom hours; explicit y for side hours
         icon_center = square_perimeter_point(center, angle, half + 6, half + 6);
+        if (!is_top_bottom) {
+          int y_top = (half + 6) * 3 / 4;
+          int y_mid = (s_screen_h - 1) / 2;
+          int y_mid_adj = y_mid - 2;
+          int y_bot = (s_screen_h - 1) - (half + 6);
+          if (h == 8 || h == 9 || h == 10) {
+            icon_center.x = half + 6;
+          } else {
+            icon_center.x = (s_screen_w - 1) - (half + 6);
+          }
+          if (h == 2 || h == 10) {
+            icon_center.y = (y_top + y_mid_adj) / 2;
+          } else if (h == 3 || h == 9) {
+            icon_center.y = y_mid_adj;
+          } else if (h == 4 || h == 8) {
+            icon_center.y = (y_mid_adj + y_bot) / 2;
+          }
+        }
       }
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
