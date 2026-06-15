@@ -166,7 +166,7 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define PERSIST_SETTINGS        30
 
 #define SHAKE_DISPLAY_MS        5000
-#define APP_MSG_INBOX_SIZE      256
+#define APP_MSG_INBOX_SIZE      512
 #define APP_MSG_OUTBOX_SIZE     64
 
 #define FIXED_BATT_PCT_MID       50
