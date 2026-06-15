@@ -182,6 +182,15 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #else
   #define FIXED_ICON_SIZE 24
 #endif
+
+// Helper: true on Chalk (round screen)
+static inline bool is_round_screen(void) {
+#if defined(PBL_PLATFORM_CHALK)
+  return true;
+#else
+  return false;
+#endif
+}
 #define FIXED_HOUR_MARKER_LENGTH 1
 // Gap between icon edge and the innermost marker tick (increased to match top icon distance)
 #define ICON_MARKER_GAP 12
@@ -434,45 +443,66 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle,
 // Compute and cache all marker positions
 static void cache_marker_positions(void) {
   GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
+  bool round = is_round_screen();
+  // Chalk: radius to the inner edge of the bezel (90px for 180px screen)
+  int circle_r = (s_screen_w < s_screen_h ? s_screen_w : s_screen_h) / 2;
 
   // Minute markers
   for (int i = 0; i < 60; i++) {
     int32_t angle = DEG_TO_TRIGANGLE(i * 6);
-    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-    int dx = center.x - outer_pt.x;
-    int dy = center.y - outer_pt.y;
-    int adx = dx < 0 ? -dx : dx;
-    int ady = dy < 0 ? -dy : dy;
-    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+    GPoint outer_pt;
     int marker_len = 4;  // doubled from 2
 #if defined(PBL_PLATFORM_BASALT)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 8;  // doubled from 4
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 8;
 #elif defined(PBL_PLATFORM_EMERY)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 10;  // doubled from 5
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 10;
+#elif defined(PBL_PLATFORM_CHALK)
+    marker_len = 4;
 #endif
-    s_min_marker_outer[i] = outer_pt;
-    if (dist > 0) {
-      s_min_marker_inner[i] = GPoint(outer_pt.x + dx * marker_len / dist,
-                                     outer_pt.y + dy * marker_len / dist);
+    if (round) {
+      outer_pt = polar_to_point(center, angle, circle_r - 1);
+      GPoint inner_pt = polar_to_point(center, angle, circle_r - 1 - marker_len);
+      s_min_marker_outer[i] = outer_pt;
+      s_min_marker_inner[i] = inner_pt;
     } else {
-      s_min_marker_inner[i] = outer_pt;
+      outer_pt = square_perimeter_point(center, angle, 0, 0);
+      int dx = center.x - outer_pt.x;
+      int dy = center.y - outer_pt.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+      s_min_marker_outer[i] = outer_pt;
+      if (dist > 0) {
+        s_min_marker_inner[i] = GPoint(outer_pt.x + dx * marker_len / dist,
+                                       outer_pt.y + dy * marker_len / dist);
+      } else {
+        s_min_marker_inner[i] = outer_pt;
+      }
     }
   }
 
   // Hour tick marks
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
-    GPoint outer_pt = square_perimeter_point(center, angle, 0, 0);
-    int dx = center.x - outer_pt.x;
-    int dy = center.y - outer_pt.y;
-    int adx = dx < 0 ? -dx : dx;
-    int ady = dy < 0 ? -dy : dy;
-    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-    s_hour_marker_outer[h] = outer_pt;
-    if (dist > 0) {
-      s_hour_marker_inner[h] = GPoint(outer_pt.x + dx * 2 / dist, outer_pt.y + dy * 2 / dist);  // doubled from 1px
+    GPoint outer_pt;
+    if (round) {
+      outer_pt = polar_to_point(center, angle, circle_r - 1);
+      GPoint inner_pt = polar_to_point(center, angle, circle_r - 1 - 8);  // 8px hour tick
+      s_hour_marker_outer[h] = outer_pt;
+      s_hour_marker_inner[h] = inner_pt;
     } else {
-      s_hour_marker_inner[h] = outer_pt;
+      outer_pt = square_perimeter_point(center, angle, 0, 0);
+      int dx = center.x - outer_pt.x;
+      int dy = center.y - outer_pt.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+      s_hour_marker_outer[h] = outer_pt;
+      if (dist > 0) {
+        s_hour_marker_inner[h] = GPoint(outer_pt.x + dx * 2 / dist, outer_pt.y + dy * 2 / dist);
+      } else {
+        s_hour_marker_inner[h] = outer_pt;
+      }
     }
   }
 
@@ -482,6 +512,8 @@ static void cache_marker_positions(void) {
 // Pre-compute sunrise/sunset marker geometry from current data
 static void cache_sunrise_sunset_markers(void) {
   GPoint center = GPoint((s_screen_w - 1) / 2, (s_screen_h - 1) / 2);
+  bool round = is_round_screen();
+  int circle_r = (s_screen_w < s_screen_h ? s_screen_w : s_screen_h) / 2;
 
   for (int evt = 0; evt < 2; evt++) {
     int8_t eh = (evt == 0) ? s_sunrise_hour : s_sunset_hour;
@@ -498,17 +530,22 @@ static void cache_sunrise_sunset_markers(void) {
     int marker = hour12 * 5 + rounded_min / 12;
     int32_t angle = DEG_TO_TRIGANGLE(marker * 6);
 
-    GPoint opt = square_perimeter_point(center, angle, 0, 0);
-    int dx = center.x - opt.x;
-    int dy = center.y - opt.y;
-    int adx = dx < 0 ? -dx : dx;
-    int ady = dy < 0 ? -dy : dy;
-    int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
-    *outer = opt;
-    if (dist > 0) {
-      *inner = GPoint(opt.x + dx * 5 / dist, opt.y + dy * 5 / dist);
+    if (round) {
+      *outer = polar_to_point(center, angle, circle_r - 1);
+      *inner = polar_to_point(center, angle, circle_r - 1 - 5);
     } else {
-      *inner = opt;
+      GPoint opt = square_perimeter_point(center, angle, 0, 0);
+      int dx = center.x - opt.x;
+      int dy = center.y - opt.y;
+      int adx = dx < 0 ? -dx : dx;
+      int ady = dy < 0 ? -dy : dy;
+      int dist = (adx > ady ? adx : ady) + ((adx < ady ? adx : ady) * 3 / 8);
+      *outer = opt;
+      if (dist > 0) {
+        *inner = GPoint(opt.x + dx * 5 / dist, opt.y + dy * 5 / dist);
+      } else {
+        *inner = opt;
+      }
     }
     *valid = true;
   }
@@ -721,7 +758,13 @@ static void seconds_layer_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = GPoint((bounds.size.w - 1) / 2, (bounds.size.h - 1) / 2);
   int32_t sec_angle = DEG_TO_TRIGANGLE(s_tick_tm.tm_sec * 6);
-  GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+  GPoint sec_tip;
+  if (is_round_screen()) {
+    int circle_r = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
+    sec_tip = polar_to_point(center, sec_angle, circle_r - 2);
+  } else {
+    sec_tip = square_perimeter_point(center, sec_angle, 0, 0);
+  }
   GPoint sec_tail = polar_to_point(center, sec_angle + DEG_TO_TRIGANGLE(180), POS_Y(18));
   graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
   graphics_context_set_stroke_width(ctx, 1);
@@ -813,17 +856,28 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   if (!s_num_sizes_cached) cache_number_sizes();
   int cur_hour = s_tick_tm.tm_hour;
   int cur_min  = s_tick_tm.tm_min;
+  bool round_screen = is_round_screen();
+  // Chalk: place numbers/icons on a circle inset from the edge
+  int circle_r = (s_screen_w < s_screen_h ? s_screen_w : s_screen_h) / 2;
+  // Inset radius for icon/number centres: leave room for the icon half-size + marker gap
+  int chalk_icon_r  = circle_r - FIXED_ICON_SIZE / 2 - ICON_MARKER_GAP;
+  int chalk_num_r   = circle_r - 22;  // ~22px from edge for numbers
 
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
     bool is_top_bottom = (h == 0 || h == 1 || h == 5 || h == 6 || h == 7 || h == 11);
-    GPoint pos = square_perimeter_point(center, angle, 0, 0);
+    GPoint pos = round_screen
+      ? polar_to_point(center, angle, chalk_num_r)
+      : square_perimeter_point(center, angle, 0, 0);
 
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
       GPoint icon_center;
-      if (s_screen_w >= 200) {
+      if (round_screen) {
+        // Chalk: place icons on a circle
+        icon_center = polar_to_point(center, angle, chalk_icon_r);
+      } else if (s_screen_w >= 200) {
         // Emery: custom positioning per hour
         icon_center = pos;
         if (is_top_bottom) {
@@ -907,57 +961,62 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       draw_weather_icon(ctx, icon, icon_center, sz, h);
 
     } else if (s_settings.display_hour_markers) {
-      int ntw = s_num_sizes[h].w;
-      int nth = s_num_sizes[h].h;
-      // Actual rendered size offsets from GRect: top 7, bottom 0, left 3, right 3
-      // Position so actual text edge is 6px from screen edge
-      // actual_h = nth - 7, actual_w = ntw - 6
-      // draw_hour_number centers on actual_h, so pos.y = actual_top + actual_h/2
-      int actual_h = nth - 7;
-      int actual_w = ntw - 6;
-      int margin = (s_screen_w >= 200) ? 12 : 6;
-      if (is_top_bottom) {
-        if (h == 0 || h == 1 || h == 11) {
-          pos.y = margin + actual_h / 2;
-        } else {
-          pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
-        }
-        // Align h=1,5,7,11 x to angular ray intersection, shifted toward centre
-        // Basalt: 2px, Emery: 4px
-        if (h == 1 || h == 5 || h == 7 || h == 11) {
-          int32_t ray_angle = DEG_TO_TRIGANGLE(h * 30);
-          int ray_dx = sin_lookup(ray_angle);
-          int ray_dy = -cos_lookup(ray_angle);
-          int raw_x;
-          if (ray_dy < 0) {
-            raw_x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
-          } else {
-            raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
-          }
-          int shift = (s_screen_w >= 200) ? 4 : 2;
-          pos.x = raw_x + (raw_x > center.x ? -shift : shift);
-        }
+      if (round_screen) {
+        // Chalk: pos is already on the circle (chalk_num_r), draw directly
+        draw_hour_number(ctx, h, pos, num_font);
       } else {
-        int y_top = margin + actual_h / 2;
-        int y_mid = (s_screen_h - 1) / 2;
-        int y_bot = (s_screen_h - 1 - margin) - actual_h / 2;
-        int y2 = (y_top + y_mid) / 2;
-        int y3 = y_mid;
-        int y4 = (y_mid + y_bot) / 2;
-        if (h == 8 || h == 9 || h == 10) {
-          pos.x = margin + actual_w / 2;
+        int ntw = s_num_sizes[h].w;
+        int nth = s_num_sizes[h].h;
+        // Actual rendered size offsets from GRect: top 7, bottom 0, left 3, right 3
+        // Position so actual text edge is 6px from screen edge
+        // actual_h = nth - 7, actual_w = ntw - 6
+        // draw_hour_number centers on actual_h, so pos.y = actual_top + actual_h/2
+        int actual_h = nth - 7;
+        int actual_w = ntw - 6;
+        int margin = (s_screen_w >= 200) ? 12 : 6;
+        if (is_top_bottom) {
+          if (h == 0 || h == 1 || h == 11) {
+            pos.y = margin + actual_h / 2;
+          } else {
+            pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
+          }
+          // Align h=1,5,7,11 x to angular ray intersection, shifted toward centre
+          // Basalt: 2px, Emery: 4px
+          if (h == 1 || h == 5 || h == 7 || h == 11) {
+            int32_t ray_angle = DEG_TO_TRIGANGLE(h * 30);
+            int ray_dx = sin_lookup(ray_angle);
+            int ray_dy = -cos_lookup(ray_angle);
+            int raw_x;
+            if (ray_dy < 0) {
+              raw_x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+            } else {
+              raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+            }
+            int shift = (s_screen_w >= 200) ? 4 : 2;
+            pos.x = raw_x + (raw_x > center.x ? -shift : shift);
+          }
         } else {
-          pos.x = (s_screen_w - 1 - margin) - actual_w / 2;
+          int y_top = margin + actual_h / 2;
+          int y_mid = (s_screen_h - 1) / 2;
+          int y_bot = (s_screen_h - 1 - margin) - actual_h / 2;
+          int y2 = (y_top + y_mid) / 2;
+          int y3 = y_mid;
+          int y4 = (y_mid + y_bot) / 2;
+          if (h == 8 || h == 9 || h == 10) {
+            pos.x = margin + actual_w / 2;
+          } else {
+            pos.x = (s_screen_w - 1 - margin) - actual_w / 2;
+          }
+          if (h == 2 || h == 10) {
+            pos.y = y2;
+          } else if (h == 3 || h == 9) {
+            pos.y = y3;
+          } else if (h == 4 || h == 8) {
+            pos.y = y4;
+          }
         }
-        if (h == 2 || h == 10) {
-          pos.y = y2;
-        } else if (h == 3 || h == 9) {
-          pos.y = y3;
-        } else if (h == 4 || h == 8) {
-          pos.y = y4;
-        }
+        draw_hour_number(ctx, h, pos, num_font);
       }
-      draw_hour_number(ctx, h, pos, num_font);
     }
   }
 
