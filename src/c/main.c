@@ -590,6 +590,11 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
       path_count = UNKNOWN_PATH_COUNT;            paths = UNKNOWN_PATHS;            break;
   }
 
+  // Icons are drawn in a native 24x24 coordinate space.
+  // Scale each point so the icon fills the requested sz box.
+  // Use integer fixed-point: scale = sz * 256 / 24, then divide by 256.
+  int native = 24;
+  int scale256 = (sz * 256) / native;  // fixed-point scale factor
   int half = sz / 2;
   int ox = center.x - half;
   int oy = center.y - half;
@@ -605,9 +610,10 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
     int npts = paths[i].num_points;
     if (npts < 2) continue;
     for (int j = 0; j < npts; j++) {
-      GPoint a = GPoint(paths[i].points[j].x + ox, paths[i].points[j].y + oy);
-      GPoint b = GPoint(paths[i].points[(j + 1) % npts].x + ox,
-                        paths[i].points[(j + 1) % npts].y + oy);
+      GPoint a = GPoint(ox + (paths[i].points[j].x * scale256) / 256,
+                        oy + (paths[i].points[j].y * scale256) / 256);
+      GPoint b = GPoint(ox + (paths[i].points[(j+1)%npts].x * scale256) / 256,
+                        oy + (paths[i].points[(j+1)%npts].y * scale256) / 256);
       graphics_draw_line(ctx, a, b);
     }
   }
