@@ -853,6 +853,16 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       } else {
         // Basalt: simple inset for top/bottom hours; explicit y for side hours
         icon_center = square_perimeter_point(center, angle, half + 6, half + 6);
+        // Align h=1,5,7,11 x to where their angular ray hits the top/bottom edge
+        if (is_top_bottom && (h == 1 || h == 5 || h == 7 || h == 11)) {
+          int ray_dx = sin_lookup(angle);   // TRIG_MAX_RATIO units
+          int ray_dy = -cos_lookup(angle);  // TRIG_MAX_RATIO units
+          if (ray_dy < 0) {
+            icon_center.x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+          } else {
+            icon_center.x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+          }
+        }
         if (!is_top_bottom) {
           int y_top = (half + 6) * 3 / 4;
           int y_mid = (s_screen_h - 1) / 2;
@@ -898,9 +908,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
         }
-        // On Basalt, align h=1,5,7,11 x to their hour marker x position
+        // On Basalt, align h=1,5,7,11 x to where their angular ray hits the top/bottom edge
         if (s_screen_w < 200 && (h == 1 || h == 5 || h == 7 || h == 11)) {
-          pos.x = s_hour_marker_outer[h].x;
+          // ray: dx=sin(h*30 deg), dy=-cos(h*30 deg)
+          // intersect with top edge (dy<0) or bottom edge (dy>0)
+          int32_t ray_angle = DEG_TO_TRIGANGLE(h * 30);
+          int ray_dx = sin_lookup(ray_angle);   // TRIG_MAX_RATIO units
+          int ray_dy = -cos_lookup(ray_angle);  // TRIG_MAX_RATIO units
+          if (ray_dy < 0) {
+            // hits top edge: t = cy / (-ray_dy)
+            pos.x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+          } else {
+            // hits bottom edge: t = (sh-1-cy) / ray_dy
+            pos.x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+          }
         }
       } else {
         int y_top = margin + actual_h / 2;
