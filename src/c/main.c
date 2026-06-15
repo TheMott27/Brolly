@@ -187,8 +187,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
   #define FIXED_ICON_SIZE 24
 #endif
 #define FIXED_HOUR_MARKER_LENGTH 1
-// Gap between icon edge and the innermost marker tick (1px hour marker + 5px clearance)
-#define ICON_MARKER_GAP 6
+// Gap between icon edge and the innermost marker tick (doubled: 1px hour marker + 11px clearance)
+#define ICON_MARKER_GAP 12
 
 
 // ============================================================
@@ -890,30 +890,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int actual_w = ntw - 6;
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          // Top of actual text at y=6: pos.y = 6 + actual_h/2
-          pos.y = 6 + actual_h / 2;
+          // Top of actual text at y=12: pos.y = 12 + actual_h/2
+          pos.y = 12 + actual_h / 2;
         } else {
-          // Bottom of actual text at y=(screen_h-1-6): pos.y = (screen_h-1-6) - actual_h/2
-          pos.y = (s_screen_h - 1 - 6) - actual_h / 2;
+          // Bottom of actual text at y=(screen_h-1-12): pos.y = (screen_h-1-12) - actual_h/2
+          pos.y = (s_screen_h - 1 - 12) - actual_h / 2;
         }
       } else {
         // Rendered centres of the corner/edge anchors:
-        //   h==1 (top):    y_top = 6 + actual_h/2
+        //   h==1 (top):    y_top = 12 + actual_h/2
         //   h==3 (centre): y_mid = (screen_h-1) / 2  (true screen centre)
-        //   h==5 (bottom): y_bot = (screen_h-1-6) - actual_h/2
+        //   h==5 (bottom): y_bot = (screen_h-1-12) - actual_h/2
         // h==2/10: 50% between top and centre
         // h==3/9:  true screen centre
         // h==4/8:  50% between centre and bottom
-        int y_top = 6 + actual_h / 2;
+        int y_top = 12 + actual_h / 2;
         int y_mid = (s_screen_h - 1) / 2;
-        int y_bot = (s_screen_h - 1 - 6) - actual_h / 2;
+        int y_bot = (s_screen_h - 1 - 12) - actual_h / 2;
         int y2 = (y_top + y_mid) / 2;
         int y3 = y_mid;
         int y4 = (y_mid + y_bot) / 2;
         if (h == 8 || h == 9 || h == 10) {
-          pos.x = 6 + actual_w / 2;
+          pos.x = 12 + actual_w / 2;
         } else {
-          pos.x = (s_screen_w - 1 - 6) - actual_w / 2;
+          pos.x = (s_screen_w - 1 - 12) - actual_w / 2;
         }
         if (h == 2 || h == 10) {
           pos.y = y2;
