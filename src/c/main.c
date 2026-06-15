@@ -649,7 +649,7 @@ static GFont get_complication_font(void) {
   } else if (s_screen_w >= 180) {
     return fonts_get_system_font(FONT_KEY_GOTHIC_18);  // Chalk: same as Basalt
   } else {
-    return fonts_get_system_font(FONT_KEY_GOTHIC_18);  // Basalt, Diorite: default
+    return fonts_get_system_font(FONT_KEY_GOTHIC_14);  // Basalt, Diorite: smaller
   }
 }
 
