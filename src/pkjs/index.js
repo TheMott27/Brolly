@@ -464,24 +464,6 @@ function getDictionaryOM(json) {
     KEY_NORTHERN_HEMISPHERE: northern_hemisphere,
     KEY_TEMP_C: temp_c,
     KEY_TEMP_F: temp_f,
-    KEY_SUNRISE_MARKER_VISIBLE: (function() {
-      try {
-        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
-        return cd.hasOwnProperty('KEY_SUNRISE_MARKER_VISIBLE') ? parseInt(cd.KEY_SUNRISE_MARKER_VISIBLE) : 0;
-      } catch(e) { return 0; }
-    })(),
-    KEY_SUNRISE_MARKER_COLOR: (function() {
-      try {
-        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
-        return cd.hasOwnProperty('KEY_SUNRISE_MARKER_COLOR') ? parseInt(cd.KEY_SUNRISE_MARKER_COLOR) : 0xff9500;
-      } catch(e) { return 0xff9500; }
-    })(),
-    KEY_SUNSET_MARKER_COLOR: (function() {
-      try {
-        let cd = JSON.parse(localStorage.getItem('aww2ConfigData')) || {};
-        return cd.hasOwnProperty('KEY_SUNSET_MARKER_COLOR') ? parseInt(cd.KEY_SUNSET_MARKER_COLOR) : 0x003d82;
-      } catch(e) { return 0x003d82; }
-    })()
   };
   
   // Only add sunrise/sunset if actual data was found
@@ -787,7 +769,7 @@ function getWeather(e) {
     navigator.geolocation.getCurrentPosition(
       locationSuccess,
       locationError,
-      {timeout: 15000, maximumAge: 60000}
+      {timeout: 15000, maximumAge: 300000}
     );
   }
   newSettings = false;
@@ -919,22 +901,15 @@ function init() {
 
 Pebble.addEventListener('ready', init);
 
-// When app message connection opens (watch connects to phone),
-// immediately send saved settings so they load even on first install.
-Pebble.addEventListener('appmessage', function(e) {
-  // This fires when the watch sends a message, but we use it as a signal
-  // that the connection is active. Send settings proactively.
-  let configData = JSON.parse(localStorage.getItem("aww2ConfigData")) || {};
-  if (Object.keys(configData).length > 0) {
-    sendSavedSettings(configData);
-  }
-});
+// Note: appmessage listener removed for battery optimisation.
+// Settings are already sent on 'ready' event (init). Re-sending on every
+// watch→phone message caused unnecessary Bluetooth traffic.
 
 Pebble.addEventListener('showConfiguration', function() {
   // Use the stored URL (which includes all saved settings as query params)
   // so the page reopens pre-populated with the user's last choices.
   // Falls back to the base URL on first open.
-  var baseUrl = 'https://aww2setts-au3w7dkw.manus.space/?test=1';
+  var baseUrl = 'https://aww2setts-au3w7dkw.manus.space/';
   var stored = null;
   try {
     var cd = JSON.parse(localStorage.getItem('aww2ConfigData'));
