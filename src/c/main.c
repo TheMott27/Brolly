@@ -854,7 +854,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // Side hours: y interpolated between actual top/mid/bottom icon positions
         // y_top = actual top icon y (h=1/11), y_bot = actual bottom icon y (h=5/7)
         int y_top = (half + ICON_MARKER_GAP) * 3 / 4;  // matches top icon inset
-        int y_mid = (s_screen_h - 1) / 2;              // 50% screen centre
+        int y_mid = (s_screen_h - 1) / 2;              // 50% screen centre (for interpolation)
+        int y_mid_39 = y_mid - 3;                       // adjusted up for h=3/9 visual alignment
         int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);  // matches bottom icon inset
         if (h == 8 || h == 9 || h == 10) {
           // Left side: x inset from left
@@ -864,11 +865,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
         }
         if (h == 2 || h == 10) {
-          icon_center.y = (y_top + y_mid) / 2;  // halfway between top and centre
+          icon_center.y = (y_top + y_mid_39) / 2;  // halfway between top and adjusted centre
         } else if (h == 3 || h == 9) {
-          icon_center.y = y_mid;                 // 50% screen centre
+          icon_center.y = y_mid_39;                 // exactly at 50% line (visually adjusted)
         } else if (h == 4 || h == 8) {
-          icon_center.y = (y_mid + y_bot) / 2;  // halfway between centre and bottom
+          icon_center.y = (y_mid_39 + y_bot) / 2;  // halfway between adjusted centre and bottom
         }
       }
       int clock_num = (h == 0) ? 12 : h;
