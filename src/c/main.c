@@ -666,7 +666,7 @@ static GFont resolve_number_font(int8_t id) {
   
   switch (id) {
     case 0:  // 10% screen width (Digital)
-      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_GOTHIC_28);  // Emery: thin sans
+      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Emery: 28px light
       else return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Basalt: 28px light
     case 1:  // 13% screen width
       if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);  // Emery: 42px ~21%
