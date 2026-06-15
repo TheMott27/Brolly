@@ -253,12 +253,10 @@ static AppTimer *s_numbers_timer = NULL;
 static bool s_showing_seconds = false;
 
 // Test mode: temporarily override battery/BT state for 5 seconds
-#ifdef DEBUG_TEST_HARNESS
 static AppTimer *s_test_timer = NULL;
 static uint8_t  s_test_saved_battery_pct = 0;
 static bool     s_test_saved_bt_connected = true;
 static bool     s_test_active = false;
-#endif
 
 static bool s_battery_handler_initialized = false;
 
@@ -1074,11 +1072,7 @@ static void numbers_timer_callback(void *data) {
   s_showing_icons = true;
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
-  // Only redraw complication if it uses shake-dependent visibility
-  if (s_settings.temp_visible == COMPLICATION_SHAKE ||
-      s_settings.date_visible == COMPLICATION_SHAKE) {
-    layer_mark_dirty(s_complication_layer);
-  }
+  layer_mark_dirty(s_complication_layer);
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   s_shake_timer = app_timer_register(SHAKE_DISPLAY_MS, shake_timer_callback, NULL);
 }
@@ -1088,11 +1082,7 @@ static void shake_timer_callback(void *data) {
   s_showing_icons = false;
   s_bg_last_hour = -1;
   layer_mark_dirty(s_bg_layer);
-  // Only redraw complication if it uses shake-dependent visibility
-  if (s_settings.temp_visible == COMPLICATION_SHAKE ||
-      s_settings.date_visible == COMPLICATION_SHAKE) {
-    layer_mark_dirty(s_complication_layer);
-  }
+  layer_mark_dirty(s_complication_layer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
@@ -1160,10 +1150,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
     // Complication: only dirty when position changes (minute crosses 20 or 40 boundary)
     // or at midnight (date changes). Temp changes are handled by inbox_received.
-    // Skip entirely if both are off or shake-only (shake handler manages those).
-    bool comp_always = (s_settings.date_visible == COMPLICATION_ALWAYS ||
-                        s_settings.temp_visible == COMPLICATION_ALWAYS);
-    if (comp_always) {
+    if (s_settings.date_visible != COMPLICATION_OFF ||
+        s_settings.temp_visible != COMPLICATION_OFF) {
       int prev_min = (s_tick_tm.tm_min == 0) ? 59 : s_tick_tm.tm_min - 1;
       bool pos_changed = (prev_min < 20 && s_tick_tm.tm_min >= 20) ||
                          (prev_min < 40 && s_tick_tm.tm_min >= 40) ||
@@ -1182,7 +1170,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
 }
 
-#ifdef DEBUG_TEST_HARNESS
 static void test_timer_callback(void *context) {
   s_test_timer = NULL;
   s_test_active = false;
@@ -1203,7 +1190,6 @@ static void start_test(uint8_t fake_battery_pct, bool fake_bt_connected) {
   layer_mark_dirty(s_minute_layer);
   s_test_timer = app_timer_register(5000, test_timer_callback, NULL);
 }
-#endif
 
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   if (s_settings.shake_mode == SHAKE_MODE_ON_SHAKE) {
@@ -1371,7 +1357,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *ssmc = dict_find(iter, KEY_SUNSET_MARKER_COLOR);
   if (ssmc) { s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32); dirty_bg = true; }
 
-#ifdef DEBUG_TEST_HARNESS
   // Test mode: temporarily override battery/BT state
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);
   if (tba && tba->value->int32) start_test(10, s_bt_connected);  // <20% battery
@@ -1379,7 +1364,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (tb50 && tb50->value->int32) start_test(35, s_bt_connected); // 50%–20% battery
   Tuple *tbt = dict_find(iter, KEY_TEST_BT_DISCONNECT);
   if (tbt && tbt->value->int32) start_test(s_battery_pct, false); // BT disconnect
-#endif
 
   // Only persist data that actually changed (flash writes are expensive)
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
@@ -1511,9 +1495,7 @@ static void deinit(void) {
   if (s_shake_timer) app_timer_cancel(s_shake_timer);
   if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
   if (s_numbers_timer) app_timer_cancel(s_numbers_timer);
-#ifdef DEBUG_TEST_HARNESS
   if (s_test_timer) app_timer_cancel(s_test_timer);
-#endif
   window_destroy(s_window);
 }
 
