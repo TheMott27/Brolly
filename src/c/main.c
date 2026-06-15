@@ -922,9 +922,9 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
         }
-        // On Basalt, align h=1,5,7,11 x to where their angular ray hits the top/bottom edge
-        // shifted 2px toward centre
-        if (s_screen_w < 200 && (h == 1 || h == 5 || h == 7 || h == 11)) {
+        // Align h=1,5,7,11 x to angular ray intersection, shifted toward centre
+        // Basalt: 2px, Emery: 4px
+        if (h == 1 || h == 5 || h == 7 || h == 11) {
           int32_t ray_angle = DEG_TO_TRIGANGLE(h * 30);
           int ray_dx = sin_lookup(ray_angle);
           int ray_dy = -cos_lookup(ray_angle);
@@ -934,8 +934,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           } else {
             raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
           }
-          // shift 2px toward centre
-          pos.x = raw_x + (raw_x > center.x ? -2 : 2);
+          int shift = (s_screen_w >= 200) ? 4 : 2;
+          pos.x = raw_x + (raw_x > center.x ? -shift : shift);
         }
       } else {
         int y_top = margin + actual_h / 2;
