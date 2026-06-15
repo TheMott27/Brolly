@@ -181,9 +181,7 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define FIXED_HAND_OUTER_WIDTH   6
 #define FIXED_HAND_INNER_WIDTH   2
 #define FIXED_HAND_BASE_PX      20
-// Icon size as % of screen width (TEST: 35% of 144px = 50px for Basalt)
-// For Emery (200px): 35% = 70px, for any screen: scales automatically
-#define ICON_SIZE_PERCENT 35
+#define FIXED_ICON_SIZE 24
 #define FIXED_HOUR_MARKER_LENGTH 1
 
 
@@ -621,12 +619,11 @@ static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz,
 
 // Helper to get scaled icon size (0=75%, 1=100%, 2=125%)
 static int get_icon_size(void) {
-  int base_size = (s_screen_w * ICON_SIZE_PERCENT) / 100;
   switch (s_settings.icon_size) {
-    case 0:  return (base_size * 3) / 4;  // 75%
-    case 2:  return (base_size * 5) / 4;  // 125%
+    case 0:  return (FIXED_ICON_SIZE * 3) / 4;  // 75%
+    case 2:  return (FIXED_ICON_SIZE * 5) / 4;  // 125%
     case 1:
-    default: return base_size;             // 100%
+    default: return FIXED_ICON_SIZE;             // 100%
   }
 }
 
