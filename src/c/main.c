@@ -886,22 +886,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int actual_h = nth - 7;
       int actual_w = ntw - 6;
       int margin = (s_screen_w >= 200) ? 12 : 6;
-      // On Emery, align number edges to icon edges:
-      // icon top edge = (half+ICON_MARKER_GAP)*3/4 - half
-      // icon bottom/left/right edge = ICON_MARKER_GAP = 12px
-      int icon_sz = get_icon_size();
-      int icon_half = icon_sz / 2;
-      int margin_top = (s_screen_w >= 200)
-        ? (icon_half + ICON_MARKER_GAP) * 3 / 4 - icon_half
-        : 6;
       if (is_top_bottom) {
         if (h == 0 || h == 1 || h == 11) {
-          pos.y = margin_top + actual_h / 2;
+          pos.y = margin + actual_h / 2;
         } else {
           pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
         }
       } else {
-        int y_top = margin_top + actual_h / 2;
+        int y_top = margin + actual_h / 2;
         int y_mid = (s_screen_h - 1) / 2;
         int y_bot = (s_screen_h - 1 - margin) - actual_h / 2;
         int y2 = (y_top + y_mid) / 2;
