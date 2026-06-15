@@ -851,10 +851,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
         }
       } else {
-        // Side hours: y is interpolated, x is inset from left/right edge
-        int y_top = half + ICON_MARKER_GAP;
-        int y_mid = (s_screen_h - 1) / 2;
-        int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+        // Side hours: y interpolated between actual top/mid/bottom icon positions
+        // y_top = actual top icon y (h=1/11), y_bot = actual bottom icon y (h=5/7)
+        int y_top = (half + ICON_MARKER_GAP) * 3 / 4;  // matches top icon inset
+        int y_mid = (s_screen_h - 1) / 2;              // 50% screen centre
+        int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);  // matches bottom icon inset
         if (h == 8 || h == 9 || h == 10) {
           // Left side: x inset from left
           icon_center.x = half + ICON_MARKER_GAP;
@@ -863,11 +864,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
         }
         if (h == 2 || h == 10) {
-          icon_center.y = (y_top + y_mid) / 2;
+          icon_center.y = (y_top + y_mid) / 2;  // halfway between top and centre
         } else if (h == 3 || h == 9) {
-          icon_center.y = y_mid;
+          icon_center.y = y_mid;                 // 50% screen centre
         } else if (h == 4 || h == 8) {
-          icon_center.y = (y_mid + y_bot) / 2;
+          icon_center.y = (y_mid + y_bot) / 2;  // halfway between centre and bottom
         }
       }
       int clock_num = (h == 0) ? 12 : h;
