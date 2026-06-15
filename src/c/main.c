@@ -187,6 +187,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
   #define FIXED_ICON_SIZE 24
 #endif
 #define FIXED_HOUR_MARKER_LENGTH 1
+// Gap between icon edge and the innermost marker tick (marker_len=4 + 5px clearance)
+#define ICON_MARKER_GAP 9
 
 
 // ============================================================
@@ -835,10 +837,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
-      // Place icon centre at the perimeter point inset by half the icon size on both axes.
-      // square_perimeter_point with margin=half gives the correct position for every hour,
-      // including corners (h=1,5,7,11) where both x and y must be inset simultaneously.
-      GPoint icon_center = square_perimeter_point(center, angle, half, half);
+      // Inset icon centre by half + ICON_MARKER_GAP so the icon clears all marker ticks
+      // (longest tick = 4px) plus 5px breathing room.
+      int margin = half + ICON_MARKER_GAP;
+      GPoint icon_center = square_perimeter_point(center, angle, margin, margin);
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
       int pm_hour   = (clock_num == 12) ? 12 : clock_num + 12;
