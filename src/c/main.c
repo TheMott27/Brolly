@@ -882,7 +882,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         icon_center = pos;
         if (is_top_bottom) {
           if (h == 0 || h == 1 || h == 11) {
-            icon_center.y = (half + ICON_MARKER_GAP) * 3 / 4;
+            icon_center.y = half + ICON_MARKER_GAP;
           } else {
             icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
           }
@@ -899,7 +899,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = raw_x + (raw_x > center.x ? -4 : 4);
           }
         } else {
-          int y_top = (half + ICON_MARKER_GAP) * 3 / 4;
+          int y_top = half + ICON_MARKER_GAP;
           int y_mid = (s_screen_h - 1) / 2;
           int y_mid_39 = y_mid - 3;
           int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
