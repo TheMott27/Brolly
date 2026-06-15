@@ -839,29 +839,28 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
-      // Icons use the same margin as numbers: 12px on Emery, 6px on Basalt
-      int margin = (s_screen_w >= 200) ? 12 : 6;
+      // Icons inset by half + ICON_MARKER_GAP to keep them away from screen edge
       GPoint icon_center = pos;  // Start from perimeter point
       if (is_top_bottom) {
-        // Top/bottom hours: x stays at center.x, y is inset from top/bottom by margin
+        // Top/bottom hours: x stays at center.x, y is inset from top/bottom by half+gap
         if (h == 0 || h == 1 || h == 11) {
-          // Top: y = margin from top edge
-          icon_center.y = margin;
+          // Top: y = half + ICON_MARKER_GAP from top edge
+          icon_center.y = half + ICON_MARKER_GAP;
         } else {
-          // Bottom: y = margin from bottom edge
-          icon_center.y = (s_screen_h - 1) - margin;
+          // Bottom: y = half + ICON_MARKER_GAP from bottom edge
+          icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
         }
       } else {
-        // Side hours: y is interpolated, x is inset from left/right edge by margin
-        int y_top = margin;
+        // Side hours: y is interpolated, x is inset from left/right edge
+        int y_top = half + ICON_MARKER_GAP;
         int y_mid = (s_screen_h - 1) / 2;
-        int y_bot = (s_screen_h - 1) - margin;
+        int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
         if (h == 8 || h == 9 || h == 10) {
           // Left side: x inset from left
-          icon_center.x = margin;
+          icon_center.x = half + ICON_MARKER_GAP;
         } else {
           // Right side: x inset from right
-          icon_center.x = (s_screen_w - 1) - margin;
+          icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
         }
         if (h == 2 || h == 10) {
           icon_center.y = (y_top + y_mid) / 2;
