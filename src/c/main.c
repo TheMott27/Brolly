@@ -837,10 +837,38 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
-      // Inset icon centre by half + ICON_MARKER_GAP so the icon clears all marker ticks
-      // (longest tick = 4px) plus 5px breathing room.
-      int margin = half + ICON_MARKER_GAP;
-      GPoint icon_center = square_perimeter_point(center, angle, margin, margin);
+      // Position icons at the same coordinates as their numbers.
+      // Numbers use 6px inset from screen edge; icons use half + ICON_MARKER_GAP.
+      GPoint icon_center = pos;  // Start from perimeter point
+      if (is_top_bottom) {
+        // Top/bottom hours: x stays at center.x, y is inset from top/bottom by half+gap
+        if (h == 0 || h == 1 || h == 11) {
+          // Top: y = half + ICON_MARKER_GAP from top edge
+          icon_center.y = half + ICON_MARKER_GAP;
+        } else {
+          // Bottom: y = half + ICON_MARKER_GAP from bottom edge
+          icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+        }
+      } else {
+        // Side hours: y is interpolated, x is inset from left/right edge
+        int y_top = half + ICON_MARKER_GAP;
+        int y_mid = (s_screen_h - 1) / 2;
+        int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+        if (h == 8 || h == 9 || h == 10) {
+          // Left side: x inset from left
+          icon_center.x = half + ICON_MARKER_GAP;
+        } else {
+          // Right side: x inset from right
+          icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
+        }
+        if (h == 2 || h == 10) {
+          icon_center.y = (y_top + y_mid) / 2;
+        } else if (h == 3 || h == 9) {
+          icon_center.y = y_mid;
+        } else if (h == 4 || h == 8) {
+          icon_center.y = (y_mid + y_bot) / 2;
+        }
+      }
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
       int pm_hour   = (clock_num == 12) ? 12 : clock_num + 12;
