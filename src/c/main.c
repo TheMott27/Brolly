@@ -844,8 +844,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (is_top_bottom) {
         // Top/bottom hours: x stays at center.x, y is inset from top/bottom by half+gap
         if (h == 0 || h == 1 || h == 11) {
-          // Top: y = (half + ICON_MARKER_GAP) / 2 from top edge (reduced by half)
-          icon_center.y = (half + ICON_MARKER_GAP) / 2;
+          // Top: y = 3/4 of (half + ICON_MARKER_GAP) from top edge (halfway between /2 and full)
+          icon_center.y = (half + ICON_MARKER_GAP) * 3 / 4;
         } else {
           // Bottom: y = half + ICON_MARKER_GAP from bottom edge
           icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
