@@ -898,6 +898,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
         }
+        // On Basalt, align h=1,5,7,11 x to their hour marker x position
+        if (s_screen_w < 200 && (h == 1 || h == 5 || h == 7 || h == 11)) {
+          pos.x = s_hour_marker_outer[h].x;
+        }
       } else {
         int y_top = margin + actual_h / 2;
         int y_mid = (s_screen_h - 1) / 2;
