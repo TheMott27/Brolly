@@ -896,7 +896,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             } else {
               raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
             }
-            icon_center.x = raw_x + (raw_x > center.x ? -4 : 4);
+            icon_center.x = raw_x + (raw_x > center.x ? -7 : 7);
           }
         } else {
           int y_top = half + ICON_MARKER_GAP;
@@ -992,7 +992,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             } else {
               raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
             }
-            int shift = (s_screen_w >= 200) ? 4 : 2;
+            int shift = (s_screen_w >= 200) ? 7 : 2;
             pos.x = raw_x + (raw_x > center.x ? -shift : shift);
           }
         } else {
