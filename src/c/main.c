@@ -839,38 +839,37 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (show_icons) {
       int sz = get_icon_size();
       int half = sz / 2;
-      // Icons inset by half + ICON_MARKER_GAP to keep them away from screen edge
-      GPoint icon_center = pos;  // Start from perimeter point
-      if (is_top_bottom) {
-        // Top/bottom hours: x stays at center.x, y is inset from top/bottom by half+gap
-        if (h == 0 || h == 1 || h == 11) {
-          // Top: y = 3/4 of (half + ICON_MARKER_GAP) from top edge (halfway between /2 and full)
-          icon_center.y = (half + ICON_MARKER_GAP) * 3 / 4;
+      GPoint icon_center;
+      if (s_screen_w >= 200) {
+        // Emery: custom positioning per hour
+        icon_center = pos;
+        if (is_top_bottom) {
+          if (h == 0 || h == 1 || h == 11) {
+            icon_center.y = (half + ICON_MARKER_GAP) * 3 / 4;
+          } else {
+            icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+          }
         } else {
-          // Bottom: y = half + ICON_MARKER_GAP from bottom edge
-          icon_center.y = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+          int y_top = (half + ICON_MARKER_GAP) * 3 / 4;
+          int y_mid = (s_screen_h - 1) / 2;
+          int y_mid_39 = y_mid - 3;
+          int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);
+          if (h == 8 || h == 9 || h == 10) {
+            icon_center.x = half + ICON_MARKER_GAP;
+          } else {
+            icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
+          }
+          if (h == 2 || h == 10) {
+            icon_center.y = (y_top + y_mid_39) / 2;
+          } else if (h == 3 || h == 9) {
+            icon_center.y = y_mid_39;
+          } else if (h == 4 || h == 8) {
+            icon_center.y = (y_mid_39 + y_bot) / 2;
+          }
         }
       } else {
-        // Side hours: y interpolated between actual top/mid/bottom icon positions
-        // y_top = actual top icon y (h=1/11), y_bot = actual bottom icon y (h=5/7)
-        int y_top = (half + ICON_MARKER_GAP) * 3 / 4;  // matches top icon inset
-        int y_mid = (s_screen_h - 1) / 2;              // 50% screen centre (for interpolation)
-        int y_mid_39 = y_mid - 3;                       // adjusted up for h=3/9 visual alignment
-        int y_bot = (s_screen_h - 1) - (half + ICON_MARKER_GAP);  // matches bottom icon inset
-        if (h == 8 || h == 9 || h == 10) {
-          // Left side: x inset from left
-          icon_center.x = half + ICON_MARKER_GAP;
-        } else {
-          // Right side: x inset from right
-          icon_center.x = (s_screen_w - 1) - (half + ICON_MARKER_GAP);
-        }
-        if (h == 2 || h == 10) {
-          icon_center.y = (y_top + y_mid_39) / 2;  // halfway between top and adjusted centre
-        } else if (h == 3 || h == 9) {
-          icon_center.y = y_mid_39;                 // exactly at 50% line (visually adjusted)
-        } else if (h == 4 || h == 8) {
-          icon_center.y = (y_mid_39 + y_bot) / 2;  // halfway between adjusted centre and bottom
-        }
+        // Basalt: original simple inset via square_perimeter_point
+        icon_center = square_perimeter_point(center, angle, half + 6, half + 6);
       }
       int clock_num = (h == 0) ? 12 : h;
       int am_hour   = (clock_num == 12) ? 0  : clock_num;
