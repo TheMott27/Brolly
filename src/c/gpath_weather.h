@@ -19,24 +19,25 @@ enum WEATHER_GPATH_ID {
   GPATH_WEATHER_UNKNOWN,
 };
 
-// Pre-calculated bounding boxes: { width, height } of the visible drawn area
-// Used for accurate icon positioning (e.g. centering on screen edges)
-typedef struct { int16_t w; int16_t h; } GPathBounds;
+// Precise bounding boxes of the visible drawn area within the 24x24 native space.
+// min_x/min_y: first pixel drawn; w/h: span of drawn pixels.
+// Used for accurate edge-aligned icon positioning.
+typedef struct { int16_t min_x; int16_t min_y; int16_t w; int16_t h; } GPathBounds;
 static const GPathBounds GPATH_BOUNDS[] = {
-  [GPATH_CLOUDY_DAY]           = { 24, 15 },
-  [GPATH_HEAVY_RAIN]           = { 24, 23 },
-  [GPATH_HEAVY_SNOW]           = { 24, 24 },
-  [GPATH_LIGHT_RAIN]           = { 24, 24 },
-  [GPATH_LIGHT_SNOW]           = { 24, 24 },
-  [GPATH_PARTLY_CLOUDY]        = { 24, 25 },
-  [GPATH_RAINING_AND_SNOWING]  = { 24, 24 },
-  [GPATH_TIMELINE_SUN]         = { 23, 24 },
-  [GPATH_TIMELINE_MOON]        = { 16, 23 },
-  [GPATH_PARTLY_CLOUDY_NIGHT]  = { 24, 24 },
-  [GPATH_THUNDERSTORM]         = { 24, 19 },
-  [GPATH_UNKNOWN]              = { 23, 23 },
-  [GPATH_TIMELINE_WEATHER]     = { 24, 24 },
-  [GPATH_WEATHER_UNKNOWN]      = { 24, 24 },
+  [GPATH_CLOUDY_DAY]           = {  1,  6, 23, 14 },
+  [GPATH_HEAVY_RAIN]           = {  1,  1, 23, 22 },
+  [GPATH_HEAVY_SNOW]           = {  1,  1, 23, 23 },
+  [GPATH_LIGHT_RAIN]           = {  1,  1, 23, 23 },
+  [GPATH_LIGHT_SNOW]           = {  1,  1, 23, 23 },
+  [GPATH_PARTLY_CLOUDY]        = {  1,  0, 23, 24 },
+  [GPATH_RAINING_AND_SNOWING]  = {  1,  1, 23, 23 },
+  [GPATH_TIMELINE_SUN]         = {  1,  1, 22, 23 },
+  [GPATH_TIMELINE_MOON]        = {  3,  1, 15, 22 },
+  [GPATH_PARTLY_CLOUDY_NIGHT]  = {  1,  1, 23, 23 },
+  [GPATH_THUNDERSTORM]         = {  1,  6, 23, 18 },
+  [GPATH_UNKNOWN]              = {  1,  1, 22, 22 },
+  [GPATH_TIMELINE_WEATHER]     = {  1,  1, 23, 23 },
+  [GPATH_WEATHER_UNKNOWN]      = {  1,  1, 23, 23 },
 };
 
 // CLOUDY_DAY (single cloud, resized to fill canvas)

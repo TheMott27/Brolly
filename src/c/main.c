@@ -643,21 +643,26 @@ static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center,
 
   // For edge-aligned modes, shift ox/oy so the actual drawn edge of this
   // specific icon lands exactly at the requested position.
+  // GPATH_BOUNDS stores min_x/min_y (first drawn pixel in native coords) and w/h (span).
+  // The actual drawn edge in screen coords is: ox + (min_x * scale256)/256  (for left/right)
+  //                                        and: oy + (min_y * scale256)/256  (for top/bottom)
   if (align != ICON_ALIGN_CENTER && gpath_id >= 0 && gpath_id < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
-    int drawn_w = (GPATH_BOUNDS[gpath_id].w * scale256) / 256;
-    int drawn_h = (GPATH_BOUNDS[gpath_id].h * scale256) / 256;
+    int b_min_x = (GPATH_BOUNDS[gpath_id].min_x * scale256) / 256;
+    int b_min_y = (GPATH_BOUNDS[gpath_id].min_y * scale256) / 256;
+    int b_max_x = b_min_x + (GPATH_BOUNDS[gpath_id].w * scale256) / 256;
+    int b_max_y = b_min_y + (GPATH_BOUNDS[gpath_id].h * scale256) / 256;
     if (align == ICON_ALIGN_RIGHT) {
-      // right edge of drawn icon = center.x  →  ox = center.x - drawn_w
-      ox = center.x - drawn_w;
+      // right drawn edge = center.x  →  ox + b_max_x = center.x
+      ox = center.x - b_max_x;
     } else if (align == ICON_ALIGN_LEFT) {
-      // left edge of drawn icon = center.x  →  ox = center.x
-      ox = center.x;
+      // left drawn edge = center.x  →  ox + b_min_x = center.x
+      ox = center.x - b_min_x;
     } else if (align == ICON_ALIGN_TOP) {
-      // top edge of drawn icon = center.y  →  oy = center.y
-      oy = center.y;
+      // top drawn edge = center.y  →  oy + b_min_y = center.y
+      oy = center.y - b_min_y;
     } else if (align == ICON_ALIGN_BOTTOM) {
-      // bottom edge of drawn icon = center.y  →  oy = center.y - drawn_h
-      oy = center.y - drawn_h;
+      // bottom drawn edge = center.y  →  oy + b_max_y = center.y
+      oy = center.y - b_max_y;
     }
   }
 
@@ -937,7 +942,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           int y_top = ICON_MARKER_GAP;
           int y_mid = (s_screen_h - 1) / 2;
-          int y_mid_39 = y_mid - 3;
           int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
@@ -947,11 +951,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = (s_screen_w - 1) - ICON_MARKER_GAP;
           }
           if (h == 2 || h == 10) {
-            icon_center.y = (y_top + y_mid_39) / 2;
+            icon_center.y = (y_top + y_mid) / 2;
           } else if (h == 3 || h == 9) {
-            icon_center.y = y_mid_39;
+            icon_center.y = y_mid;
           } else if (h == 4 || h == 8) {
-            icon_center.y = (y_mid_39 + y_bot) / 2;
+            icon_center.y = (y_mid + y_bot) / 2;
           }
         }
       } else {
