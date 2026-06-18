@@ -924,22 +924,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // draw_weather_icon_aligned will shift ox/oy so the icon edge lands there.
         icon_center = pos;
         if (is_top_bottom) {
-          // Compute y positions for all top/bottom group icons
-          // h=1,11: midpoint between h=0 (top boundary) and h=2/10 (side top)
-          // h=5,7:  midpoint between h=4/8 (side bot) and h=6 (bot boundary)
-          int y_top_b = ICON_MARKER_GAP;
-          int y_bot_b = (s_screen_h - 1) - ICON_MARKER_GAP;
-          int y_mid_e = (s_screen_h - 1) / 2;
-          int y_side_top = (y_top_b + y_mid_e) / 2;  // y of h=2,10 icons
-          int y_side_bot = (y_mid_e + y_bot_b) / 2;  // y of h=4,8 icons
-          if (h == 0) {
-            icon_center.y = y_top_b;
-          } else if (h == 1 || h == 11) {
-            icon_center.y = (y_top_b + y_side_top) / 2;
-          } else if (h == 6) {
-            icon_center.y = y_bot_b;
-          } else if (h == 5 || h == 7) {
-            icon_center.y = (y_side_bot + y_bot_b) / 2;
+          // top group: icon_center.y = top margin boundary
+          if (h == 0 || h == 1 || h == 11) {
+            icon_center.y = ICON_MARKER_GAP;
+          } else {
+            // bottom group: icon_center.y = bottom margin boundary
+            icon_center.y = (s_screen_h - 1) - ICON_MARKER_GAP;
           }
           // Align h=1,5,7,11 x to angular ray intersection, shifted 7px toward centre
           if (h == 1 || h == 5 || h == 7 || h == 11) {
@@ -954,16 +944,9 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = raw_x + (raw_x > center.x ? -7 : 7);
           }
         } else {
-          int y_top_b2 = ICON_MARKER_GAP;
-          int y_mid2   = (s_screen_h - 1) / 2;
-          int y_bot_b2 = (s_screen_h - 1) - ICON_MARKER_GAP;
-          // y_side_top2 = y of h=2,10 = midpoint(top_boundary, mid)
-          int y_side_top2 = (y_top_b2 + y_mid2) / 2;
-          // y_side_bot2 = y of h=4,8 = midpoint(mid, bot_boundary)
-          // but h=4,8 should be midpoint of h=3/9 (y_mid) and h=5/7
-          // h=5/7 are now at midpoint(y_side_bot, y_bot_b) where y_side_bot=(y_mid+y_bot_b)/2
-          int y_side_bot2 = (y_mid2 + y_bot_b2) / 2;
-          int y_h57 = (y_side_bot2 + y_bot_b2) / 2;  // y of h=5,7
+          int y_top = ICON_MARKER_GAP;
+          int y_mid = (s_screen_h - 1) / 2;
+          int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary
@@ -972,12 +955,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = (s_screen_w - 1) - ICON_MARKER_GAP;
           }
           if (h == 2 || h == 10) {
-            icon_center.y = y_side_top2;
+            icon_center.y = (y_top + y_mid) / 2;
           } else if (h == 3 || h == 9) {
-            icon_center.y = y_mid2;
+            icon_center.y = y_mid;
           } else if (h == 4 || h == 8) {
-            // midpoint between h=3/9 (y_mid) and h=5/7 (y_h57)
-            icon_center.y = (y_mid2 + y_h57) / 2;
+            icon_center.y = (y_mid + y_bot) / 2;
           }
         }
       } else {
