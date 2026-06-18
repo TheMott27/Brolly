@@ -451,12 +451,16 @@ static void cache_marker_positions(void) {
   for (int i = 0; i < 60; i++) {
     int32_t angle = DEG_TO_TRIGANGLE(i * 6);
     GPoint outer_pt;
-    int marker_len = 4;  // doubled from 2
+    int marker_len;
 #if defined(PBL_PLATFORM_BASALT)
-    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 8;
+    marker_len = 2;  // shorter on Basalt
+    if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 4;
 #elif defined(PBL_PLATFORM_EMERY)
+    marker_len = 4;
     if (i == 7 || i == 23 || i == 37 || i == 53) marker_len = 10;
 #elif defined(PBL_PLATFORM_CHALK)
+    marker_len = 4;
+#else
     marker_len = 4;
 #endif
     if (round) {
@@ -959,36 +963,43 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           }
         }
       } else {
-        // Basalt: simple inset for top/bottom hours; explicit y for side hours
-        icon_center = square_perimeter_point(center, angle, half + 6, half + 6);
-        // Align h=1,5,7,11 x to match their numbers (angular ray + 2px toward centre)
-        if (is_top_bottom && (h == 1 || h == 5 || h == 7 || h == 11)) {
-          int ray_dx = sin_lookup(angle);
-          int ray_dy = -cos_lookup(angle);
-          int raw_x;
-          if (ray_dy < 0) {
-            raw_x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+        // Basalt/Diorite/Flint: edge-aligned for top/bottom, centred for sides
+        int bas_margin = 6;  // inset from screen edge
+        icon_center = square_perimeter_point(center, angle, half + bas_margin, half + bas_margin);
+        if (is_top_bottom) {
+          // Pass margin boundary; alignment mode will place the icon edge there
+          if (h == 0 || h == 1 || h == 11) {
+            icon_center.y = bas_margin;  // top margin boundary
           } else {
-            raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+            icon_center.y = (s_screen_h - 1) - bas_margin;  // bottom margin boundary
           }
-          icon_center.x = raw_x + (raw_x > center.x ? -2 : 2);
-        }
-        if (!is_top_bottom) {
-          int y_top = (half + 6) * 3 / 4;
+          // Align h=1,5,7,11 x to angular ray + 2px toward centre
+          if (h == 1 || h == 5 || h == 7 || h == 11) {
+            int ray_dx = sin_lookup(angle);
+            int ray_dy = -cos_lookup(angle);
+            int raw_x;
+            if (ray_dy < 0) {
+              raw_x = center.x + (int32_t)ray_dx * center.y / (-ray_dy);
+            } else {
+              raw_x = center.x + (int32_t)ray_dx * (s_screen_h - 1 - center.y) / ray_dy;
+            }
+            icon_center.x = raw_x + (raw_x > center.x ? -2 : 2);
+          }
+        } else {
           int y_mid = (s_screen_h - 1) / 2;
-          int y_mid_adj = y_mid - 2;
-          int y_bot = (s_screen_h - 1) - (half + 6);
+          int y_top = bas_margin;
+          int y_bot = (s_screen_h - 1) - bas_margin;
           if (h == 8 || h == 9 || h == 10) {
-            icon_center.x = half + 6;
+            icon_center.x = bas_margin;
           } else {
-            icon_center.x = (s_screen_w - 1) - (half + 6);
+            icon_center.x = (s_screen_w - 1) - bas_margin;
           }
           if (h == 2 || h == 10) {
-            icon_center.y = (y_top + y_mid_adj) / 2;
+            icon_center.y = (y_top + y_mid) / 2;
           } else if (h == 3 || h == 9) {
-            icon_center.y = y_mid_adj;
+            icon_center.y = y_mid;
           } else if (h == 4 || h == 8) {
-            icon_center.y = (y_mid_adj + y_bot) / 2;
+            icon_center.y = (y_mid + y_bot) / 2;
           }
         }
       }
@@ -1000,17 +1011,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-      // On Emery, align each icon's outer edge to the margin boundary
+      // Align each icon's outer edge to the margin boundary on Emery and Basalt
       IconAlign align = ICON_ALIGN_CENTER;
-      if (s_screen_w >= 200) {
+      if (!round_screen) {
         if (h == 0 || h == 1 || h == 11) {
           align = ICON_ALIGN_TOP;     // top edge to margin
         } else if (h == 5 || h == 6 || h == 7) {
           align = ICON_ALIGN_BOTTOM;  // bottom edge to margin
-        } else if (h == 2 || h == 3 || h == 4) {
-          align = ICON_ALIGN_RIGHT;   // right edge to margin
-        } else if (h == 8 || h == 9 || h == 10) {
-          align = ICON_ALIGN_LEFT;    // left edge to margin
+        } else if (s_screen_w >= 200) {
+          // side alignment only on Emery (Basalt sides remain centred)
+          if (h == 2 || h == 3 || h == 4) {
+            align = ICON_ALIGN_RIGHT;
+          } else if (h == 8 || h == 9 || h == 10) {
+            align = ICON_ALIGN_LEFT;
+          }
         }
       }
       draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
