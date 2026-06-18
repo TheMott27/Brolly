@@ -1225,6 +1225,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_context_set_stroke_color(ctx, GColorBlue);
       graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
     }
+    // Two vertical pink lines at X=5% and X=90%, 10px wide, alternating every 2nd vertical pixel
+    graphics_context_set_stroke_color(ctx, GColorMagenta);
+    graphics_context_set_stroke_width(ctx, 10);
+    int x_left = s_screen_w * 5 / 100;
+    int x_right = s_screen_w * 90 / 100;
+    for (int y = 0; y < s_screen_h; y += 2) {
+      graphics_draw_line(ctx, GPoint(x_left, y), GPoint(x_left, y));
+      graphics_draw_line(ctx, GPoint(x_right, y), GPoint(x_right, y));
+    }
   }
 
   s_bg_last_hour = (int8_t)cur_hour;
