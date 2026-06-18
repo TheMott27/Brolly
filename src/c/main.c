@@ -1199,14 +1199,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   if (s_settings.debug_show_lines && !round_screen) {
-    // Full-screen horizontal lines at the render-centre Y of each diagonal icon (2, 4, 8, 10)
+    // Full-screen horizontal lines at the render-centre Y of each diagonal icon
+    // icon 2 = red, icon 4 = pink (magenta), icon 8 = green, icon 10 = blue
     graphics_context_set_stroke_width(ctx, 1);
     if (diag_y_2  >= 0) {
-      graphics_context_set_stroke_color(ctx, GColorBlue);
+      graphics_context_set_stroke_color(ctx, GColorRed);
       graphics_draw_line(ctx, GPoint(0, diag_y_2),  GPoint(s_screen_w - 1, diag_y_2));
     }
     if (diag_y_4  >= 0) {
-      graphics_context_set_stroke_color(ctx, GColorRed);
+      graphics_context_set_stroke_color(ctx, GColorMagenta);
       graphics_draw_line(ctx, GPoint(0, diag_y_4),  GPoint(s_screen_w - 1, diag_y_4));
     }
     if (diag_y_8  >= 0) {
@@ -1214,7 +1215,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_draw_line(ctx, GPoint(0, diag_y_8),  GPoint(s_screen_w - 1, diag_y_8));
     }
     if (diag_y_10 >= 0) {
-      graphics_context_set_stroke_color(ctx, GColorMagenta);
+      graphics_context_set_stroke_color(ctx, GColorBlue);
       graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
     }
   }
