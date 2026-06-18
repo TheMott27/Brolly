@@ -1120,12 +1120,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-      // Adjust diagonal icons (2,4,8,10) by adding half their scaled height
-      // to move the render centre to the true midpoint between neighbours
-      if (!round_screen && (h == 2 || h == 4 || h == 8 || h == 10)) {
-        int sh = get_icon_scaled_h(icon, sz);
-        icon_center.y += sh / 2;
-      }
       // Align each icon's outer edge to the margin boundary on Emery and Basalt
       IconAlign align = ICON_ALIGN_CENTER;
       if (!round_screen) {
