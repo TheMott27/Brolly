@@ -198,6 +198,9 @@ static inline bool is_round_screen(void) {
 // Uncomment to enable debug overlays (white bbox, red centre line, green/blue screen lines)
 // #define DEBUG_ICON_OVERLAY
 
+// Uncomment to force specific icons and draw red/blue lines at centres of icon 2 and 10
+#define DEBUG_ICON_FORCE
+
 
 // ============================================================
 // SETTINGS STRUCTURE
@@ -966,6 +969,13 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     int8_t icon9  = ICON_FOR_HOUR(9);
     int8_t icon11 = ICON_FOR_HOUR(11);
     #undef ICON_FOR_HOUR
+#ifdef DEBUG_ICON_FORCE
+    // Force: 1=sun, 9=sun; 2,3,10,11=cloud
+    icon1  = ICON_CLEAR;   // sun
+    icon9  = ICON_CLEAR;   // sun
+    icon3  = ICON_CLOUDY;  // cloud
+    icon11 = ICON_CLOUDY;  // cloud
+#endif
     // h=1 and h=11: top-aligned, top edge at ICON_MARKER_GAP
     int sh1  = get_icon_scaled_h(icon1,  sz_pre);
     int sh11 = get_icon_scaled_h(icon11, sz_pre);
@@ -1113,6 +1123,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
+#ifdef DEBUG_ICON_FORCE
+      if (h == 1)  icon = ICON_CLEAR;   // sun
+      if (h == 9)  icon = ICON_CLEAR;   // sun
+      if (h == 2)  icon = ICON_CLOUDY;  // cloud
+      if (h == 3)  icon = ICON_CLOUDY;  // cloud
+      if (h == 10) icon = ICON_CLOUDY;  // cloud
+      if (h == 11) icon = ICON_CLOUDY;  // cloud
+#endif
       // Align each icon's outer edge to the margin boundary on Emery and Basalt
       IconAlign align = ICON_ALIGN_CENTER;
       if (!round_screen) {
@@ -1130,6 +1148,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
       draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
+#ifdef DEBUG_ICON_FORCE
+      // Draw red line at centre of icon 2, blue line at centre of icon 10
+      if (h == 2 && diag_y_2 >= 0) {
+        graphics_context_set_stroke_color(ctx, GColorRed);
+        graphics_draw_line(ctx, GPoint(0, diag_y_2), GPoint(s_screen_w - 1, diag_y_2));
+      }
+      if (h == 10 && diag_y_10 >= 0) {
+        graphics_context_set_stroke_color(ctx, GColorBlue);
+        graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
+      }
+#endif
 #ifdef DEBUG_ICON_OVERLAY
       if (h == 1 || h == 5) {
         int gpath_id2 = icon_code_to_gpath(icon);
