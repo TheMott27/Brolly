@@ -942,8 +942,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
   // Pre-pass: compute dynamic y positions for diagonal icons 2,4,8,10 on Emery.
   // Each is placed halfway between the bottom of its upper neighbour and the top of its lower neighbour.
-  int emery_y_2 = -1, emery_y_4 = -1, emery_y_8 = -1, emery_y_10 = -1;
-  if (show_icons && !round_screen && s_screen_w >= 200) {
+  int diag_y_2 = -1, diag_y_4 = -1, diag_y_8 = -1, diag_y_10 = -1;
+  if (show_icons && !round_screen) {
     int sz_pre = get_icon_size();
     int y_mid_pre = (s_screen_h - 1) / 2;
     // Helper: get icon for a given clock hour
@@ -981,13 +981,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     // h=5 and h=7: bottom-aligned, bottom edge at (s_screen_h-1)-ICON_MARKER_GAP
     int sh5 = get_icon_scaled_h(icon5, sz_pre);
     int sh7 = get_icon_scaled_h(icon7, sz_pre);
-    int top5 = (s_screen_h - 1) - ICON_MARKER_GAP - sh5;  // top of h=5
-    int top7 = (s_screen_h - 1) - ICON_MARKER_GAP - sh7;  // top of h=7
-    // Each diagonal icon gets its own independent y
-    emery_y_2  = (bot1  + top3) / 2;  // midpoint: bottom of h=1,  top of h=3
-    emery_y_10 = (bot11 + top9) / 2;  // midpoint: bottom of h=11, top of h=9
-    emery_y_4  = (bot3  + top5) / 2;  // midpoint: bottom of h=3,  top of h=5
-    emery_y_8  = (bot9  + top7) / 2;  // midpoint: bottom of h=9,  top of h=7
+    int bas_margin = (s_screen_w >= 200) ? ICON_MARKER_GAP : 6;
+    int top5 = (s_screen_h - 1) - bas_margin - sh5;  // top of h=5
+    int top7 = (s_screen_h - 1) - bas_margin - sh7;  // top of h=7
+    // Each diagonal icon gets its own independent y (applies to Emery and Basalt)
+    diag_y_2  = (bot1  + top3) / 2;  // midpoint: bottom of h=1,  top of h=3
+    diag_y_10 = (bot11 + top9) / 2;  // midpoint: bottom of h=11, top of h=9
+    diag_y_4  = (bot3  + top5) / 2;  // midpoint: bottom of h=3,  top of h=5
+    diag_y_8  = (bot9  + top7) / 2;  // midpoint: bottom of h=9,  top of h=7
   }
 
   for (int h = 0; h < 12; h++) {
@@ -1031,10 +1032,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           int y_mid = (s_screen_h - 1) / 2;  // 113 — h=3,9
           // h=2,10 and h=4,8 use dynamically computed y from pre-pass (midpoint between neighbour edges)
-          int y_2  = (emery_y_2  >= 0) ? emery_y_2  : (ICON_MARKER_GAP + y_mid) / 2;
-          int y_10 = (emery_y_10 >= 0) ? emery_y_10 : (ICON_MARKER_GAP + y_mid) / 2;
-          int y_4  = (emery_y_4  >= 0) ? emery_y_4  : (y_mid + (s_screen_h - 1) - ICON_MARKER_GAP) / 2;
-          int y_8  = (emery_y_8  >= 0) ? emery_y_8  : (y_mid + (s_screen_h - 1) - ICON_MARKER_GAP) / 2;
+          int y_2  = (diag_y_2  >= 0) ? diag_y_2  : (ICON_MARKER_GAP + y_mid) / 2;
+          int y_10 = (diag_y_10 >= 0) ? diag_y_10 : (ICON_MARKER_GAP + y_mid) / 2;
+          int y_4  = (diag_y_4  >= 0) ? diag_y_4  : (y_mid + (s_screen_h - 1) - ICON_MARKER_GAP) / 2;
+          int y_8  = (diag_y_8  >= 0) ? diag_y_8  : (y_mid + (s_screen_h - 1) - ICON_MARKER_GAP) / 2;
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary
@@ -1087,12 +1088,20 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           } else {
             icon_center.x = (s_screen_w - 1) - (half + bas_margin);
           }
-          if (h == 2 || h == 10) {
-            icon_center.y = (y_top + y_mid) / 2;
+          int y_2b  = (diag_y_2  >= 0) ? diag_y_2  : (y_top + y_mid) / 2;
+          int y_10b = (diag_y_10 >= 0) ? diag_y_10 : (y_top + y_mid) / 2;
+          int y_4b  = (diag_y_4  >= 0) ? diag_y_4  : (y_mid + y_bot) / 2;
+          int y_8b  = (diag_y_8  >= 0) ? diag_y_8  : (y_mid + y_bot) / 2;
+          if (h == 2) {
+            icon_center.y = y_2b;
+          } else if (h == 10) {
+            icon_center.y = y_10b;
           } else if (h == 3 || h == 9) {
             icon_center.y = y_mid;
-          } else if (h == 4 || h == 8) {
-            icon_center.y = (y_mid + y_bot) / 2;
+          } else if (h == 4) {
+            icon_center.y = y_4b;
+          } else if (h == 8) {
+            icon_center.y = y_8b;
           }
         }
       }
