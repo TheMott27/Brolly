@@ -196,7 +196,7 @@ static inline bool is_round_screen(void) {
 #define ICON_MARKER_GAP 12
 
 // Uncomment to enable debug overlays (white bbox, red centre line, green/blue screen lines)
-#define DEBUG_ICON_OVERLAY
+// #define DEBUG_ICON_OVERLAY
 
 
 // ============================================================
