@@ -944,9 +944,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = raw_x + (raw_x > center.x ? -7 : 7);
           }
         } else {
-          int y_top = ICON_MARKER_GAP;
-          int y_mid = (s_screen_h - 1) / 2;
-          int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;
+          int y_mid = (s_screen_h - 1) / 2;  // 113 — h=3,9
+          int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;  // 215 — h=5,6,7 boundary
+          // h=1,11 are top-aligned: top edge at ICON_MARKER_GAP.
+          // Visual centre of a typical icon (drawn_h≈27px) = ICON_MARKER_GAP + 14 ≈ 26
+          // h=5,7 are bottom-aligned: bottom edge at y_bot.
+          // Visual centre ≈ y_bot - 14 ≈ 201
+          // h=2,10 y = midpoint of h=1/11 visual centre and h=3/9 centre
+          int y_h1_vis = ICON_MARKER_GAP + 14;  // ~26
+          int y_h7_vis = y_bot - 14;             // ~201
+          int y_2_10 = (y_h1_vis + y_mid) / 2;  // ~69
+          int y_4_8  = (y_mid + y_h7_vis) / 2;  // ~157
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary
@@ -955,11 +963,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             icon_center.x = (s_screen_w - 1) - ICON_MARKER_GAP;
           }
           if (h == 2 || h == 10) {
-            icon_center.y = (y_top + y_mid) / 2;
+            icon_center.y = y_2_10;
           } else if (h == 3 || h == 9) {
             icon_center.y = y_mid;
           } else if (h == 4 || h == 8) {
-            icon_center.y = (y_mid + y_bot) / 2;
+            icon_center.y = y_4_8;
           }
         }
       } else {
