@@ -602,6 +602,21 @@ static int icon_code_to_gpath(int icon) {
   }
 }
 
+// Returns the scaled height of an icon at a given sz, using GPATH_BOUNDS native dimensions.
+static int get_icon_scaled_h(int8_t icon, int sz) {
+  int gpath_id = icon_code_to_gpath(icon);
+  int nh = 24;
+  if (gpath_id >= 0 && gpath_id < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
+    int nw = GPATH_BOUNDS[gpath_id].w;
+    nh = GPATH_BOUNDS[gpath_id].h;
+    if (nw < 1) nw = 24;
+    if (nh < 1) nh = 24;
+    int nm = (nw > nh) ? nw : nh;
+    return (nh * ((sz * 256) / nm)) / 256;
+  }
+  return sz;
+}
+
 // Edge alignment modes for draw_weather_icon
 typedef enum {
   ICON_ALIGN_CENTER = 0,
@@ -924,6 +939,58 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 #ifdef DEBUG_ICON_OVERLAY
   int debug_h1_cy = -1, debug_h5_cy = -1;
 #endif
+
+  // Pre-pass: compute dynamic y positions for diagonal icons 2,4,8,10 on Emery.
+  // Each is placed halfway between the bottom of its upper neighbour and the top of its lower neighbour.
+  int emery_y_2_10 = -1, emery_y_4_8 = -1;
+  if (show_icons && !round_screen && s_screen_w >= 200) {
+    int sz_pre = get_icon_size();
+    int y_mid_pre = (s_screen_h - 1) / 2;
+    // Helper: get icon for a given clock hour
+    // h=1 (clock 1): am=1, pm=13
+    // h=3 (clock 3): am=3, pm=15
+    // h=5 (clock 5): am=5, pm=17
+    // h=7 (clock 7): am=7, pm=19
+    // h=9 (clock 9): am=9, pm=21
+    // h=11 (clock 11): am=11, pm=23
+    #define ICON_FOR_HOUR(hh) ({\
+      int _am = (hh); int _pm = (hh) + 12;\
+      bool _amp = (_am < cur_hour) || (_am == cur_hour && cur_min > 0);\
+      bool _pmp = (_pm < cur_hour) || (_pm == cur_hour && cur_min > 0);\
+      int8_t _ic = s_icons[(!_amp) ? _am : (!_pmp) ? _pm : _am];\
+      if (_ic < 0) _ic = ICON_UNKNOWN; _ic; })
+    int8_t icon1  = ICON_FOR_HOUR(1);
+    int8_t icon3  = ICON_FOR_HOUR(3);
+    int8_t icon5  = ICON_FOR_HOUR(5);
+    int8_t icon7  = ICON_FOR_HOUR(7);
+    int8_t icon9  = ICON_FOR_HOUR(9);
+    int8_t icon11 = ICON_FOR_HOUR(11);
+    #undef ICON_FOR_HOUR
+    // h=1 and h=11: top-aligned, top edge at ICON_MARKER_GAP
+    int sh1  = get_icon_scaled_h(icon1,  sz_pre);
+    int sh11 = get_icon_scaled_h(icon11, sz_pre);
+    int bot1  = ICON_MARKER_GAP + sh1;   // bottom of h=1
+    int bot11 = ICON_MARKER_GAP + sh11;  // bottom of h=11
+    // h=3 and h=9: side-centred at y_mid
+    int sh3 = get_icon_scaled_h(icon3, sz_pre);
+    int sh9 = get_icon_scaled_h(icon9, sz_pre);
+    int top3 = y_mid_pre - sh3 / 2;  // top of h=3
+    int bot3 = y_mid_pre + sh3 / 2;  // bottom of h=3
+    int top9 = y_mid_pre - sh9 / 2;  // top of h=9
+    int bot9 = y_mid_pre + sh9 / 2;  // bottom of h=9
+    // h=5 and h=7: bottom-aligned, bottom edge at (s_screen_h-1)-ICON_MARKER_GAP
+    int sh5 = get_icon_scaled_h(icon5, sz_pre);
+    int sh7 = get_icon_scaled_h(icon7, sz_pre);
+    int top5 = (s_screen_h - 1) - ICON_MARKER_GAP - sh5;  // top of h=5
+    int top7 = (s_screen_h - 1) - ICON_MARKER_GAP - sh7;  // top of h=7
+    // h=2: midpoint between bottom of h=1 and top of h=3
+    // h=10: midpoint between bottom of h=11 and top of h=9
+    emery_y_2_10 = (bot1 + bot11 + top3 + top9) / 4;  // average of both sides
+    // h=4: midpoint between bottom of h=3 and top of h=5
+    // h=8: midpoint between bottom of h=9 and top of h=7
+    emery_y_4_8  = (bot3 + bot9 + top5 + top7) / 4;   // average of both sides
+  }
+
   for (int h = 0; h < 12; h++) {
     int32_t angle = DEG_TO_TRIGANGLE(h * 30);
     bool is_top_bottom = (h == 0 || h == 1 || h == 5 || h == 6 || h == 7 || h == 11);
@@ -964,14 +1031,9 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           }
         } else {
           int y_mid = (s_screen_h - 1) / 2;  // 113 — h=3,9
-          int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;  // 215 — h=5,6,7 boundary
-          // h=2,10 centre at 25% of span (top icon edge to bottom icon edge)
-          // h=4,8  centre at 75% of span
-          // span = y_bot - ICON_MARKER_GAP, pink_top = ICON_MARKER_GAP
-          int pink_top = ICON_MARKER_GAP;
-          int span = y_bot - pink_top;
-          int y_2_10 = pink_top + span / 4;      // 25%
-          int y_4_8  = pink_top + span * 3 / 4;  // 75%
+          // h=2,10 and h=4,8 use dynamically computed y from pre-pass (midpoint between neighbour edges)
+          int y_2_10 = (emery_y_2_10 >= 0) ? emery_y_2_10 : (ICON_MARKER_GAP + y_mid) / 2;
+          int y_4_8  = (emery_y_4_8  >= 0) ? emery_y_4_8  : (y_mid + (s_screen_h - 1) - ICON_MARKER_GAP) / 2;
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary
