@@ -965,13 +965,13 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         } else {
           int y_mid = (s_screen_h - 1) / 2;  // 113 — h=3,9
           int y_bot = (s_screen_h - 1) - ICON_MARKER_GAP;  // 215 — h=5,6,7 boundary
-          // h=1,11 are top-aligned: top edge at ICON_MARKER_GAP.
-          // Rendered centre of top icons (ALIGN_TOP): icon_center.y + scaled_h/2 ≈ gap + 14 = 26
-          // Rendered centre of bottom icons (ALIGN_BOTTOM): icon_center.y - scaled_h/2 ≈ bot - 14 = 201
-          // h=2,10 y = midpoint(26, 113) = 69
-          // h=4,8  y = midpoint(113, 201) = 157
-          int y_2_10 = (ICON_MARKER_GAP + 14 + y_mid) / 2;  // 69
-          int y_4_8  = (y_mid + y_bot - 14) / 2;            // 157
+          // h=2,10 centre at 25% of span (top icon edge to bottom icon edge)
+          // h=4,8  centre at 75% of span
+          // span = y_bot - ICON_MARKER_GAP, pink_top = ICON_MARKER_GAP
+          int pink_top = ICON_MARKER_GAP;
+          int span = y_bot - pink_top;
+          int y_2_10 = pink_top + span / 4;      // 25%
+          int y_4_8  = pink_top + span * 3 / 4;  // 75%
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary
