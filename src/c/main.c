@@ -195,11 +195,12 @@ static inline bool is_round_screen(void) {
 // Gap between icon edge and the innermost marker tick (increased to match top icon distance)
 #define ICON_MARKER_GAP 12
 
-// Uncomment to enable debug overlays (white bbox, red centre line, green/blue screen lines)
-// #define DEBUG_ICON_OVERLAY
+// Debug overlay settings — controlled at runtime via Settings (KEY_DEBUG_SHOW_LINES / KEY_DEBUG_SHOW_ICON_BOXES)
+// No compile-time defines needed; use the settings app to toggle.
 
-// Uncomment to force specific icons and draw red/blue lines at centres of icon 2 and 10
-#define DEBUG_ICON_FORCE
+// Message keys — debug overlay toggles
+#define KEY_DEBUG_SHOW_LINES      159
+#define KEY_DEBUG_SHOW_ICON_BOXES 160
 
 
 // ============================================================
@@ -242,6 +243,8 @@ typedef struct {
   int8_t sunrise_marker_visible;
   GColor sunrise_marker_color;
   GColor sunset_marker_color;
+  bool debug_show_lines;       // runtime debug: draw horizontal lines at icon centres
+  bool debug_show_icon_boxes;  // runtime debug: draw white bounding box around each icon
 } Settings;
 
 // ============================================================
@@ -398,6 +401,8 @@ static void settings_set_defaults(Settings *s) {
   s->sunrise_marker_visible      = SUNRISE_MARKER_ALWAYS;
   s->sunrise_marker_color          = GColorOrange;
   s->sunset_marker_color           = GColorOxfordBlue;
+  s->debug_show_lines              = false;
+  s->debug_show_icon_boxes         = false;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -712,16 +717,16 @@ static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center,
     }
   }
 
-#ifdef DEBUG_ICON_OVERLAY
-  // White bounding box around rendered icon
-  graphics_context_set_stroke_color(ctx, GColorWhite);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_rect(ctx, GRect(ox, oy, scaled_w, scaled_h));
-  // Red horizontal line through rendered centre
-  int icon_centre_y = oy + scaled_h / 2;
-  graphics_context_set_stroke_color(ctx, GColorRed);
-  graphics_draw_line(ctx, GPoint(ox, icon_centre_y), GPoint(ox + scaled_w, icon_centre_y));
-#endif
+  if (s_settings.debug_show_icon_boxes) {
+    // White bounding box around rendered icon
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_draw_rect(ctx, GRect(ox, oy, scaled_w, scaled_h));
+    // Red horizontal line through rendered centre
+    int icon_centre_y = oy + scaled_h / 2;
+    graphics_context_set_stroke_color(ctx, GColorRed);
+    graphics_draw_line(ctx, GPoint(ox, icon_centre_y), GPoint(ox + scaled_w, icon_centre_y));
+  }
 }
 
 static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
@@ -939,9 +944,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   int chalk_icon_r  = circle_r - FIXED_ICON_SIZE / 2 - ICON_MARKER_GAP;
   int chalk_num_r   = circle_r - 22;  // ~22px from edge for numbers
 
-#ifdef DEBUG_ICON_OVERLAY
-  int debug_h1_cy = -1, debug_h5_cy = -1;
-#endif
+  int debug_h1_cy = -1, debug_h5_cy = -1;  // used when debug_show_lines is on
 
   // Pre-pass: compute dynamic y positions for diagonal icons 2,4,8,10 on Emery.
   // Each is placed halfway between the bottom of its upper neighbour and the top of its lower neighbour.
@@ -969,14 +972,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     int8_t icon9  = ICON_FOR_HOUR(9);
     int8_t icon11 = ICON_FOR_HOUR(11);
     #undef ICON_FOR_HOUR
-#ifdef DEBUG_ICON_FORCE
-    icon1  = ICON_CLEAR;   // sun
-    icon3  = ICON_CLEAR;   // sun
-    icon7  = ICON_CLEAR;   // sun
-    icon9  = ICON_CLEAR;   // sun
-    icon11 = ICON_CLEAR;   // sun
-    icon5  = ICON_CLOUDY;  // cloud
-#endif
     // h=1 and h=11: top-aligned, top edge at ICON_MARKER_GAP
     int sh1  = get_icon_scaled_h(icon1,  sz_pre);
     int sh11 = get_icon_scaled_h(icon11, sz_pre);
@@ -1124,16 +1119,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int icon_hour  = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
-#ifdef DEBUG_ICON_FORCE
-      if (h == 1)  icon = ICON_CLEAR;   // sun
-      if (h == 3)  icon = ICON_CLEAR;   // sun
-      if (h == 7)  icon = ICON_CLEAR;   // sun
-      if (h == 9)  icon = ICON_CLEAR;   // sun
-      if (h == 11) icon = ICON_CLEAR;   // sun
-      if (h == 4)  icon = ICON_CLOUDY;  // cloud
-      if (h == 5)  icon = ICON_CLOUDY;  // cloud
-      if (h == 8)  icon = ICON_CLOUDY;  // cloud
-#endif
       // Align each icon's outer edge to the margin boundary on Emery and Basalt
       IconAlign align = ICON_ALIGN_CENTER;
       if (!round_screen) {
@@ -1151,27 +1136,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
       draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
-#ifdef DEBUG_ICON_FORCE
-      // Red=icon4, Blue=icon8, Green=icon2, Yellow=icon10
-      if (h == 4 && diag_y_4 >= 0) {
-        graphics_context_set_stroke_color(ctx, GColorRed);
-        graphics_draw_line(ctx, GPoint(0, diag_y_4), GPoint(s_screen_w - 1, diag_y_4));
-      }
-      if (h == 8 && diag_y_8 >= 0) {
-        graphics_context_set_stroke_color(ctx, GColorBlue);
-        graphics_draw_line(ctx, GPoint(0, diag_y_8), GPoint(s_screen_w - 1, diag_y_8));
-      }
-      if (h == 2 && diag_y_2 >= 0) {
-        graphics_context_set_stroke_color(ctx, GColorGreen);
-        graphics_draw_line(ctx, GPoint(0, diag_y_2), GPoint(s_screen_w - 1, diag_y_2));
-      }
-      if (h == 10 && diag_y_10 >= 0) {
-        graphics_context_set_stroke_color(ctx, GColorYellow);
-        graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
-      }
-#endif
-#ifdef DEBUG_ICON_OVERLAY
-      if (h == 1 || h == 5) {
+      if (s_settings.debug_show_lines && (h == 1 || h == 5)) {
         int gpath_id2 = icon_code_to_gpath(icon);
         int nw2 = 24, nh2 = 24;
         if (gpath_id2 >= 0 && gpath_id2 < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
@@ -1185,7 +1150,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         if (h == 1) debug_h1_cy = icon_center.y + sh2 / 2;  // ALIGN_TOP: top edge at icon_center.y
         if (h == 5) debug_h5_cy = icon_center.y - sh2 / 2;  // ALIGN_BOTTOM: bottom edge at icon_center.y
       }
-#endif
 
     } else if (s_settings.display_hour_markers) {
       if (round_screen) {
@@ -1247,40 +1211,38 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     }
   }
 
-#ifdef DEBUG_ICON_OVERLAY
-  // Green lines at 25%, 50%, 75% of screen height
-  graphics_context_set_stroke_color(ctx, GColorGreen);
-  graphics_context_set_stroke_width(ctx, 1);
-  int g25 = (s_screen_h - 1) / 4;
-  int g50 = (s_screen_h - 1) / 2;
-  int g75 = (s_screen_h - 1) * 3 / 4;
-  graphics_draw_line(ctx, GPoint(0, g25), GPoint(s_screen_w - 1, g25));
-  graphics_draw_line(ctx, GPoint(0, g50), GPoint(s_screen_w - 1, g50));
-  graphics_draw_line(ctx, GPoint(0, g75), GPoint(s_screen_w - 1, g75));
-  // Blue lines at midpoint between rendered centres of icons 1&3 and 3&5
-  // Uses actual captured rendered centres from the draw loop above
-  // Pink lines at 0/25/50/75/100% of the span from top edge of top icons to bottom edge of bottom icons
-  // top_edge = ICON_MARKER_GAP (or bas_margin for Basalt), bottom_edge = screen_h - 1 - same gap
-  {
-    int pink_gap = (s_screen_w >= 200) ? ICON_MARKER_GAP : 6;
-    int pink_top = pink_gap;                        // top edge of top icons
-    int pink_bot = (s_screen_h - 1) - pink_gap;    // bottom edge of bottom icons
-    int span = pink_bot - pink_top;
-    graphics_context_set_stroke_color(ctx, GColorMagenta);
-    for (int p = 0; p <= 4; p++) {
-      int py = pink_top + (span * p) / 4;
-      graphics_draw_line(ctx, GPoint(0, py), GPoint(s_screen_w - 1, py));
+  if (s_settings.debug_show_lines) {
+    // Green lines at 25%, 50%, 75% of screen height
+    graphics_context_set_stroke_color(ctx, GColorGreen);
+    graphics_context_set_stroke_width(ctx, 1);
+    int g25 = (s_screen_h - 1) / 4;
+    int g50 = (s_screen_h - 1) / 2;
+    int g75 = (s_screen_h - 1) * 3 / 4;
+    graphics_draw_line(ctx, GPoint(0, g25), GPoint(s_screen_w - 1, g25));
+    graphics_draw_line(ctx, GPoint(0, g50), GPoint(s_screen_w - 1, g50));
+    graphics_draw_line(ctx, GPoint(0, g75), GPoint(s_screen_w - 1, g75));
+    // Pink lines at 0/25/50/75/100% of the span from top edge of top icons to bottom edge of bottom icons
+    {
+      int pink_gap = (s_screen_w >= 200) ? ICON_MARKER_GAP : 6;
+      int pink_top = pink_gap;
+      int pink_bot = (s_screen_h - 1) - pink_gap;
+      int span = pink_bot - pink_top;
+      graphics_context_set_stroke_color(ctx, GColorMagenta);
+      for (int p = 0; p <= 4; p++) {
+        int py = pink_top + (span * p) / 4;
+        graphics_draw_line(ctx, GPoint(0, py), GPoint(s_screen_w - 1, py));
+      }
+    }
+    // Blue lines at midpoint between rendered centres of icons 1&3 and 3&5
+    if (debug_h1_cy >= 0 && debug_h5_cy >= 0) {
+      int mid3 = (s_screen_h - 1) / 2;  // h=3 rendered centre (side icon, centred)
+      int blue13 = (debug_h1_cy + mid3) / 2;
+      int blue35 = (mid3 + debug_h5_cy) / 2;
+      graphics_context_set_stroke_color(ctx, GColorBlue);
+      graphics_draw_line(ctx, GPoint(0, blue13), GPoint(s_screen_w - 1, blue13));
+      graphics_draw_line(ctx, GPoint(0, blue35), GPoint(s_screen_w - 1, blue35));
     }
   }
-  if (debug_h1_cy >= 0 && debug_h5_cy >= 0) {
-    int mid3 = (s_screen_h - 1) / 2;  // h=3 rendered centre (side icon, centred)
-    int blue13 = (debug_h1_cy + mid3) / 2;
-    int blue35 = (mid3 + debug_h5_cy) / 2;
-    graphics_context_set_stroke_color(ctx, GColorBlue);
-    graphics_draw_line(ctx, GPoint(0, blue13), GPoint(s_screen_w - 1, blue13));
-    graphics_draw_line(ctx, GPoint(0, blue35), GPoint(s_screen_w - 1, blue35));
-  }
-#endif
 
   s_bg_last_hour = (int8_t)cur_hour;
 }
@@ -1734,6 +1696,11 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (smc) { s_settings.sunrise_marker_color = rgb_to_gcolor(smc->value->int32); dirty_bg = true; }
   Tuple *ssmc = dict_find(iter, KEY_SUNSET_MARKER_COLOR);
   if (ssmc) { s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32); dirty_bg = true; }
+
+  Tuple *dsl = dict_find(iter, KEY_DEBUG_SHOW_LINES);
+  if (dsl) { s_settings.debug_show_lines = dsl->value->int32 != 0; dirty_bg = true; }
+  Tuple *dsib = dict_find(iter, KEY_DEBUG_SHOW_ICON_BOXES);
+  if (dsib) { s_settings.debug_show_icon_boxes = dsib->value->int32 != 0; dirty_bg = true; }
 
   // Test mode: temporarily override battery/BT state
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);

@@ -928,7 +928,9 @@
 	  'KEY_ICON_COLOR_MODE':            153,
 	  'KEY_WU_API_KEY':                 154,
 	  'KEY_OWM_API_KEY':                156,
-	  'KEY_NUMBER_LAYOUT':               158
+	  'KEY_NUMBER_LAYOUT':               158,
+	  'KEY_DEBUG_SHOW_LINES':            159,
+	  'KEY_DEBUG_SHOW_ICON_BOXES':       160
 	};
 	
 	const SETTINGS_COLOR_MAP = {
