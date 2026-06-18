@@ -970,11 +970,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     int8_t icon11 = ICON_FOR_HOUR(11);
     #undef ICON_FOR_HOUR
 #ifdef DEBUG_ICON_FORCE
+    icon1  = ICON_CLEAR;   // sun
     icon3  = ICON_CLEAR;   // sun
     icon7  = ICON_CLEAR;   // sun
     icon9  = ICON_CLEAR;   // sun
     icon11 = ICON_CLEAR;   // sun
-    icon1  = ICON_CLOUDY;  // cloud
     icon5  = ICON_CLOUDY;  // cloud
 #endif
     // h=1 and h=11: top-aligned, top edge at ICON_MARKER_GAP
@@ -1125,11 +1125,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
 #ifdef DEBUG_ICON_FORCE
+      if (h == 1)  icon = ICON_CLEAR;   // sun
       if (h == 3)  icon = ICON_CLEAR;   // sun
       if (h == 7)  icon = ICON_CLEAR;   // sun
       if (h == 9)  icon = ICON_CLEAR;   // sun
       if (h == 11) icon = ICON_CLEAR;   // sun
-      if (h == 1)  icon = ICON_CLOUDY;  // cloud
       if (h == 4)  icon = ICON_CLOUDY;  // cloud
       if (h == 5)  icon = ICON_CLOUDY;  // cloud
       if (h == 8)  icon = ICON_CLOUDY;  // cloud
