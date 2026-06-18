@@ -1124,12 +1124,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int8_t icon = s_icons[icon_hour];
       if (icon < 0) icon = ICON_UNKNOWN;
 #ifdef DEBUG_ICON_FORCE
+      if (h == 1)  icon = ICON_CLEAR;   // sun
       if (h == 5)  icon = ICON_CLEAR;   // sun
       if (h == 9)  icon = ICON_CLEAR;   // sun
       if (h == 3)  icon = ICON_CLOUDY;  // cloud
       if (h == 4)  icon = ICON_CLOUDY;  // cloud
       if (h == 7)  icon = ICON_CLOUDY;  // cloud
       if (h == 8)  icon = ICON_CLOUDY;  // cloud
+      if (h == 11) icon = ICON_CLOUDY;  // cloud
 #endif
       // Align each icon's outer edge to the margin boundary on Emery and Basalt
       IconAlign align = ICON_ALIGN_CENTER;
