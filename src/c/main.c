@@ -1143,6 +1143,19 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   graphics_draw_line(ctx, GPoint(0, g75), GPoint(s_screen_w - 1, g75));
   // Blue lines at midpoint between rendered centres of icons 1&3 and 3&5
   // Uses actual captured rendered centres from the draw loop above
+  // Pink lines at 0/25/50/75/100% of the span from top edge of top icons to bottom edge of bottom icons
+  // top_edge = ICON_MARKER_GAP (or bas_margin for Basalt), bottom_edge = screen_h - 1 - same gap
+  {
+    int pink_gap = (s_screen_w >= 200) ? ICON_MARKER_GAP : 6;
+    int pink_top = pink_gap;                        // top edge of top icons
+    int pink_bot = (s_screen_h - 1) - pink_gap;    // bottom edge of bottom icons
+    int span = pink_bot - pink_top;
+    graphics_context_set_stroke_color(ctx, GColorMagenta);
+    for (int p = 0; p <= 4; p++) {
+      int py = pink_top + (span * p) / 4;
+      graphics_draw_line(ctx, GPoint(0, py), GPoint(s_screen_w - 1, py));
+    }
+  }
   if (debug_h1_cy >= 0 && debug_h5_cy >= 0) {
     int mid3 = (s_screen_h - 1) / 2;  // h=3 rendered centre (side icon, centred)
     int blue13 = (debug_h1_cy + mid3) / 2;
