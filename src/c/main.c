@@ -1149,7 +1149,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       }
       draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
 #ifdef DEBUG_ICON_FORCE
-      // Draw red line at centre of icon 4, blue line at centre of icon 8
+      // Red=icon4, Blue=icon8, Green=icon2, Yellow=icon10
       if (h == 4 && diag_y_4 >= 0) {
         graphics_context_set_stroke_color(ctx, GColorRed);
         graphics_draw_line(ctx, GPoint(0, diag_y_4), GPoint(s_screen_w - 1, diag_y_4));
@@ -1157,6 +1157,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (h == 8 && diag_y_8 >= 0) {
         graphics_context_set_stroke_color(ctx, GColorBlue);
         graphics_draw_line(ctx, GPoint(0, diag_y_8), GPoint(s_screen_w - 1, diag_y_8));
+      }
+      if (h == 2 && diag_y_2 >= 0) {
+        graphics_context_set_stroke_color(ctx, GColorGreen);
+        graphics_draw_line(ctx, GPoint(0, diag_y_2), GPoint(s_screen_w - 1, diag_y_2));
+      }
+      if (h == 10 && diag_y_10 >= 0) {
+        graphics_context_set_stroke_color(ctx, GColorYellow);
+        graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
       }
 #endif
 #ifdef DEBUG_ICON_OVERLAY
