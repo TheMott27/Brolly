@@ -1060,7 +1060,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         int nw2 = 24, nh2 = 24;
         if (gpath_id2 >= 0 && gpath_id2 < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
           nw2 = GPATH_BOUNDS[gpath_id2].w; nh2 = GPATH_BOUNDS[gpath_id2].h;
-          if (nw2 < 1) nw2 = 24; if (nh2 < 1) nh2 = 24;
+          if (nw2 < 1) { nw2 = 24; }
+          if (nh2 < 1) { nh2 = 24; }
         }
         int nm2 = (nw2 > nh2) ? nw2 : nh2;
         int sc2 = (sz * 256) / nm2;
