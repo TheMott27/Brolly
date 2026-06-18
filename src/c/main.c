@@ -195,6 +195,9 @@ static inline bool is_round_screen(void) {
 // Gap between icon edge and the innermost marker tick (increased to match top icon distance)
 #define ICON_MARKER_GAP 12
 
+// Uncomment to enable debug overlays (white bbox, red centre line, green/blue screen lines)
+#define DEBUG_ICON_OVERLAY
+
 
 // ============================================================
 // SETTINGS STRUCTURE
@@ -690,6 +693,17 @@ static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center,
       graphics_draw_line(ctx, a, b);
     }
   }
+
+#ifdef DEBUG_ICON_OVERLAY
+  // White bounding box around rendered icon
+  graphics_context_set_stroke_color(ctx, GColorWhite);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_rect(ctx, GRect(ox, oy, scaled_w, scaled_h));
+  // Red horizontal line through rendered centre
+  int icon_centre_y = oy + scaled_h / 2;
+  graphics_context_set_stroke_color(ctx, GColorRed);
+  graphics_draw_line(ctx, GPoint(ox, icon_centre_y), GPoint(ox + scaled_w, icon_centre_y));
+#endif
 }
 
 static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
@@ -1097,6 +1111,33 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       }
     }
   }
+
+#ifdef DEBUG_ICON_OVERLAY
+  // Green lines at 25%, 50%, 75% of screen height
+  graphics_context_set_stroke_color(ctx, GColorGreen);
+  graphics_context_set_stroke_width(ctx, 1);
+  int g25 = (s_screen_h - 1) / 4;
+  int g50 = (s_screen_h - 1) / 2;
+  int g75 = (s_screen_h - 1) * 3 / 4;
+  graphics_draw_line(ctx, GPoint(0, g25), GPoint(s_screen_w - 1, g25));
+  graphics_draw_line(ctx, GPoint(0, g50), GPoint(s_screen_w - 1, g50));
+  graphics_draw_line(ctx, GPoint(0, g75), GPoint(s_screen_w - 1, g75));
+  // Blue lines at midpoint between rendered centres of icons 1&3 and 3&5
+  // Rendered centre of h=1 (top-aligned, top edge at ICON_MARKER_GAP): gap + scaled_h/2 ~ gap+14
+  // Rendered centre of h=3 (side, centre at y_mid)
+  // Rendered centre of h=5 (bottom-aligned, bottom edge at bot): bot - scaled_h/2 ~ bot-14
+  int emery = (s_screen_w >= 200);
+  int gap2 = emery ? ICON_MARKER_GAP : 6;
+  int bot2 = (s_screen_h - 1) - gap2;
+  int mid2 = (s_screen_h - 1) / 2;
+  int h1_cy = gap2 + 14;
+  int h5_cy = bot2 - 14;
+  int blue13 = (h1_cy + mid2) / 2;
+  int blue35 = (mid2 + h5_cy) / 2;
+  graphics_context_set_stroke_color(ctx, GColorBlue);
+  graphics_draw_line(ctx, GPoint(0, blue13), GPoint(s_screen_w - 1, blue13));
+  graphics_draw_line(ctx, GPoint(0, blue35), GPoint(s_screen_w - 1, blue35));
+#endif
 
   s_bg_last_hour = (int8_t)cur_hour;
 }
