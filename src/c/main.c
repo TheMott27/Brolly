@@ -636,39 +636,41 @@ static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center,
       path_count = UNKNOWN_PATH_COUNT;            paths = UNKNOWN_PATHS;            break;
   }
 
-  // Icons are drawn in a native 24x24 coordinate space.
-  // Scale each point so the icon fills the requested sz box.
-  // Use integer fixed-point: scale = sz * 256 / 24, then divide by 256.
-  int native = 24;
-  int scale256 = (sz * 256) / native;  // fixed-point scale factor
-  int half = sz / 2;
-  int ox = center.x - half;
-  int oy = center.y - half;
-
-  // For edge-aligned modes, shift ox/oy so the actual drawn edge of this
-  // specific icon lands exactly at the requested position.
-  // GPATH_BOUNDS stores min_x/min_y (first drawn pixel in native coords) and w/h (span).
-  // The actual drawn edge in screen coords is: ox + (min_x * scale256)/256  (for left/right)
-  //                                        and: oy + (min_y * scale256)/256  (for top/bottom)
-  if (align != ICON_ALIGN_CENTER && gpath_id >= 0 && gpath_id < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
-    int b_min_x = (GPATH_BOUNDS[gpath_id].min_x * scale256) / 256;
-    int b_min_y = (GPATH_BOUNDS[gpath_id].min_y * scale256) / 256;
-    int b_max_x = b_min_x + (GPATH_BOUNDS[gpath_id].w * scale256) / 256;
-    int b_max_y = b_min_y + (GPATH_BOUNDS[gpath_id].h * scale256) / 256;
-    if (align == ICON_ALIGN_RIGHT) {
-      // right drawn edge = center.x  →  ox + b_max_x = center.x
-      ox = center.x - b_max_x;
-    } else if (align == ICON_ALIGN_LEFT) {
-      // left drawn edge = center.x  →  ox + b_min_x = center.x
-      ox = center.x - b_min_x;
-    } else if (align == ICON_ALIGN_TOP) {
-      // top drawn edge = center.y  →  oy + b_min_y = center.y
-      oy = center.y - b_min_y;
-    } else if (align == ICON_ALIGN_BOTTOM) {
-      // bottom drawn edge = center.y  →  oy + b_max_y = center.y
-      oy = center.y - b_max_y;
-    }
+  // Icons are now cropped: each icon's coordinate space starts at (0,0).
+  // GPATH_BOUNDS[].w and .h are the actual drawn dimensions in native coords.
+  // Scale independently on x and y so the icon fills sz x sz exactly.
+  int native_w = 24, native_h = 24;
+  if (gpath_id >= 0 && gpath_id < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
+    native_w = GPATH_BOUNDS[gpath_id].w;
+    native_h = GPATH_BOUNDS[gpath_id].h;
+    if (native_w < 1) native_w = 24;
+    if (native_h < 1) native_h = 24;
   }
+  // Use the smaller dimension to preserve aspect ratio (icon fits within sz box)
+  int native_max = (native_w > native_h) ? native_w : native_h;
+  int scale256 = (sz * 256) / native_max;  // uniform scale to fit within sz
+  int scaled_w = (native_w * scale256) / 256;
+  int scaled_h = (native_h * scale256) / 256;
+  int half = sz / 2;
+  // Default: centre the icon within the sz box
+  int ox = center.x - scaled_w / 2;
+  int oy = center.y - scaled_h / 2;
+
+  // For edge-aligned modes, align the drawn edge to center.x or center.y
+  if (align == ICON_ALIGN_RIGHT) {
+    ox = center.x - scaled_w;  // right edge at center.x
+    oy = center.y - scaled_h / 2;
+  } else if (align == ICON_ALIGN_LEFT) {
+    ox = center.x;             // left edge at center.x
+    oy = center.y - scaled_h / 2;
+  } else if (align == ICON_ALIGN_TOP) {
+    ox = center.x - scaled_w / 2;
+    oy = center.y;             // top edge at center.y
+  } else if (align == ICON_ALIGN_BOTTOM) {
+    ox = center.x - scaled_w / 2;
+    oy = center.y - scaled_h;  // bottom edge at center.y
+  }
+  (void)half;
 
   // Choose color based on mode: rainbow or single
   GColor icon_color = (s_settings.icon_color_mode == 1) 
