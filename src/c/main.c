@@ -952,9 +952,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           // Visual centre ≈ y_bot - 14 ≈ 201
           // h=2,10 y = midpoint of h=1/11 visual centre and h=3/9 centre
           int y_h1_vis = ICON_MARKER_GAP + 14;  // ~26
-          int y_h7_vis = y_bot - 14;             // ~201
           int y_2_10 = (y_h1_vis + y_mid) / 2;  // ~69
-          int y_4_8  = (y_mid + y_h7_vis) / 2;  // ~157
+          int y_4_8  = (y_mid + y_bot) / 2;     // 164 - midpoint of h=3/9 and h=5/7 boundary
           // right group: icon_center.x = right margin boundary
           if (h == 8 || h == 9 || h == 10) {
             // left group: icon_center.x = left margin boundary

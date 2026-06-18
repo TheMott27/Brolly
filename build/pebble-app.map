@@ -2295,11 +2295,11 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/../../../../arm-none-eabi/lib/thumb/v7-m/nofp/libc.a(libc_a-errno.o)
  .comment       0x00000039       0x3a /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7-m/nofp/crtend.o
 
-.debug_info     0x00000000     0x58c3
- .debug_info    0x00000000     0x4d8b src/c/main.c.49.o
- .debug_info    0x00004d8b      0x33e aplite/appinfo.auto.c.49.o
- .debug_info    0x000050c9      0x10d aplite/src/resource_ids.auto.c.49.o
- .debug_info    0x000051d6      0x6ed src/message_keys.auto.c.49.o
+.debug_info     0x00000000     0x58af
+ .debug_info    0x00000000     0x4d77 src/c/main.c.49.o
+ .debug_info    0x00004d77      0x33e aplite/appinfo.auto.c.49.o
+ .debug_info    0x000050b5      0x10d aplite/src/resource_ids.auto.c.49.o
+ .debug_info    0x000051c2      0x6ed src/message_keys.auto.c.49.o
 
 .debug_abbrev   0x00000000      0x712
  .debug_abbrev  0x00000000      0x5c5 src/c/main.c.49.o
@@ -2308,9 +2308,9 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_abbrev  0x000006c8       0x4a src/message_keys.auto.c.49.o
 
 .debug_loclists
-                0x00000000     0x4724
+                0x00000000     0x46f9
  .debug_loclists
-                0x00000000     0x4724 src/c/main.c.49.o
+                0x00000000     0x46f9 src/c/main.c.49.o
 
 .debug_aranges  0x00000000      0x148
  .debug_aranges
@@ -2327,18 +2327,18 @@ LOAD /home/ubuntu/.pebble-sdk/SDKs/4.9.169/toolchain/arm-none-eabi/bin/../lib/gc
  .debug_rnglists
                 0x00000000      0x428 src/c/main.c.49.o
 
-.debug_line     0x00000000     0x3253
- .debug_line    0x00000000     0x2ecd src/c/main.c.49.o
- .debug_line    0x00002ecd      0x165 aplite/appinfo.auto.c.49.o
- .debug_line    0x00003032      0x114 aplite/src/resource_ids.auto.c.49.o
- .debug_line    0x00003146      0x10d src/message_keys.auto.c.49.o
+.debug_line     0x00000000     0x3252
+ .debug_line    0x00000000     0x2ecc src/c/main.c.49.o
+ .debug_line    0x00002ecc      0x165 aplite/appinfo.auto.c.49.o
+ .debug_line    0x00003031      0x114 aplite/src/resource_ids.auto.c.49.o
+ .debug_line    0x00003145      0x10d src/message_keys.auto.c.49.o
 
-.debug_str      0x00000000     0x2c90
- .debug_str     0x00000000     0x2c90 src/c/main.c.49.o
-                               0x1d4f (size before relaxing)
- .debug_str     0x00002c90      0x4bf aplite/appinfo.auto.c.49.o
- .debug_str     0x00002c90      0x2b4 aplite/src/resource_ids.auto.c.49.o
- .debug_str     0x00002c90      0xd78 src/message_keys.auto.c.49.o
+.debug_str      0x00000000     0x2c87
+ .debug_str     0x00000000     0x2c87 src/c/main.c.49.o
+                               0x1d46 (size before relaxing)
+ .debug_str     0x00002c87      0x4bf aplite/appinfo.auto.c.49.o
+ .debug_str     0x00002c87      0x2b4 aplite/src/resource_ids.auto.c.49.o
+ .debug_str     0x00002c87      0xd78 src/message_keys.auto.c.49.o
 
 .debug_frame    0x00000000      0x40c
  .debug_frame   0x00000000      0x40c src/c/main.c.49.o
