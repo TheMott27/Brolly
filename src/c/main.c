@@ -970,10 +970,11 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     int8_t icon11 = ICON_FOR_HOUR(11);
     #undef ICON_FOR_HOUR
 #ifdef DEBUG_ICON_FORCE
-    // Force: 1=sun, 9=sun; 2,3,10,11=cloud
     icon1  = ICON_CLEAR;   // sun
+    icon5  = ICON_CLEAR;   // sun
     icon9  = ICON_CLEAR;   // sun
     icon3  = ICON_CLOUDY;  // cloud
+    icon7  = ICON_CLOUDY;  // cloud
     icon11 = ICON_CLOUDY;  // cloud
 #endif
     // h=1 and h=11: top-aligned, top edge at ICON_MARKER_GAP
