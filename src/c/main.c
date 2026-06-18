@@ -958,7 +958,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       bool _amp = (_am < cur_hour) || (_am == cur_hour && cur_min > 0);\
       bool _pmp = (_pm < cur_hour) || (_pm == cur_hour && cur_min > 0);\
       int8_t _ic = s_icons[(!_amp) ? _am : (!_pmp) ? _pm : _am];\
-      if (_ic < 0) _ic = ICON_UNKNOWN; _ic; })
+      if (_ic < 0) { _ic = ICON_UNKNOWN; } _ic; })
     int8_t icon1  = ICON_FOR_HOUR(1);
     int8_t icon3  = ICON_FOR_HOUR(3);
     int8_t icon5  = ICON_FOR_HOUR(5);
