@@ -1220,13 +1220,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
     }
     // Two vertical pink lines at X=15% and X=85%, 15px wide, visible only on alternating y pixels
-    graphics_context_set_stroke_color(ctx, GColorMagenta);
-    graphics_context_set_stroke_width(ctx, 15);
-    int x_left = s_screen_w * 15 / 100;
-    int x_right = s_screen_w * 85 / 100;
+    graphics_context_set_fill_color(ctx, GColorMagenta);
+    int x_left = s_screen_w * 15 / 100 - 7;  // center the 15px width
+    int x_right = s_screen_w * 85 / 100 - 7;
     for (int y = 0; y < s_screen_h; y += 2) {
-      graphics_draw_line(ctx, GPoint(x_left, y), GPoint(x_left, y));
-      graphics_draw_line(ctx, GPoint(x_right, y), GPoint(x_right, y));
+      graphics_fill_rect(ctx, GRect(x_left, y, 15, 1), 0, GCornerNone);
+      graphics_fill_rect(ctx, GRect(x_right, y, 15, 1), 0, GCornerNone);
     }
   }
 
