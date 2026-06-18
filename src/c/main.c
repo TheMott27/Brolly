@@ -944,7 +944,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   int chalk_icon_r  = circle_r - FIXED_ICON_SIZE / 2 - ICON_MARKER_GAP;
   int chalk_num_r   = circle_r - 22;  // ~22px from edge for numbers
 
-  int debug_h1_cy = -1, debug_h5_cy = -1;  // used when debug_show_lines is on
+  // (debug_h1_cy/h5_cy removed — debug lines now use diag_y_2/4/8/10 directly)
 
   // Pre-pass: compute dynamic y positions for diagonal icons 2,4,8,10 on Emery.
   // Each is placed halfway between the bottom of its upper neighbour and the top of its lower neighbour.
@@ -1136,20 +1136,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
       draw_weather_icon_aligned(ctx, icon, icon_center, sz, h, align);
-      if (s_settings.debug_show_lines && (h == 1 || h == 5)) {
-        int gpath_id2 = icon_code_to_gpath(icon);
-        int nw2 = 24, nh2 = 24;
-        if (gpath_id2 >= 0 && gpath_id2 < (int)(sizeof(GPATH_BOUNDS)/sizeof(GPATH_BOUNDS[0]))) {
-          nw2 = GPATH_BOUNDS[gpath_id2].w; nh2 = GPATH_BOUNDS[gpath_id2].h;
-          if (nw2 < 1) { nw2 = 24; }
-          if (nh2 < 1) { nh2 = 24; }
-        }
-        int nm2 = (nw2 > nh2) ? nw2 : nh2;
-        int sc2 = (sz * 256) / nm2;
-        int sh2 = (nh2 * sc2) / 256;
-        if (h == 1) debug_h1_cy = icon_center.y + sh2 / 2;  // ALIGN_TOP: top edge at icon_center.y
-        if (h == 5) debug_h5_cy = icon_center.y - sh2 / 2;  // ALIGN_BOTTOM: bottom edge at icon_center.y
-      }
+
 
     } else if (s_settings.display_hour_markers) {
       if (round_screen) {
@@ -1211,37 +1198,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     }
   }
 
-  if (s_settings.debug_show_lines) {
-    // Green lines at 25%, 50%, 75% of screen height
-    graphics_context_set_stroke_color(ctx, GColorGreen);
+  if (s_settings.debug_show_lines && !round_screen) {
+    // Full-screen horizontal lines at the render-centre Y of each diagonal icon (2, 4, 8, 10)
+    graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_stroke_width(ctx, 1);
-    int g25 = (s_screen_h - 1) / 4;
-    int g50 = (s_screen_h - 1) / 2;
-    int g75 = (s_screen_h - 1) * 3 / 4;
-    graphics_draw_line(ctx, GPoint(0, g25), GPoint(s_screen_w - 1, g25));
-    graphics_draw_line(ctx, GPoint(0, g50), GPoint(s_screen_w - 1, g50));
-    graphics_draw_line(ctx, GPoint(0, g75), GPoint(s_screen_w - 1, g75));
-    // Pink lines at 0/25/50/75/100% of the span from top edge of top icons to bottom edge of bottom icons
-    {
-      int pink_gap = (s_screen_w >= 200) ? ICON_MARKER_GAP : 6;
-      int pink_top = pink_gap;
-      int pink_bot = (s_screen_h - 1) - pink_gap;
-      int span = pink_bot - pink_top;
-      graphics_context_set_stroke_color(ctx, GColorMagenta);
-      for (int p = 0; p <= 4; p++) {
-        int py = pink_top + (span * p) / 4;
-        graphics_draw_line(ctx, GPoint(0, py), GPoint(s_screen_w - 1, py));
-      }
-    }
-    // Blue lines at midpoint between rendered centres of icons 1&3 and 3&5
-    if (debug_h1_cy >= 0 && debug_h5_cy >= 0) {
-      int mid3 = (s_screen_h - 1) / 2;  // h=3 rendered centre (side icon, centred)
-      int blue13 = (debug_h1_cy + mid3) / 2;
-      int blue35 = (mid3 + debug_h5_cy) / 2;
-      graphics_context_set_stroke_color(ctx, GColorBlue);
-      graphics_draw_line(ctx, GPoint(0, blue13), GPoint(s_screen_w - 1, blue13));
-      graphics_draw_line(ctx, GPoint(0, blue35), GPoint(s_screen_w - 1, blue35));
-    }
+    if (diag_y_2  >= 0) graphics_draw_line(ctx, GPoint(0, diag_y_2),  GPoint(s_screen_w - 1, diag_y_2));
+    if (diag_y_4  >= 0) graphics_draw_line(ctx, GPoint(0, diag_y_4),  GPoint(s_screen_w - 1, diag_y_4));
+    if (diag_y_8  >= 0) graphics_draw_line(ctx, GPoint(0, diag_y_8),  GPoint(s_screen_w - 1, diag_y_8));
+    if (diag_y_10 >= 0) graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
   }
 
   s_bg_last_hour = (int8_t)cur_hour;
