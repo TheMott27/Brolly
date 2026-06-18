@@ -19,24 +19,24 @@ enum WEATHER_GPATH_ID {
   GPATH_WEATHER_UNKNOWN,
 };
 
-// Bounding boxes after cropping: all icons now have min_x=0, min_y=0.
-// w/h are the native drawn dimensions used for scaling.
-typedef struct { int16_t min_x; int16_t min_y; int16_t w; int16_t h; } GPathBounds;
+// Native drawn dimensions for each icon (after cropping to zero blank space).
+// Used for scaling: icon fills sz box with no padding.
+typedef struct { int16_t w; int16_t h; } GPathBounds;
 static const GPathBounds GPATH_BOUNDS[] = {
-  [GPATH_CLOUDY_DAY]           = { 0, 0, 23, 14 },
-  [GPATH_HEAVY_RAIN]           = { 0, 0, 23, 22 },
-  [GPATH_HEAVY_SNOW]           = { 0, 0, 23, 23 },
-  [GPATH_LIGHT_RAIN]           = { 0, 0, 23, 23 },
-  [GPATH_LIGHT_SNOW]           = { 0, 0, 23, 23 },
-  [GPATH_PARTLY_CLOUDY]        = { 0, 0, 23, 24 },
-  [GPATH_RAINING_AND_SNOWING]  = { 0, 0, 23, 23 },
-  [GPATH_TIMELINE_SUN]         = { 0, 0, 22, 23 },
-  [GPATH_TIMELINE_MOON]        = { 0, 0, 15, 22 },
-  [GPATH_PARTLY_CLOUDY_NIGHT]  = { 0, 0, 23, 23 },
-  [GPATH_THUNDERSTORM]         = { 0, 0, 23, 18 },
-  [GPATH_UNKNOWN]              = { 0, 0, 22, 22 },
-  [GPATH_TIMELINE_WEATHER]     = { 0, 0, 23, 23 },
-  [GPATH_WEATHER_UNKNOWN]      = { 0, 0, 22, 22 },
+  [GPATH_CLOUDY_DAY]           = { 23, 14 },
+  [GPATH_HEAVY_RAIN]           = { 23, 22 },
+  [GPATH_HEAVY_SNOW]           = { 23, 23 },
+  [GPATH_LIGHT_RAIN]           = { 23, 23 },
+  [GPATH_LIGHT_SNOW]           = { 23, 23 },
+  [GPATH_PARTLY_CLOUDY]        = { 23, 24 },
+  [GPATH_RAINING_AND_SNOWING]  = { 23, 23 },
+  [GPATH_TIMELINE_SUN]         = { 22, 23 },
+  [GPATH_TIMELINE_MOON]        = { 15, 22 },
+  [GPATH_PARTLY_CLOUDY_NIGHT]  = { 23, 23 },
+  [GPATH_THUNDERSTORM]         = { 23, 18 },
+  [GPATH_UNKNOWN]              = { 22, 22 },
+  [GPATH_TIMELINE_WEATHER]     = { 23, 23 },
+  [GPATH_WEATHER_UNKNOWN]      = { 22, 22 },
 };
 
 // CLOUDY_DAY — cropped: min_x=1 min_y=6 → subtract (1,6)
