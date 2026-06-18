@@ -1219,9 +1219,9 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_context_set_stroke_color(ctx, GColorBlue);
       graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
     }
-    // Two vertical pink lines at X=15% and X=85%, 1px wide, visible only on alternating y pixels
+    // Two vertical pink lines at X=15% and X=85%, 15px wide, visible only on alternating y pixels
     graphics_context_set_stroke_color(ctx, GColorMagenta);
-    graphics_context_set_stroke_width(ctx, 1);
+    graphics_context_set_stroke_width(ctx, 15);
     int x_left = s_screen_w * 15 / 100;
     int x_right = s_screen_w * 85 / 100;
     for (int y = 0; y < s_screen_h; y += 2) {
