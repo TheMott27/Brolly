@@ -102,7 +102,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define KEY_NUMBER_FONT           121
 #define KEY_NUMBER_COLOR_MODE     152
 #define KEY_ICON_COLOR_MODE       153
-#define KEY_BATTERY_INDICATOR_ENABLED 138
+#define KEY_BATTERY_RING_THRESHOLD 138    // 0=off, 50, 40, 30, 20, 10
+#define KEY_BATTERY_CENTER_THRESHOLD 139   // 0=off, 20, 10, 5
 #define KEY_SECONDS_HAND_MODE     142
 #define KEY_SECONDS_SHAKE_DUR     143
 #define KEY_TEST_BATTERY_ALERT    144
@@ -237,7 +238,8 @@ typedef struct {
   GColor middle_ring_20_color;
   GColor date_color;
   GColor temp_color;
-  bool battery_indicator_enabled;
+  int8_t battery_ring_threshold;    // 0=off, 50, 40, 30, 20, 10 (red ring alert threshold %)
+  int8_t battery_center_threshold;   // 0=off, 20, 10, 5 (centre dot alert threshold %)
   GColor seconds_hand_color;
   int8_t seconds_hand_mode;
   int8_t seconds_shake_dur;
@@ -396,7 +398,14 @@ static void settings_set_defaults(Settings *s) {
   s->middle_ring_20_color        = GColorBlack;
   s->date_color                  = GColorFromRGB(0x4a, 0x5f, 0x7f);
   s->temp_color                  = GColorFromRGB(0x4a, 0x5f, 0x7f);
-  s->battery_indicator_enabled   = true;
+  // Battery thresholds: platform-specific defaults
+  #ifdef PBL_RECT
+    s->battery_ring_threshold = 30;   // Emery: red ring at 30%
+    s->battery_center_threshold = 10; // Emery: centre dot at 10%
+  #else
+    s->battery_ring_threshold = 50;   // Basalt: red ring at 50%
+    s->battery_center_threshold = 20; // Basalt: centre dot at 20%
+  #endif
   s->seconds_hand_color          = GColorWhite;
   s->seconds_hand_mode           = SECONDS_MODE_SHAKE;
   s->seconds_shake_dur           = 10;
@@ -1298,19 +1307,22 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 
   // Draw cap on top of hand — all circles at same centre as hand pivot
   GColor battery_ring, inner_ring, dot;
-  if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_LOW) {
+  bool show_ring_alert = (s_settings.battery_ring_threshold > 0) && (s_battery_pct <= s_settings.battery_ring_threshold);
+  bool show_center_alert = (s_settings.battery_center_threshold > 0) && (s_battery_pct <= s_settings.battery_center_threshold);
+  
+  if (show_ring_alert) {
     GColor alert = MONO_COLOR(s_settings.center_dot_20_color);
     battery_ring = alert;
     inner_ring   = alert;
-    dot          = alert;
-  } else if (s_settings.battery_indicator_enabled && s_battery_pct <= FIXED_BATT_PCT_MID) {
-    battery_ring = MONO_COLOR(s_settings.center_dot_50_color);
-    inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
-    dot          = MONO_COLOR(s_settings.hour_hand_outer);
   } else {
     battery_ring = GColorWhite;
     inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
-    dot          = MONO_COLOR(s_settings.hour_hand_outer);
+  }
+  
+  if (show_center_alert) {
+    dot = MONO_COLOR(s_settings.center_dot_20_color);
+  } else {
+    dot = MONO_COLOR(s_settings.hour_hand_outer);
   }
   int r5 = POS_X(7);
   int r4 = POS_X(5);
@@ -1555,7 +1567,8 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 }
 
 static void battery_handler(BatteryChargeState charge) {
-  if (!s_settings.battery_indicator_enabled) return;
+  // Skip if both thresholds are disabled
+  if (s_settings.battery_ring_threshold == 0 && s_settings.battery_center_threshold == 0) return;
   uint8_t old_pct = s_battery_pct;
   s_battery_pct = charge.charge_percent;
   if (!s_battery_handler_initialized) {
@@ -1656,8 +1669,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (dc) { s_settings.date_color = rgb_to_gcolor(dc->value->int32); dirty_complication = true; }
   Tuple *tpc = dict_find(iter, KEY_TEMP_COLOR);
   if (tpc) { s_settings.temp_color = rgb_to_gcolor(tpc->value->int32); dirty_complication = true; }
-  Tuple *bie = dict_find(iter, KEY_BATTERY_INDICATOR_ENABLED);
-  if (bie) { s_settings.battery_indicator_enabled = (bool)bie->value->int32; dirty_hands = true; }
+  Tuple *brt = dict_find(iter, KEY_BATTERY_RING_THRESHOLD);
+  if (brt) { s_settings.battery_ring_threshold = (int8_t)brt->value->int32; dirty_hands = true; }
+  Tuple *bct = dict_find(iter, KEY_BATTERY_CENTER_THRESHOLD);
+  if (bct) { s_settings.battery_center_threshold = (int8_t)bct->value->int32; dirty_hands = true; }
 
   // Sunrise / sunset
   bool sr_ss_changed = false;
