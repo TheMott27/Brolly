@@ -201,6 +201,7 @@ static inline bool is_round_screen(void) {
 // Message keys — debug overlay toggles
 #define KEY_DEBUG_SHOW_LINES      159
 #define KEY_DEBUG_SHOW_ICON_BOXES 160
+#define KEY_DEBUG_SHOW_PINK_LINES 161
 
 
 // ============================================================
@@ -245,6 +246,7 @@ typedef struct {
   GColor sunset_marker_color;
   bool debug_show_lines;       // runtime debug: draw horizontal lines at icon centres
   bool debug_show_icon_boxes;  // runtime debug: draw white bounding box around each icon
+  bool debug_show_pink_lines;  // runtime debug: draw pink vertical lines at X=15% and X=85%
 } Settings;
 
 // ============================================================
@@ -403,6 +405,7 @@ static void settings_set_defaults(Settings *s) {
   s->sunset_marker_color           = GColorOxfordBlue;
   s->debug_show_lines              = false;
   s->debug_show_icon_boxes         = false;
+  s->debug_show_pink_lines         = false;
 }
 
 static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
@@ -1220,12 +1223,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_draw_line(ctx, GPoint(0, diag_y_10), GPoint(s_screen_w - 1, diag_y_10));
     }
     // Two vertical pink lines at X=15% and X=85%, 15px wide, visible only on alternating y pixels
-    graphics_context_set_fill_color(ctx, GColorMagenta);
-    int x_left = s_screen_w * 15 / 100 - 7;  // center the 15px width
-    int x_right = s_screen_w * 85 / 100 - 7;
-    for (int y = 0; y < s_screen_h; y += 2) {
-      graphics_fill_rect(ctx, GRect(x_left, y, 15, 1), 0, GCornerNone);
-      graphics_fill_rect(ctx, GRect(x_right, y, 15, 1), 0, GCornerNone);
+    if (s_settings.debug_show_pink_lines) {
+      graphics_context_set_fill_color(ctx, GColorMagenta);
+      int x_left = s_screen_w * 15 / 100 - 7;  // center the 15px width
+      int x_right = s_screen_w * 85 / 100 - 7;
+      for (int y = 0; y < s_screen_h; y += 2) {
+        graphics_fill_rect(ctx, GRect(x_left, y, 15, 1), 0, GCornerNone);
+        graphics_fill_rect(ctx, GRect(x_right, y, 15, 1), 0, GCornerNone);
+      }
     }
   }
 
@@ -1686,6 +1691,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (dsl) { s_settings.debug_show_lines = dsl->value->int32 != 0; dirty_bg = true; }
   Tuple *dsib = dict_find(iter, KEY_DEBUG_SHOW_ICON_BOXES);
   if (dsib) { s_settings.debug_show_icon_boxes = dsib->value->int32 != 0; dirty_bg = true; }
+  Tuple *dspl = dict_find(iter, KEY_DEBUG_SHOW_PINK_LINES);
+  if (dspl) { s_settings.debug_show_pink_lines = dspl->value->int32 != 0; dirty_bg = true; }
 
   // Test mode: temporarily override battery/BT state
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);

@@ -12,8 +12,8 @@
         "flint"
     ],
     "capabilities": [
-        "configurable",
-        "location"
+        "location",
+        "configurable"
     ],
     "configureUrl": "https://aww2setts-au3w7dkw.manus.space/?test=1",
     "watchapp": {
@@ -126,7 +126,8 @@
         "KEY_WEATHER_SERVICE_TYPE": 157,
         "KEY_NUMBER_LAYOUT": 158,
         "KEY_DEBUG_SHOW_LINES": 159,
-        "KEY_DEBUG_SHOW_ICON_BOXES": 160
+        "KEY_DEBUG_SHOW_ICON_BOXES": 160,
+        "KEY_DEBUG_SHOW_PINK_LINES": 161
     },
     "resources": {
         "media": [
@@ -287,6 +288,7 @@
         "KEY_WEATHER_SERVICE_TYPE": 157,
         "KEY_NUMBER_LAYOUT": 158,
         "KEY_DEBUG_SHOW_LINES": 159,
-        "KEY_DEBUG_SHOW_ICON_BOXES": 160
+        "KEY_DEBUG_SHOW_ICON_BOXES": 160,
+        "KEY_DEBUG_SHOW_PINK_LINES": 161
     }
 }

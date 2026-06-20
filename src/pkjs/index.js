@@ -834,7 +834,8 @@ const SETTINGS_KEY_MAP = {
   'KEY_OWM_API_KEY':                156,
   'KEY_NUMBER_LAYOUT':               158,
   'KEY_DEBUG_SHOW_LINES':            159,
-  'KEY_DEBUG_SHOW_ICON_BOXES':       160
+  'KEY_DEBUG_SHOW_ICON_BOXES':       160,
+  'KEY_DEBUG_SHOW_PINK_LINES':       161
 };
 
 const SETTINGS_COLOR_MAP = {
