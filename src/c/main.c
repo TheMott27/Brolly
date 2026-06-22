@@ -1382,6 +1382,14 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   int comp_y = (s_tick_tm.tm_min >= 20 && s_tick_tm.tm_min <= 40) ? POS_Y(45) : POS_Y(105);
   GFont font = get_complication_font();
 
+  if (show_date) {
+    static const char *day_names[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
+    char date_str[12];
+    snprintf(date_str, sizeof(date_str), "%s %d",
+             day_names[s_tick_tm.tm_wday], s_tick_tm.tm_mday);
+    draw_centred_text(ctx, date_str, font, cx, comp_y, bounds.size.w, MONO_COLOR(s_settings.date_color));
+  }
+
   if (show_temp) {
     char temp_str[12];
     if (s_settings.temp_unit == TEMP_UNIT_FAHRENHEIT) {
@@ -1389,17 +1397,9 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     } else {
       snprintf(temp_str, sizeof(temp_str), "%d\xc2\xb0" "C", (int)s_temp_c);
     }
-    draw_centred_text(ctx, temp_str, font, cx, comp_y, bounds.size.w, MONO_COLOR(s_settings.temp_color));
-  }
-
-  if (show_date) {
-    static const char *day_names[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-    char date_str[12];
-    snprintf(date_str, sizeof(date_str), "%s %d",
-             day_names[s_tick_tm.tm_wday], s_tick_tm.tm_mday);
-    draw_centred_text(ctx, date_str, font, cx,
-                      show_temp ? comp_y + POS_Y(18) : comp_y,
-                      bounds.size.w, MONO_COLOR(s_settings.date_color));
+    draw_centred_text(ctx, temp_str, font, cx,
+                      show_date ? comp_y + POS_Y(18) : comp_y,
+                      bounds.size.w, MONO_COLOR(s_settings.temp_color));
   }
 }
 
@@ -1490,18 +1490,24 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       layer_mark_dirty(s_hour_layer);
     }
 
-    // Complication: only dirty when position changes (minute crosses 20 or 40 boundary)
-    // or at midnight (date changes). Temp changes are handled by inbox_received.
+    // Complication: dirty on every minute if temp/date are ALWAYS, or only when position changes.
+    // Temp changes are also handled by inbox_received.
     if (s_settings.date_visible != COMPLICATION_OFF ||
         s_settings.temp_visible != COMPLICATION_OFF) {
-      int prev_min = (s_tick_tm.tm_min == 0) ? 59 : s_tick_tm.tm_min - 1;
-      bool pos_changed = (prev_min < 20 && s_tick_tm.tm_min >= 20) ||
-                         (prev_min < 40 && s_tick_tm.tm_min >= 40) ||
-                         (prev_min >= 40 && s_tick_tm.tm_min < 20) ||
-                         (prev_min >= 20 && prev_min < 40 && s_tick_tm.tm_min >= 40);
-      bool date_changed = (s_tick_tm.tm_hour == 0 && s_tick_tm.tm_min == 0);
-      if (pos_changed || date_changed) {
+      bool always_show = (s_settings.temp_visible == COMPLICATION_ALWAYS) ||
+                         (s_settings.date_visible == COMPLICATION_ALWAYS);
+      if (always_show) {
         layer_mark_dirty(s_complication_layer);
+      } else {
+        int prev_min = (s_tick_tm.tm_min == 0) ? 59 : s_tick_tm.tm_min - 1;
+        bool pos_changed = (prev_min < 20 && s_tick_tm.tm_min >= 20) ||
+                           (prev_min < 40 && s_tick_tm.tm_min >= 40) ||
+                           (prev_min >= 40 && s_tick_tm.tm_min < 20) ||
+                           (prev_min >= 20 && prev_min < 40 && s_tick_tm.tm_min >= 40);
+        bool date_changed = (s_tick_tm.tm_hour == 0 && s_tick_tm.tm_min == 0);
+        if (pos_changed || date_changed) {
+          layer_mark_dirty(s_complication_layer);
+        }
       }
     }
   }
