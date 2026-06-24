@@ -1,7 +1,7 @@
 {
   "name": "brolly",
   "author": "jRay",
-  "version": "1.3.38",
+  "version": "1.4.224",
   "keywords": [
     "pebble-app"
   ],
@@ -185,6 +185,306 @@
           "type": "bitmap",
           "name": "WEATHER_CLASSIC_UNKNOWN",
           "file": "images/weather_classic_unknown.png"
+        },
+        {
+          "type": "font",
+          "name": "FONT_DIGITAL_18",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_DIGITAL_22",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_DIGITAL_26",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_DIGITAL_30",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_DIGITAL_36",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_STANDARD_18",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_STANDARD_22",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_STANDARD_26",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_STANDARD_30",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_STANDARD_36",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_TRADITIONAL_18",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_TRADITIONAL_22",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_TRADITIONAL_26",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_TRADITIONAL_30",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_TRADITIONAL_36",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_THIN_18",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_THIN_22",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_THIN_26",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_THIN_30",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_THIN_36",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_OVERSIZE_18",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_OVERSIZE_22",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_OVERSIZE_26",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_OVERSIZE_30",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_OVERSIZE_36",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery"
+          ]
         }
       ]
     }

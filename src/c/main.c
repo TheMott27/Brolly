@@ -135,6 +135,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define KEY_SUNRISE_MARKER_VISIBLE 147
 #define KEY_SUNRISE_MARKER_COLOR   148
 #define KEY_SUNSET_MARKER_COLOR    149
+#define KEY_NUMBER_SIZE            150
+#define KEY_ICON_SIZE              151
 
 // Sunrise/sunset marker visibility modes
 #define SUNRISE_MARKER_ALWAYS       0
@@ -228,6 +230,8 @@ typedef struct {
   int8_t number_font;
   int8_t number_color_mode;  // 0=single color, 1=rainbow
   int8_t icon_color_mode;    // 0=single color, 1=rainbow
+  int8_t number_size;        // 1-5, 3 is default
+  int8_t icon_size;          // 1-5, 3 is default
   GColor background_color;
   GColor number_color;
   GColor icon_color;
@@ -320,6 +324,7 @@ static const char *s_num_strings[12] = {
 
 // Cached number text sizes (invalidated on font change)
 static GSize s_num_sizes[12];
+static int s_num_ink_left[12];  // left ink offset within GRect for each number
 static bool s_num_sizes_cached = false;
 
 // Pre-computed sunrise/sunset marker data (recalculated on data arrival)
@@ -394,7 +399,7 @@ static void settings_set_defaults(Settings *s) {
   s->hour_marker_color           = GColorWhite;
   s->minute_marker_color         = GColorFromRGB(0x6b, 0x7f, 0x99);
   s->center_dot_50_color         = GColorBlack;
-  s->center_dot_20_color         = GColorBlack;
+  s->center_dot_20_color         = GColorRed;  // battery alert color (ring + dot when low/critical)
   s->middle_ring_20_color        = GColorBlack;
   s->date_color                  = GColorFromRGB(0x4a, 0x5f, 0x7f);
   s->temp_color                  = GColorFromRGB(0x4a, 0x5f, 0x7f);
@@ -412,6 +417,8 @@ static void settings_set_defaults(Settings *s) {
   s->sunrise_marker_visible      = SUNRISE_MARKER_ALWAYS;
   s->sunrise_marker_color          = GColorOrange;
   s->sunset_marker_color           = GColorOxfordBlue;
+  s->number_size                   = 3;  // 1-5, 3 is default
+  s->icon_size                     = 3;  // 1-5, 3 is default
   s->debug_show_lines              = false;
   s->debug_show_icon_boxes         = false;
   s->debug_show_pink_lines         = false;
@@ -741,17 +748,17 @@ static void draw_weather_icon_aligned(GContext *ctx, int8_t icon, GPoint center,
   }
 }
 
-static void draw_weather_icon(GContext *ctx, int8_t icon, GPoint center, int sz, int h) {
-  draw_weather_icon_aligned(ctx, icon, center, sz, h, ICON_ALIGN_CENTER);
-}
-
 // ============================================================
 // HOUR NUMBER DRAWING
 // ============================================================
 
-// Icon size is fixed per platform, no user configuration
+// Get icon size based on user configuration (1-5 scale, 3 is default = 24px base)
 static int get_icon_size(void) {
-  return FIXED_ICON_SIZE;
+  // Old size 4 (32px) is now the default (option 3).
+  // Scale: 1=16px, 2=24px, 3=32px, 4=40px, 5=48px
+  static const int icon_sizes[6] = { 0, 16, 24, 32, 40, 48 };
+  int s = (s_settings.icon_size >= 1 && s_settings.icon_size <= 5) ? s_settings.icon_size : 3;
+  return icon_sizes[s];
 }
 
 // Select font based on screen dimensions
@@ -768,63 +775,169 @@ static GFont get_complication_font(void) {
 
 static GFont s_cached_number_font = NULL;
 
-static GFont resolve_number_font(int8_t id) {
-  // Font sizes scale as percentages of screen width:
-  // Index 0, 2, 3: ~10% of screen width
-  // Index 1: ~13% of screen width
-  // Index 4: ~20% of screen width
-  // Select fonts based on actual screen size to maintain these ratios
-  
-  int screen_w = s_screen_w > 0 ? s_screen_w : 144;  // Default to Basalt if not yet set
-  
-  // Supported: Basalt (144px) and Emery (200px)
-  
+// Resolve number font based on family (id) AND size step (1-5, 3=default).
+// On colour platforms: loads custom embedded fonts (same typeface, different sizes).
+// On Aplite/Diorite/Flint: falls back to closest system font.
+static GFont resolve_number_font(int8_t id, int8_t size_step) {
+  // Clamp size step to 1..5, default 3
+  int s = (size_step >= 1 && size_step <= 5) ? size_step : 3;
+
+#ifdef PBL_COLOR
+  // Custom embedded fonts: same typeface, 5 true sizes (18/22/26/30/36px)
+  // Size step maps to: 1=18, 2=22, 3=26, 4=30, 5=36
   switch (id) {
-    case 0:  // 10% screen width (Digital)
-      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Emery: 28px light
-      else return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);  // Basalt: 28px light
-    case 1:  // 13% screen width
-      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);  // Emery: 42px ~21%
-      else return fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);  // Basalt: 34px ~23.6%
-    case 2:  // 10% screen width
-      return fonts_get_system_font(FONT_KEY_DROID_SERIF_28_BOLD);  // Both: 28px
-    case 3:  // 10% screen width
-      if (screen_w >= 200) return fonts_get_system_font(FONT_KEY_GOTHIC_28);  // Emery: 28px ~14%
-      else return fonts_get_system_font(FONT_KEY_GOTHIC_24);  // Basalt: 24px ~16.7%
-    case 4:  // 20% screen width
-      return fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT);  // Both: 42px
-    default: return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+    case 0:  // Digital (DSEG7 7-segment LCD style)
+      switch (s) {
+        case 1: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DIGITAL_18));
+        case 2: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DIGITAL_22));
+        case 3: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DIGITAL_26));
+        case 4: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DIGITAL_30));
+        case 5: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_DIGITAL_36));
+      }
+      break;
+    case 1:  // Standard (Roboto Regular)
+      switch (s) {
+        case 1: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_18));
+        case 2: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_22));
+        case 3: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_26));
+        case 4: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_30));
+        case 5: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_36));
+      }
+      break;
+    case 2:  // Traditional (Lora Regular serif)
+      switch (s) {
+        case 1: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TRADITIONAL_18));
+        case 2: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TRADITIONAL_22));
+        case 3: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TRADITIONAL_26));
+        case 4: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TRADITIONAL_30));
+        case 5: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TRADITIONAL_36));
+      }
+      break;
+    case 3:  // Thin (Raleway Thin)
+      switch (s) {
+        case 1: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_THIN_18));
+        case 2: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_THIN_22));
+        case 3: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_THIN_26));
+        case 4: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_THIN_30));
+        case 5: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_THIN_36));
+      }
+      break;
+    case 4:  // Oversize (Oswald Regular condensed)
+      switch (s) {
+        case 1: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_OVERSIZE_18));
+        case 2: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_OVERSIZE_22));
+        case 3: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_OVERSIZE_26));
+        case 4: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_OVERSIZE_30));
+        case 5: return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_OVERSIZE_36));
+      }
+      break;
   }
+  return fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_STANDARD_26));
+
+#else
+  // Aplite/Diorite/Flint fallback: system fonts (limited sizes, best match)
+  switch (id) {
+    case 0:  // Digital -> LECO (closest available)
+      switch (s) {
+        case 1: return fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS);
+        case 2: return fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM);
+        case 3: return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+        case 4: return fonts_get_system_font(FONT_KEY_LECO_32_BOLD_NUMBERS);
+        case 5: return fonts_get_system_font(FONT_KEY_LECO_36_BOLD_NUMBERS);
+      }
+      break;
+    case 1:  // Standard -> Bitham medium
+    case 4:  // Oversize -> Bitham (largest available)
+      switch (s) {
+        case 1: return fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
+        case 2: return fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
+        case 3: return fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);
+        case 4: return fonts_get_system_font(FONT_KEY_BITHAM_42_MEDIUM_NUMBERS);
+        case 5: return fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
+      }
+      break;
+    case 2:  // Traditional -> Droid Serif (only one size, slider has limited effect)
+      return fonts_get_system_font(FONT_KEY_DROID_SERIF_28_BOLD);
+    case 3:  // Thin -> Gothic regular
+      switch (s) {
+        case 1: return fonts_get_system_font(FONT_KEY_GOTHIC_18);
+        case 2: return fonts_get_system_font(FONT_KEY_GOTHIC_24);
+        case 3: return fonts_get_system_font(FONT_KEY_GOTHIC_28);
+        case 4: return fonts_get_system_font(FONT_KEY_GOTHIC_28);
+        case 5: return fonts_get_system_font(FONT_KEY_GOTHIC_28);
+      }
+      break;
+  }
+  return fonts_get_system_font(FONT_KEY_LECO_28_LIGHT_NUMBERS);
+#endif
 }
 
 static GFont get_number_font(void) {
   if (!s_cached_number_font) {
-    s_cached_number_font = resolve_number_font(s_settings.number_font);
+    s_cached_number_font = resolve_number_font(s_settings.number_font, s_settings.number_size);
   }
   return s_cached_number_font;
 }
 
-// Cache text sizes for all 12 numbers
+// Cache text sizes and left ink offsets for all 12 numbers.
+// We render each number into a temporary GBitmap and scan for the leftmost lit pixel
+// to determine the actual ink left offset within the GRect.
 static void cache_number_sizes(void) {
   GFont font = get_number_font();
   for (int h = 0; h < 12; h++) {
-    int measure_box = (s_screen_w * 50) / 100;  // TEST: 50% of screen width for measurement
+    int measure_box = (s_screen_w * 50) / 100;
     GSize sz = graphics_text_layout_get_content_size(s_num_strings[h], font,
       GRect(0, 0, measure_box, measure_box), GTextOverflowModeWordWrap, GTextAlignmentCenter);
-    s_num_sizes[h] = GSize(sz.w + 4, sz.h);  // Remove vertical padding
+    s_num_sizes[h] = GSize(sz.w + 4, sz.h);
+
+    // Measure left ink offset by rendering to a temporary GBitmap and scanning pixels.
+    int bw = sz.w + 4;
+    int bh = sz.h;
+    GBitmap *bmp = gbitmap_create_blank(GSize(bw, bh), GBitmapFormat1Bit);
+    if (bmp) {
+      GContext *tmp_ctx = graphics_context_get_current_context();
+      // We can't easily get a fresh GContext here, so use a fallback approach:
+      // measure with GTextAlignmentLeft in a box of width = ink_width.
+      // When the box is exactly the ink width, left-aligned text fills it completely.
+      // We binary-search for the minimum box width that fits the text on one line.
+      gbitmap_destroy(bmp);
+    }
+    // Fallback: use dual content-size measurement.
+    // Measure with GTextAlignmentLeft in a wide box.
+    GSize sz_left = graphics_text_layout_get_content_size(s_num_strings[h], font,
+      GRect(0, 0, measure_box, measure_box), GTextOverflowModeWordWrap, GTextAlignmentLeft);
+    // sz_left.w = width from GRect left to rightmost ink (left-aligned)
+    // sz.w = ink width (center-aligned, symmetric padding)
+    // For numbers with left side-bearing: sz_left.w < sz.w
+    // Left ink offset = sz.w - sz_left.w
+    int ink_adj = sz.w - sz_left.w;
+    s_num_ink_left[h] = (ink_adj > 0) ? ink_adj : 0;
   }
   s_num_sizes_cached = true;
 }
 
-static void draw_hour_number(GContext *ctx, int h, GPoint center, GFont font) {
+static void draw_hour_number(GContext *ctx, int h, GPoint center, GFont font, GTextAlignment align) {
   const char *buf = s_num_strings[h];
   if (!s_num_sizes_cached) cache_number_sizes();
+  // The font itself is sized by the number_size slider (see resolve_number_font),
+  // so the cached measured dimensions already reflect the chosen size.
   int tw = s_num_sizes[h].w;
   int th = s_num_sizes[h].h;
   // Actual rendered text offsets within GRect: top 7px, bottom 0px, left 3px, right 3px
   // Shift GRect up by 7px so actual text top aligns with center.y - actual_h/2
   int actual_h = th - 7;
-  int tx = center.x - tw / 2;
+  // Position GRect based on alignment:
+  // Center: GRect centered on center.x
+  // Left:   GRect left edge at center.x (text starts here)
+  // Right:  GRect right edge at center.x (text ends here)
+  int tx;
+  if (align == GTextAlignmentLeft) {
+    tx = center.x;  // left edge of text at center.x
+  } else if (align == GTextAlignmentRight) {
+    tx = center.x - tw;  // right edge of text at center.x
+  } else {
+    tx = center.x - tw / 2;  // centered
+  }
   int ty = center.y - actual_h / 2 - 7;  // Shift up 7px so text renders at actual_h center
   
   // Choose color based on mode: rainbow or single
@@ -835,7 +948,7 @@ static void draw_hour_number(GContext *ctx, int h, GPoint center, GFont font) {
   graphics_context_set_text_color(ctx, MONO_COLOR(text_color));
   
   graphics_draw_text(ctx, buf, font, GRect(tx, ty, tw, th),
-    GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    GTextOverflowModeWordWrap, align, NULL);
   
 
 }
@@ -1154,7 +1267,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     } else if (s_settings.display_hour_markers) {
       if (round_screen) {
         // Chalk: pos is already on the circle (chalk_num_r), draw directly
-        draw_hour_number(ctx, h, pos, num_font);
+        draw_hour_number(ctx, h, pos, num_font, GTextAlignmentCenter);
       } else {
         int ntw = s_num_sizes[h].w;
         int nth = s_num_sizes[h].h;
@@ -1163,11 +1276,13 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // actual_h = nth - 7, actual_w = ntw - 6
         // draw_hour_number centers on actual_h, so pos.y = actual_top + actual_h/2
         int actual_h = nth - 7;
-        int actual_w = ntw - 6;
         int margin = (s_screen_w >= 200) ? 12 : 6;
         if (is_top_bottom) {
           if (h == 0 || h == 1 || h == 11) {
-            pos.y = margin + actual_h / 2;
+            // DSEG7 (Digital) has different internal top metrics: needs +7px extra offset
+            // so the visual top gap matches the bottom gap. Other fonts are already correct.
+            int top_extra = (s_settings.number_font == 0) ? 7 : 0;
+            pos.y = margin + actual_h / 2 + top_extra;
           } else {
             pos.y = (s_screen_h - 1 - margin) - actual_h / 2;
           }
@@ -1193,10 +1308,15 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           int y2 = (y_top + y_mid) / 2;
           int y3 = y_mid;
           int y4 = (y_mid + y_bot) / 2;
+            // For left-side numbers (8,9,10): pos.x = left edge where text starts
+          // For right-side numbers (2,3,4): pos.x = right edge where text ends
+          // draw_hour_number uses GTextAlignmentLeft/Right accordingly
           if (h == 8 || h == 9 || h == 10) {
-            pos.x = margin + actual_w / 2;
+            // pos.x is the left edge of the text (margin from screen left)
+            pos.x = margin;
           } else {
-            pos.x = (s_screen_w - 1 - margin) - actual_w / 2;
+            // pos.x is the right edge of the text (margin from screen right)
+            pos.x = s_screen_w - 1 - margin;
           }
           if (h == 2 || h == 10) {
             pos.y = y2;
@@ -1206,7 +1326,16 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
             pos.y = y4;
           }
         }
-        draw_hour_number(ctx, h, pos, num_font);
+        // Determine text alignment based on position
+        GTextAlignment num_align;
+        if (!is_top_bottom && (h == 8 || h == 9 || h == 10)) {
+          num_align = GTextAlignmentLeft;
+        } else if (!is_top_bottom && (h == 2 || h == 3 || h == 4)) {
+          num_align = GTextAlignmentRight;
+        } else {
+          num_align = GTextAlignmentCenter;
+        }
+        draw_hour_number(ctx, h, pos, num_font, num_align);
       }
     }
   }
@@ -1309,26 +1438,43 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   GColor battery_ring, inner_ring, dot;
   bool show_ring_alert = (s_settings.battery_ring_threshold > 0) && (s_battery_pct <= s_settings.battery_ring_threshold);
   bool show_center_alert = (s_settings.battery_center_threshold > 0) && (s_battery_pct <= s_settings.battery_center_threshold);
-  
-  if (show_ring_alert) {
-    GColor alert = MONO_COLOR(s_settings.center_dot_20_color);
-    battery_ring = alert;
-    inner_ring   = alert;
+
+  // Battery alert color: always a strong red on colour screens so the alert is
+  // unmistakable, regardless of the user's saved cap colour. On b/w screens
+  // (aplite/diorite/flint) fall back to white via MONO_COLOR. If the user has
+  // explicitly chosen a non-black alert colour, honour it instead.
+  GColor alert_color = GColorRed;
+  if (!gcolor_equal(s_settings.center_dot_20_color, GColorBlack)) {
+    alert_color = s_settings.center_dot_20_color;
+  }
+  alert_color = MONO_COLOR(alert_color);
+
+  // Outer ring: red only when low battery alert (not yet critical)
+  if (show_ring_alert && !show_center_alert) {
+    battery_ring = alert_color;
+    inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
+  } else if (show_center_alert) {
+    // Critical battery: both ring and inner ring red
+    battery_ring = alert_color;
+    inner_ring   = alert_color;
   } else {
     battery_ring = GColorWhite;
     inner_ring   = MONO_COLOR(s_settings.min_hand_inner);
   }
-  
+
+  // Centre dot: red only for critical battery
   if (show_center_alert) {
-    dot = MONO_COLOR(s_settings.center_dot_20_color);
+    dot = alert_color;
   } else {
     dot = MONO_COLOR(s_settings.hour_hand_outer);
   }
-  int r5 = POS_X(7);
-  int r4 = POS_X(5);
-  int r3 = POS_X(4);
-  int r2 = POS_X(2);
-  int r1 = POS_X(1);
+  // Cap radii are fixed; a battery alert only changes colours, never sizes.
+  int r5 = POS_X(7);   // outer ring
+  int r4 = POS_X(5);   // black gap
+  int r3 = POS_X(4);   // inner ring
+  int r2 = POS_X(2);   // black gap
+  int r1 = POS_X(1);   // centre dot
+
   graphics_context_set_fill_color(ctx, battery_ring);
   graphics_fill_circle(ctx, center, r5);
   graphics_context_set_fill_color(ctx, GColorBlack);
@@ -1581,9 +1727,12 @@ static void battery_handler(BatteryChargeState charge) {
     s_battery_handler_initialized = true;
     return;
   }
-  bool crossed = (old_pct > FIXED_BATT_PCT_MID) != (s_battery_pct > FIXED_BATT_PCT_MID) ||
-                 (old_pct > FIXED_BATT_PCT_LOW) != (s_battery_pct > FIXED_BATT_PCT_LOW);
-  if (crossed) layer_mark_dirty(s_minute_layer);
+  // Check if we crossed either user-configured threshold
+  bool ring_crossed = (s_settings.battery_ring_threshold > 0) &&
+                      ((old_pct > s_settings.battery_ring_threshold) != (s_battery_pct > s_settings.battery_ring_threshold));
+  bool center_crossed = (s_settings.battery_center_threshold > 0) &&
+                        ((old_pct > s_settings.battery_center_threshold) != (s_battery_pct > s_settings.battery_center_threshold));
+  if (ring_crossed || center_crossed) layer_mark_dirty(s_minute_layer);
 }
 
 static void bt_handler(bool connected) {
@@ -1647,6 +1796,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *nf = dict_find(iter, KEY_NUMBER_FONT);
   if (nf) {
     s_settings.number_font = (int8_t)nf->value->int32;
+#ifdef PBL_COLOR
+    if (s_cached_number_font) { fonts_unload_custom_font(s_cached_number_font); }
+#endif
     s_cached_number_font = NULL;
     s_num_sizes_cached = false;
     dirty_bg = true;
@@ -1708,6 +1860,19 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *ssmc = dict_find(iter, KEY_SUNSET_MARKER_COLOR);
   if (ssmc) { s_settings.sunset_marker_color = rgb_to_gcolor(ssmc->value->int32); dirty_bg = true; }
 
+  Tuple *ns = dict_find(iter, KEY_NUMBER_SIZE);
+  if (ns) {
+    s_settings.number_size = (int8_t)ns->value->int32;
+#ifdef PBL_COLOR
+    if (s_cached_number_font) { fonts_unload_custom_font(s_cached_number_font); }
+#endif
+    s_cached_number_font = NULL;
+    s_num_sizes_cached = false;
+    dirty_bg = true;
+  }
+  Tuple *is = dict_find(iter, KEY_ICON_SIZE);
+  if (is) { s_settings.icon_size = (int8_t)is->value->int32; dirty_bg = true; }
+
   Tuple *dsl = dict_find(iter, KEY_DEBUG_SHOW_LINES);
   if (dsl) { s_settings.debug_show_lines = dsl->value->int32 != 0; dirty_bg = true; }
   Tuple *dsib = dict_find(iter, KEY_DEBUG_SHOW_ICON_BOXES);
@@ -1715,11 +1880,28 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *dspl = dict_find(iter, KEY_DEBUG_SHOW_PINK_LINES);
   if (dspl) { s_settings.debug_show_pink_lines = dspl->value->int32 != 0; dirty_bg = true; }
 
-  // Test mode: temporarily override battery/BT state
+  // Test mode: temporarily override battery/BT state.
+  // Test values are derived from the user's actual thresholds so the alert
+  // always fires regardless of how the thresholds are configured.
   Tuple *tba = dict_find(iter, KEY_TEST_BATTERY_ALERT);
-  if (tba && tba->value->int32) start_test(10, s_bt_connected);  // <20% battery
+  if (tba && tba->value->int32) {
+    // Critical test: battery at/below the centre threshold (both ring + dot red)
+    int ctr = s_settings.battery_center_threshold > 0 ? s_settings.battery_center_threshold : 10;
+    int pct = ctr - 1; if (pct < 0) pct = 0;
+    start_test((uint8_t)pct, s_bt_connected);
+  }
   Tuple *tb50 = dict_find(iter, KEY_TEST_BATTERY_50);
-  if (tb50 && tb50->value->int32) start_test(35, s_bt_connected); // 50%–20% battery
+  if (tb50 && tb50->value->int32) {
+    // Low test: battery just below the ring threshold but above the centre
+    // threshold (outer ring red only). Fall back to a sensible value if the
+    // ring threshold is disabled.
+    int ring = s_settings.battery_ring_threshold > 0 ? s_settings.battery_ring_threshold : 30;
+    int ctr  = s_settings.battery_center_threshold > 0 ? s_settings.battery_center_threshold : 10;
+    int pct = ring - 1;
+    if (pct <= ctr) pct = ctr + 1;   // keep above centre so only the ring alerts
+    if (pct > 100) pct = 100;
+    start_test((uint8_t)pct, s_bt_connected);
+  }
   Tuple *tbt = dict_find(iter, KEY_TEST_BT_DISCONNECT);
   if (tbt && tbt->value->int32) start_test(s_battery_pct, false); // BT disconnect
 
@@ -1854,6 +2036,9 @@ static void deinit(void) {
   if (s_seconds_timer) app_timer_cancel(s_seconds_timer);
   if (s_numbers_timer) app_timer_cancel(s_numbers_timer);
   if (s_test_timer) app_timer_cancel(s_test_timer);
+#ifdef PBL_COLOR
+  if (s_cached_number_font) { fonts_unload_custom_font(s_cached_number_font); s_cached_number_font = NULL; }
+#endif
   window_destroy(s_window);
 }
 
