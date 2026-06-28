@@ -63,18 +63,27 @@ static const GPathInfo s_cloudy_day_paths[] = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_THUNDERSTORM — native 23×23
-// Cloud upper path with bolt cut-out gaps at y=16
+// Cloud upper arc split into left and right halves with a gap where the bolt
+// protrudes. A short stub (10,5)→(11,5) marks the cloud top above the bolt.
 // Bolt: (14,0)→(14,10)→(18,10)→(10,23)→(10,14)→(6,14)→(14,0)
-// left_x at y=16 ≈ 10.0, right_x at y=16 ≈ 13.54, gap=1.0
 // ─────────────────────────────────────────────────────────────────────────────
+// Left arc: left edge up to the gap at (10,5)
 static const GPoint s_thunderstorm_0_pts[] = {
-  {0,16},{0,14},{0,11},{3,8},{7,8},{10,5},{14,5},{17,8},{21,8},{23,11},{23,14},{23,16}
+  {0,16},{0,14},{0,11},{3,8},{7,8},{10,5}
+};
+// Right arc: from gap at (14,5) to right edge
+static const GPoint s_thunderstorm_5_pts[] = {
+  {14,5},{17,8},{21,8},{23,11},{23,14},{23,16}
+};
+// Stub: short segment at cloud top above bolt gap
+static const GPoint s_thunderstorm_stub_pts[] = {
+  {10,5},{11,5}
 };
 // Left bottom segment (0,16)→(9,16)
 static const GPoint s_thunderstorm_1_pts[] = {
   {0,16},{9,16}
 };
-// Right bottom segment (~14.54+1=15.54 → 16, 16)→(23,16)
+// Right bottom segment (15,16)→(23,16)
 static const GPoint s_thunderstorm_2_pts[] = {
   {15,16},{23,16}
 };
@@ -87,11 +96,13 @@ static const GPoint s_thunderstorm_4_pts[] = {
   {14,0},{14,10},{18,10},{10,23},{10,14},{6,14},{14,0}
 };
 static const GPathInfo s_thunderstorm_paths[] = {
-  { ARRAY_LENGTH(s_thunderstorm_0_pts), (GPoint *)s_thunderstorm_0_pts },
-  { ARRAY_LENGTH(s_thunderstorm_1_pts), (GPoint *)s_thunderstorm_1_pts },
-  { ARRAY_LENGTH(s_thunderstorm_2_pts), (GPoint *)s_thunderstorm_2_pts },
-  { ARRAY_LENGTH(s_thunderstorm_3_pts), (GPoint *)s_thunderstorm_3_pts },
-  { ARRAY_LENGTH(s_thunderstorm_4_pts), (GPoint *)s_thunderstorm_4_pts }
+  { ARRAY_LENGTH(s_thunderstorm_0_pts),    (GPoint *)s_thunderstorm_0_pts },
+  { ARRAY_LENGTH(s_thunderstorm_5_pts),    (GPoint *)s_thunderstorm_5_pts },
+  { ARRAY_LENGTH(s_thunderstorm_stub_pts), (GPoint *)s_thunderstorm_stub_pts },
+  { ARRAY_LENGTH(s_thunderstorm_1_pts),    (GPoint *)s_thunderstorm_1_pts },
+  { ARRAY_LENGTH(s_thunderstorm_2_pts),    (GPoint *)s_thunderstorm_2_pts },
+  { ARRAY_LENGTH(s_thunderstorm_3_pts),    (GPoint *)s_thunderstorm_3_pts },
+  { ARRAY_LENGTH(s_thunderstorm_4_pts),    (GPoint *)s_thunderstorm_4_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -352,7 +363,7 @@ static const GPathInfo s_unknown_paths[] = {
 // ─────────────────────────────────────────────────────────────────────────────
 static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
   [GPATH_ID_CLOUDY_DAY]          = { 23, 23, 4,  s_cloudy_day_paths },
-  [GPATH_ID_THUNDERSTORM]        = { 23, 23, 5,  s_thunderstorm_paths },
+  [GPATH_ID_THUNDERSTORM]        = { 23, 23, 7,  s_thunderstorm_paths },
   [GPATH_ID_HEAVY_RAIN]          = { 23, 23, 6,  s_heavy_rain_paths },
   [GPATH_ID_HEAVY_SNOW]          = { 23, 23, 8,  s_heavy_snow_paths },
   [GPATH_ID_LIGHT_RAIN]          = { 23, 23, 5,  s_light_rain_paths },
@@ -363,6 +374,79 @@ static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
   [GPATH_ID_TIMELINE_MOON]       = { 23, 23, 4,  s_timeline_moon_paths },
   [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { 23, 23, 4,  s_partly_cloudy_night_paths },
   [GPATH_ID_UNKNOWN]             = { 23, 23, 3,  s_unknown_paths }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Weather colour table (used when icon_color_mode == 1)
+// One GColor8 per path, indexed [icon_id][path_index].
+// Approved colour scheme:
+//   clouds/arcs = grey   #aaaaaa  → 0xEA (11 10 10 10)
+//   sun/rays    = amber  #ffaa00  → 0xFC (11 11 10 00)
+//   lightning   = yellow #ffff00  → 0xFF (11 11 11 00) — closest Pebble yellow
+//   heavy rain  = bright blue #0055ff → 0xC3 (11 00 01 11)
+//   light rain  = soft blue   #5555ff → 0xC7 (11 01 01 11)
+//   snow        = cyan   #aaffff  → 0xCF (11 00 11 11)
+//   heavy snow  = white  #ffffff  → 0xFF
+//   moon        = pale blue #aaaaff → 0xCB (11 00 10 11)
+//   unknown     = dark grey  #555555 → 0xD5 (11 01 01 01)
+// GColor8 argb byte: 0b11rrggbb, r/g/b are 2-bit (0-3).
+// ─────────────────────────────────────────────────────────────────────────────
+// Maximum paths across all icons = 11 (PARTLY_CLOUDY)
+#define WEATHER_COLOR_MAX_PATHS 11
+
+// Plain uint8_t argb constants — true C99 integer constants, safe in static arrays.
+// GColor8 argb format: 0b11rrggbb (top 2 bits always 1).
+#define WC_GREY   0xEA  // #aaaaaa cloud grey
+#define WC_AMBER  0xFC  // #ffaa00 sun amber
+#define WC_YELLOW 0xFF  // #ffff00 lightning yellow
+#define WC_BBLUE  0xC3  // #0055ff heavy rain
+#define WC_SBLUE  0xC7  // #5555ff light rain
+#define WC_CYAN   0xCF  // #aaffff snow cyan
+#define WC_WHITE  0xFF  // #ffffff heavy snow
+#define WC_PALE   0xCB  // #aaaaff moon pale blue
+#define WC_DGREY  0xD5  // #555555 unknown dark grey
+
+// Per-path colour tables indexed by [icon_id][path_index]
+// Stored as raw argb bytes; cast to GColor8 at point of use.
+static const uint8_t s_weather_colors[GPATH_ID_COUNT][WEATHER_COLOR_MAX_PATHS] = {
+  // CLOUDY_DAY: 4 paths — back cloud arc, back cloud bottom, front cloud arc, front cloud bottom
+  [GPATH_ID_CLOUDY_DAY] = { WC_GREY, WC_GREY, WC_GREY, WC_GREY },
+
+  // THUNDERSTORM: 7 paths — left arc, right arc, stub, left bottom, right bottom, right close, bolt
+  [GPATH_ID_THUNDERSTORM] = { WC_GREY, WC_GREY, WC_GREY, WC_GREY, WC_GREY, WC_GREY, WC_YELLOW },
+
+  // HEAVY_RAIN: 6 paths — cloud arc, cloud bottom, rain×4
+  [GPATH_ID_HEAVY_RAIN] = { WC_GREY, WC_GREY, WC_BBLUE, WC_BBLUE, WC_BBLUE, WC_BBLUE },
+
+  // HEAVY_SNOW: 8 paths — cloud arc, cloud bottom, snowflake×3 (V+H each)
+  [GPATH_ID_HEAVY_SNOW] = { WC_GREY, WC_GREY, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE },
+
+  // LIGHT_RAIN: 5 paths — cloud arc, cloud bottom, rain×3
+  [GPATH_ID_LIGHT_RAIN] = { WC_GREY, WC_GREY, WC_SBLUE, WC_SBLUE, WC_SBLUE },
+
+  // LIGHT_SNOW: 6 paths — cloud arc, cloud bottom, snowflake×2 (V+H each)
+  [GPATH_ID_LIGHT_SNOW] = { WC_GREY, WC_GREY, WC_CYAN, WC_CYAN, WC_CYAN, WC_CYAN },
+
+  // RAINING_AND_SNOWING: 6 paths — cloud arc, cloud bottom, rain×2, snowflake V, snowflake H
+  [GPATH_ID_RAINING_AND_SNOWING] = { WC_GREY, WC_GREY, WC_SBLUE, WC_SBLUE, WC_CYAN, WC_CYAN },
+
+  // PARTLY_CLOUDY: 11 paths — sun octagon, N/W/E/S rays, NE/SE/NW/SW rays, cloud arc, cloud bottom
+  [GPATH_ID_PARTLY_CLOUDY] = { WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
+                                WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
+                                WC_GREY, WC_GREY },
+
+  // TIMELINE_SUN: 9 paths — octagon, N/S/W/E rays, NW/NE/SW/SE rays
+  [GPATH_ID_TIMELINE_SUN] = { WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
+                               WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER },
+
+  // TIMELINE_MOON: 4 paths — outer arc, inner arc, star H, star V
+  [GPATH_ID_TIMELINE_MOON] = { WC_PALE, WC_PALE, WC_WHITE, WC_WHITE },
+
+  // PARTLY_CLOUDY_NIGHT: 4 paths — moon outer arc, moon inner arc, cloud arc, cloud bottom
+  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { WC_PALE, WC_PALE, WC_GREY, WC_GREY },
+
+  // UNKNOWN: 3 paths — diamond, question mark, dot
+  [GPATH_ID_UNKNOWN] = { WC_DGREY, WC_DGREY, WC_DGREY }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -458,18 +542,30 @@ static inline GPathIconID icon_code_to_gpath(int icon_code) {
   }
 }
 
-// Draw a weather icon at (ox, oy) scaled to sz×sz, using the given color
-static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy, int sz, GColor color) {
+// Draw a weather icon at (ox, oy) scaled to sz×sz.
+// color      — base colour used when use_weather_colors is false.
+// use_weather_colors — when true, each path is drawn in its approved weather
+//                      colour from s_weather_colors instead of `color`.
+static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy,
+                              int sz, GColor color, bool use_weather_colors) {
   if (icon_id >= GPATH_ID_COUNT) return;
   const WeatherIconDef *def = &s_weather_icons[icon_id];
   int native_max = def->native_w > def->native_h ? def->native_w : def->native_h;
   if (native_max == 0) return;
   int scale256 = (sz * 256) / native_max;
 
-  graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 1);
 
   for (int p = 0; p < def->num_paths; p++) {
+    GColor path_color = color;
+    if (use_weather_colors) {
+      // Apply the weather colour directly (MONO_COLOR is in main.c scope;
+      // on aplite the caller passes a pre-mono'd colour anyway).
+      GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
+      path_color = (GColor){ .argb = wc.argb };
+    }
+    graphics_context_set_stroke_color(ctx, path_color);
+
     const GPathInfo *pi = &def->paths[p];
     for (int i = 0; i < (int)pi->num_points - 1; i++) {
       GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,

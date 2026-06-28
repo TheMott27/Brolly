@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.2.0'
+const VERSION = 'v2.3.0'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -287,6 +287,7 @@ function DisplayTab({ s, set, onResetColours }: {
           options={[
             { label: 'Single colour', value: 0 },
             { label: 'Weather-based colours', value: 1 },
+            { label: 'Rainbow', value: 2 },
           ]}
           onChange={v => set('KEY_ICON_COLOR_MODE', v)}
         />

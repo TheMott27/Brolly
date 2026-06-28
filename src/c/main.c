@@ -115,6 +115,8 @@ typedef struct {
   // City name display
   uint8_t city_display_mode; // 0=Off 1=Shake 2=Always
   GColor  city_color;
+  // Icon/number colour mode
+  uint8_t icon_color_mode;   // 0=Single colour 1=Weather based 2=Rainbow
 } Settings;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -763,7 +765,31 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
 
-      draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, MONO_COLOR(s_settings.icon_color));
+      // Determine icon colour based on mode
+      GColor icon_draw_color;
+      if (s_settings.icon_color_mode == 2) {
+        // Rainbow: colour based on hour position around the dial
+        // 12 positions → hues 0..330 in steps of 30
+        static const GColor8 s_rainbow_colors[12] = {
+          { .argb = 0xFF }, // h=0  red
+          { .argb = 0xFB }, // h=1  orange
+          { .argb = 0xFC }, // h=2  yellow
+          { .argb = 0xEC }, // h=3  yellow-green
+          { .argb = 0xCC }, // h=4  green
+          { .argb = 0xCD }, // h=5  spring green
+          { .argb = 0xCF }, // h=6  cyan
+          { .argb = 0xCB }, // h=7  sky blue
+          { .argb = 0xC3 }, // h=8  blue
+          { .argb = 0xD3 }, // h=9  blue-violet
+          { .argb = 0xF3 }, // h=10 magenta
+          { .argb = 0xFE }, // h=11 rose
+        };
+        icon_draw_color = MONO_COLOR(s_rainbow_colors[h]);
+      } else {
+        icon_draw_color = MONO_COLOR(s_settings.icon_color);
+      }
+      draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, icon_draw_color,
+                        s_settings.icon_color_mode == 1);
     } else {
       // Draw number anchored by its TRUE VISIBLE INK edge a constant gap from
       // the nearest screen edge. The cross-axis position comes from the
@@ -854,7 +880,29 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       }
 
       GRect text_rect = GRect(rx, ry, 80, 80);
-      graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.number_color));
+      // Determine number colour based on mode
+      GColor num_draw_color;
+      if (s_settings.icon_color_mode == 2) {
+        // Rainbow: same colour wheel as icons
+        static const GColor8 s_rainbow_num_colors[12] = {
+          { .argb = 0xFF }, // h=0  red
+          { .argb = 0xFB }, // h=1  orange
+          { .argb = 0xFC }, // h=2  yellow
+          { .argb = 0xEC }, // h=3  yellow-green
+          { .argb = 0xCC }, // h=4  green
+          { .argb = 0xCD }, // h=5  spring green
+          { .argb = 0xCF }, // h=6  cyan
+          { .argb = 0xCB }, // h=7  sky blue
+          { .argb = 0xC3 }, // h=8  blue
+          { .argb = 0xD3 }, // h=9  blue-violet
+          { .argb = 0xF3 }, // h=10 magenta
+          { .argb = 0xFE }, // h=11 rose
+        };
+        num_draw_color = MONO_COLOR(s_rainbow_num_colors[h]);
+      } else {
+        num_draw_color = MONO_COLOR(s_settings.number_color);
+      }
+      graphics_context_set_text_color(ctx, num_draw_color);
       graphics_draw_text(ctx, s_num_strings[h], num_font, text_rect,
                          GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
     }
@@ -1372,6 +1420,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (t) { s_settings.city_display_mode = (uint8_t)t->value->int32; settings_changed = true; }
   t = dict_find(iter, 161); // KEY_CITY_COLOR
   if (t) { s_settings.city_color = rgb_to_gcolor(t->value->int32); settings_changed = true; }
+  t = dict_find(iter, 153); // KEY_ICON_COLOR_MODE
+  if (t) { s_settings.icon_color_mode = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true; }
 
   // Shake mode also controls accel subscription
   if (settings_changed) {
@@ -1435,6 +1485,7 @@ static void load_default_settings(void) {
   s_settings.shake_mode             = 0;   // Show on shake
   s_settings.city_display_mode      = 1;   // Shake
   s_settings.city_color             = GColorFromRGB(0x55, 0x55, 0x55);
+  s_settings.icon_color_mode        = 0;   // Single colour
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
