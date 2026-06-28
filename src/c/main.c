@@ -81,7 +81,6 @@ typedef struct {
   // Icons
   uint8_t icon_size;      // 1–5 → {18,22,26,30,36} (matches font sizes)
   GColor  icon_color;
-  uint8_t icon_color_mode; // 0=Single colour 1=Weather-based colours
   // Watch hands
   GColor hour_hand_outer;
   GColor hour_hand_inner;
@@ -764,7 +763,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
 
-      draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, MONO_COLOR(s_settings.icon_color), s_settings.icon_color_mode == 1);
+      draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, MONO_COLOR(s_settings.icon_color));
     } else {
       // Draw number anchored by its TRUE VISIBLE INK edge a constant gap from
       // the nearest screen edge. The cross-axis position comes from the
@@ -1361,9 +1360,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, 151); // KEY_ICON_SIZE
   if (t) { s_settings.icon_size = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true; }
 
-  t = dict_find(iter, 153); // KEY_ICON_COLOR_MODE
-  if (t) { s_settings.icon_color_mode = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true; }
-
   t = dict_find(iter, 158); // KEY_DISPLAY_MODE
   if (t) { s_settings.display_mode = (uint8_t)t->value->int32; settings_changed = true; }
   t = dict_find(iter, 159); // KEY_CITY_NAME (string)
@@ -1413,7 +1409,6 @@ static void load_default_settings(void) {
   s_settings.number_color           = GColorWhite;
   s_settings.icon_size              = 3;
   s_settings.icon_color             = GColorWhite;
-  s_settings.icon_color_mode        = 0;   // Single colour
   s_settings.hour_hand_outer        = GColorWhite;
   s_settings.hour_hand_inner        = GColorBlack;
   s_settings.min_hand_outer         = GColorBlack;
