@@ -761,14 +761,20 @@ static void shade_draw_fill(GContext *ctx, const GPoint *poly_scaled, int n,
     c_end   = max_x - min_y;
   }
 
-  // Align c_start to the nearest multiple of gap
-  if (c_start < 0) c_start = c_start - (gap - 1 + ((-c_start) % gap)) % gap;
-  else             c_start = (c_start / gap) * gap;
+  // Align c_start down to the nearest multiple of gap (works for negative too)
+  c_start = c_start - ((c_start % gap + gap) % gap);
 
-  // Intersection buffer (max edges = n)
+  // Safety: cap the number of lines to avoid watchdog timeout
+  // At icon size ~36px and gap 4, max lines across 36px diagonal = ~13.
+  // Allow up to 64 lines per polygon to be safe.
+  int max_lines = (c_end - c_start) / gap + 1;
+  if (max_lines > 64) max_lines = 64;
+
+  // Intersection buffer
   int xs[16];  // up to 16 intersections per scanline
 
-  for (int c = c_start; c <= c_end; c += gap) {
+  int line_count = 0;
+  for (int c = c_start; c <= c_end && line_count < max_lines; c += gap, line_count++) {
     // Find all intersections of the diagonal line with polygon edges.
     // NE→SW: y = c - x  →  substitute into edge equations.
     // NW→SE: y = x - c  →  substitute into edge equations.
