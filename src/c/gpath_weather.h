@@ -576,3 +576,307 @@ static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy
     }
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LINE SHADING (icon_color_mode == 3)
+// 45° diagonal hatching clipped to closed fill polygons.
+// Clouds/rain/snow: NE→SW lines (x+y = const, gap 12px in scaled space).
+// Sun/moon/bolt:    NW→SE lines (x-y = const, gap 12px in scaled space).
+// Unknown: outline only, no shading.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Shading direction flags
+#define SHADE_NE_SW 0  // x+y = const  (cloud direction)
+#define SHADE_NW_SE 1  // x-y = const  (sun/moon/bolt direction)
+
+// Shading gap in native-grid units (will be scaled with the icon).
+// 12px gap at native 23 → scales proportionally.
+#define SHADE_GAP_NATIVE 12
+
+// Descriptor for one fill region used in shading.
+typedef struct {
+  const GPoint *pts;    // polygon vertices (native coords, closed not required)
+  int           n;      // number of vertices
+  uint8_t       color;  // WC_* argb byte
+  uint8_t       dir;    // SHADE_NE_SW or SHADE_NW_SE
+  bool          cutout; // true → erase (black fill) rather than shade
+} ShadeFill;
+
+// ── Shading polygon tables per icon ──────────────────────────────────────────
+
+// Standard cloud body polygon (arc + flat bottom), native 23×23, top at y=0
+static const GPoint s_shade_cloud_std[] = {
+  {0,11},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,11}
+};
+// Cloudy-day back cloud polygon
+static const GPoint s_shade_cloud_back[] = {
+  {0,13},{0,7},{2,4},{6,4},{8,0},{12,0},{14,4},{17,4},{19,7},{19,13}
+};
+// Cloudy-day front cloud polygon
+static const GPoint s_shade_cloud_front[] = {
+  {4,23},{4,17},{6,14},{10,14},{12,10},{16,10},{18,14},{21,14},{23,17},{23,23}
+};
+// Thunderstorm cloud body polygon
+static const GPoint s_shade_thunder_cloud[] = {
+  {0,16},{0,11},{3,8},{7,8},{10,5},{14,5},{17,8},{21,8},{23,11},{23,16}
+};
+// Lightning bolt polygon
+static const GPoint s_shade_bolt[] = {
+  {14,0},{14,10},{18,10},{10,23},{10,14},{6,14}
+};
+// Sun octagon (TIMELINE_SUN)
+static const GPoint s_shade_sun_oct[] = {
+  {9,5},{15,5},{19,9},{19,15},{15,19},{9,19},{5,15},{5,9}
+};
+// Small sun octagon (PARTLY_CLOUDY)
+static const GPoint s_shade_sun_small[] = {
+  {3,1},{1,3},{1,7},{3,9},{7,9},{9,7},{9,3},{7,1}
+};
+// Partly-cloudy cloud body polygon
+static const GPoint s_shade_cloud_partly[] = {
+  {0,23},{0,18},{3,15},{7,15},{10,12},{14,12},{17,15},{21,15},{23,18},{23,23}
+};
+// Moon outer polygon (TIMELINE_MOON)
+static const GPoint s_shade_moon_outer[] = {
+  {16,0},{23,7},{23,16},{16,23},{7,23},{0,16}
+};
+// Moon inner cutout polygon (TIMELINE_MOON)
+static const GPoint s_shade_moon_inner[] = {
+  {16,0},{16,9},{9,16},{0,16}
+};
+// Small moon outer (PARTLY_CLOUDY_NIGHT)
+static const GPoint s_shade_moon_sm_outer[] = {
+  {20,0},{23,3},{23,8},{20,11},{15,11},{12,8}
+};
+// Small moon inner cutout (PARTLY_CLOUDY_NIGHT)
+static const GPoint s_shade_moon_sm_inner[] = {
+  {20,0},{20,4},{16,8},{12,8}
+};
+
+// Per-icon fill descriptor arrays
+static const ShadeFill s_shade_cloudy_day[] = {
+  { s_shade_cloud_back,  10, WC_GREY, SHADE_NE_SW, false },
+  { s_shade_cloud_front, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_thunderstorm[] = {
+  { s_shade_thunder_cloud, 10, WC_GREY,   SHADE_NE_SW, false },
+  { s_shade_bolt,           6, WC_YELLOW, SHADE_NW_SE, false },
+};
+static const ShadeFill s_shade_heavy_rain[] = {
+  { s_shade_cloud_std, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_heavy_snow[] = {
+  { s_shade_cloud_std, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_light_rain[] = {
+  { s_shade_cloud_std, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_light_snow[] = {
+  { s_shade_cloud_std, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_rain_snow[] = {
+  { s_shade_cloud_std, 10, WC_GREY, SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_partly_cloudy[] = {
+  { s_shade_sun_small,   8, WC_AMBER, SHADE_NW_SE, false },
+  { s_shade_cloud_partly,10, WC_GREY,  SHADE_NE_SW, false },
+};
+static const ShadeFill s_shade_timeline_sun[] = {
+  { s_shade_sun_oct, 8, WC_AMBER, SHADE_NW_SE, false },
+};
+static const ShadeFill s_shade_timeline_moon[] = {
+  { s_shade_moon_outer, 6, WC_PALE, SHADE_NW_SE, false  },
+  { s_shade_moon_inner, 4, WC_PALE, SHADE_NW_SE, true   },  // cutout
+};
+static const ShadeFill s_shade_partly_cloudy_night[] = {
+  { s_shade_moon_sm_outer, 6, WC_PALE, SHADE_NW_SE, false },
+  { s_shade_moon_sm_inner, 4, WC_PALE, SHADE_NW_SE, true  },  // cutout
+  { s_shade_cloud_partly, 10, WC_GREY, SHADE_NE_SW, false },
+};
+// Unknown: no fill entries (outline only)
+
+typedef struct {
+  const ShadeFill *fills;
+  int              n_fills;
+} ShadeIconDef;
+
+static const ShadeIconDef s_shade_icons[GPATH_ID_COUNT] = {
+  [GPATH_ID_CLOUDY_DAY]          = { s_shade_cloudy_day,          2 },
+  [GPATH_ID_THUNDERSTORM]        = { s_shade_thunderstorm,         2 },
+  [GPATH_ID_HEAVY_RAIN]          = { s_shade_heavy_rain,           1 },
+  [GPATH_ID_HEAVY_SNOW]          = { s_shade_heavy_snow,           1 },
+  [GPATH_ID_LIGHT_RAIN]          = { s_shade_light_rain,           1 },
+  [GPATH_ID_LIGHT_SNOW]          = { s_shade_light_snow,           1 },
+  [GPATH_ID_RAINING_AND_SNOWING] = { s_shade_rain_snow,            1 },
+  [GPATH_ID_PARTLY_CLOUDY]       = { s_shade_partly_cloudy,        2 },
+  [GPATH_ID_TIMELINE_SUN]        = { s_shade_timeline_sun,         1 },
+  [GPATH_ID_TIMELINE_MOON]       = { s_shade_timeline_moon,        2 },
+  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { s_shade_partly_cloudy_night,  3 },
+  [GPATH_ID_UNKNOWN]             = { NULL,                         0 },
+};
+
+// ── Scanline polygon clipper for diagonal lines ───────────────────────────────
+// Clips 45° diagonal lines (NE→SW or NW→SE) to a convex-or-concave polygon
+// using a simple even-odd edge-intersection scan.
+// Works in scaled pixel space.
+
+// Compute x-intersection of horizontal scanline y=scan_y with edge (x0,y0)→(x1,y1).
+// Returns false if edge doesn't cross scan_y.
+static bool shade_edge_x(int x0, int y0, int x1, int y1, int scan_y, int *out_x) {
+  if (y0 == y1) return false;
+  if (scan_y < (y0 < y1 ? y0 : y1)) return false;
+  if (scan_y >= (y0 > y1 ? y0 : y1)) return false;
+  // x = x0 + (scan_y - y0) * (x1 - x0) / (y1 - y0)
+  *out_x = x0 + (scan_y - y0) * (x1 - x0) / (y1 - y0);
+  return true;
+}
+
+// Sort two ints ascending.
+static void shade_sort2(int *a, int *b) {
+  if (*a > *b) { int t = *a; *a = *b; *b = t; }
+}
+
+// Draw hatching lines for one fill polygon.
+// poly_scaled: polygon vertices already in screen pixel coords.
+// n: number of vertices.
+// gap: spacing between lines in pixels.
+// dir: SHADE_NE_SW or SHADE_NW_SE.
+static void shade_draw_fill(GContext *ctx, const GPoint *poly_scaled, int n,
+                            int gap, int dir) {
+  if (n < 3) return;
+
+  // Bounding box
+  int min_x = poly_scaled[0].x, max_x = poly_scaled[0].x;
+  int min_y = poly_scaled[0].y, max_y = poly_scaled[0].y;
+  for (int i = 1; i < n; i++) {
+    if (poly_scaled[i].x < min_x) min_x = poly_scaled[i].x;
+    if (poly_scaled[i].x > max_x) max_x = poly_scaled[i].x;
+    if (poly_scaled[i].y < min_y) min_y = poly_scaled[i].y;
+    if (poly_scaled[i].y > max_y) max_y = poly_scaled[i].y;
+  }
+
+  // For NE→SW: lines where x+y = c.  Scan c from min_x+min_y to max_x+max_y.
+  // For NW→SE: lines where x-y = c.  Scan c from min_x-max_y to max_x-min_y.
+  int c_start, c_end;
+  if (dir == SHADE_NE_SW) {
+    c_start = min_x + min_y;
+    c_end   = max_x + max_y;
+  } else {
+    c_start = min_x - max_y;
+    c_end   = max_x - min_y;
+  }
+
+  // Align c_start to the nearest multiple of gap
+  if (c_start < 0) c_start = c_start - (gap - 1 + ((-c_start) % gap)) % gap;
+  else             c_start = (c_start / gap) * gap;
+
+  // Intersection buffer (max edges = n)
+  int xs[16];  // up to 16 intersections per scanline
+
+  for (int c = c_start; c <= c_end; c += gap) {
+    // Find all intersections of the diagonal line with polygon edges.
+    // NE→SW: y = c - x  →  substitute into edge equations.
+    // NW→SE: y = x - c  →  substitute into edge equations.
+    // We convert to a horizontal scanline problem by a coordinate transform:
+    //   NE→SW: u = x+y, v = x-y  →  scan u=c, find v intersections.
+    //   NW→SE: u = x-y, v = x+y  →  scan u=c, find v intersections.
+    // Then convert back to (x,y) to draw.
+    int n_xs = 0;
+    for (int i = 0; i < n; i++) {
+      int j = (i + 1) % n;
+      int u0, v0, u1, v1;
+      if (dir == SHADE_NE_SW) {
+        u0 = poly_scaled[i].x + poly_scaled[i].y;
+        v0 = poly_scaled[i].x - poly_scaled[i].y;
+        u1 = poly_scaled[j].x + poly_scaled[j].y;
+        v1 = poly_scaled[j].x - poly_scaled[j].y;
+      } else {
+        u0 = poly_scaled[i].x - poly_scaled[i].y;
+        v0 = poly_scaled[i].x + poly_scaled[i].y;
+        u1 = poly_scaled[j].x - poly_scaled[j].y;
+        v1 = poly_scaled[j].x + poly_scaled[j].y;
+      }
+      int vx;
+      if (shade_edge_x(v0, u0, v1, u1, c, &vx)) {
+        if (n_xs < 16) xs[n_xs++] = vx;
+      }
+    }
+    if (n_xs < 2) continue;
+    // Sort intersections
+    for (int a = 0; a < n_xs - 1; a++)
+      for (int b = a + 1; b < n_xs; b++)
+        shade_sort2(&xs[a], &xs[b]);
+    // Draw interior segments (pairs)
+    for (int k = 0; k + 1 < n_xs; k += 2) {
+      int va = xs[k], vb = xs[k+1];
+      GPoint pa, pb;
+      if (dir == SHADE_NE_SW) {
+        // u=x+y=c, v=x-y  →  x=(u+v)/2, y=(u-v)/2
+        pa = GPoint((c + va) / 2, (c - va) / 2);
+        pb = GPoint((c + vb) / 2, (c - vb) / 2);
+      } else {
+        // u=x-y=c, v=x+y  →  x=(u+v)/2, y=(v-u)/2
+        pa = GPoint((c + va) / 2, (va - c) / 2);
+        pb = GPoint((c + vb) / 2, (vb - c) / 2);
+      }
+      graphics_draw_line(ctx, pa, pb);
+    }
+  }
+}
+
+// Draw a weather icon with line shading (icon_color_mode == 3).
+// Uses weather colours for both the fill hatching and the outline strokes.
+static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
+                                     int ox, int oy, int sz) {
+  if (icon_id >= GPATH_ID_COUNT) return;
+  const WeatherIconDef *def = &s_weather_icons[icon_id];
+  int native_max = def->native_w > def->native_h ? def->native_w : def->native_h;
+  if (native_max == 0) return;
+  int scale256 = (sz * 256) / native_max;
+
+  // Scaled gap
+  int gap = (SHADE_GAP_NATIVE * scale256) / 256;
+  if (gap < 2) gap = 2;
+
+  const ShadeIconDef *sdef = &s_shade_icons[icon_id];
+
+  // ── Step 1: Draw shaded fill regions ─────────────────────────────────────
+  for (int f = 0; f < sdef->n_fills; f++) {
+    const ShadeFill *sf = &sdef->fills[f];
+    // Scale polygon to screen coords
+    GPoint scaled[16];
+    int n = sf->n;
+    if (n > 16) n = 16;
+    for (int i = 0; i < n; i++) {
+      scaled[i] = GPoint(ox + (sf->pts[i].x * scale256) / 256,
+                         oy + (sf->pts[i].y * scale256) / 256);
+    }
+
+    GColor8 wc; wc.argb = sf->color;
+    GColor fill_color = (GColor){ .argb = wc.argb };
+
+    if (sf->cutout) {
+      // Erase interior with black hatching (effectively a cutout)
+      graphics_context_set_stroke_color(ctx, GColorBlack);
+      shade_draw_fill(ctx, scaled, n, gap, sf->dir);
+    } else {
+      graphics_context_set_stroke_color(ctx, fill_color);
+      shade_draw_fill(ctx, scaled, n, gap, sf->dir);
+    }
+  }
+
+  // ── Step 2: Draw all original gpath outlines on top ───────────────────────
+  graphics_context_set_stroke_width(ctx, 1);
+  for (int p = 0; p < def->num_paths; p++) {
+    GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
+    graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
+    const GPathInfo *pi = &def->paths[p];
+    for (int i = 0; i < (int)pi->num_points - 1; i++) {
+      GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
+                        oy + (pi->points[i].y   * scale256) / 256);
+      GPoint b = GPoint(ox + (pi->points[i+1].x * scale256) / 256,
+                        oy + (pi->points[i+1].y * scale256) / 256);
+      graphics_draw_line(ctx, a, b);
+    }
+  }
+}

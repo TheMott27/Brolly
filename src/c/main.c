@@ -771,25 +771,30 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // Rainbow: colour based on hour position around the dial
         // 12 positions → hues 0..330 in steps of 30
         static const GColor8 s_rainbow_colors[12] = {
-          { .argb = 0xFF }, // h=0  red
-          { .argb = 0xFB }, // h=1  orange
-          { .argb = 0xFC }, // h=2  yellow
-          { .argb = 0xEC }, // h=3  yellow-green
-          { .argb = 0xCC }, // h=4  green
-          { .argb = 0xCD }, // h=5  spring green
-          { .argb = 0xCF }, // h=6  cyan
-          { .argb = 0xCB }, // h=7  sky blue
-          { .argb = 0xC3 }, // h=8  blue
-          { .argb = 0xD3 }, // h=9  blue-violet
-          { .argb = 0xF3 }, // h=10 magenta
-          { .argb = 0xFE }, // h=11 rose
+          { .argb = 0xF0 }, // h=0  red        (255,0,0)
+          { .argb = 0xF8 }, // h=1  orange     (255,170,0)
+          { .argb = 0xFC }, // h=2  yellow     (255,255,0)
+          { .argb = 0xEC }, // h=3  chartreuse (170,255,0)
+          { .argb = 0xCC }, // h=4  green      (0,255,0)
+          { .argb = 0xCE }, // h=5  spring     (0,255,170)
+          { .argb = 0xCF }, // h=6  cyan       (0,255,255)
+          { .argb = 0xCB }, // h=7  sky blue   (0,170,255)
+          { .argb = 0xC3 }, // h=8  blue       (0,0,255)
+          { .argb = 0xE3 }, // h=9  violet     (170,0,255)
+          { .argb = 0xF3 }, // h=10 magenta    (255,0,255)
+          { .argb = 0xF2 }, // h=11 rose       (255,0,170)
         };
         icon_draw_color = MONO_COLOR(s_rainbow_colors[h]);
       } else {
         icon_draw_color = MONO_COLOR(s_settings.icon_color);
       }
-      draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, icon_draw_color,
-                        s_settings.icon_color_mode == 1);
+      if (s_settings.icon_color_mode == 3) {
+        // Line shading mode: hatched fill with weather colours
+        draw_weather_icon_shaded(ctx, gpath_id, ox, oy, icon_sz);
+      } else {
+        draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, icon_draw_color,
+                          s_settings.icon_color_mode == 1);
+      }
     } else {
       // Draw number anchored by its TRUE VISIBLE INK edge a constant gap from
       // the nearest screen edge. The cross-axis position comes from the
@@ -885,18 +890,18 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (s_settings.icon_color_mode == 2) {
         // Rainbow: same colour wheel as icons
         static const GColor8 s_rainbow_num_colors[12] = {
-          { .argb = 0xFF }, // h=0  red
-          { .argb = 0xFB }, // h=1  orange
-          { .argb = 0xFC }, // h=2  yellow
-          { .argb = 0xEC }, // h=3  yellow-green
-          { .argb = 0xCC }, // h=4  green
-          { .argb = 0xCD }, // h=5  spring green
-          { .argb = 0xCF }, // h=6  cyan
-          { .argb = 0xCB }, // h=7  sky blue
-          { .argb = 0xC3 }, // h=8  blue
-          { .argb = 0xD3 }, // h=9  blue-violet
-          { .argb = 0xF3 }, // h=10 magenta
-          { .argb = 0xFE }, // h=11 rose
+          { .argb = 0xF0 }, // h=0  red        (255,0,0)
+          { .argb = 0xF8 }, // h=1  orange     (255,170,0)
+          { .argb = 0xFC }, // h=2  yellow     (255,255,0)
+          { .argb = 0xEC }, // h=3  chartreuse (170,255,0)
+          { .argb = 0xCC }, // h=4  green      (0,255,0)
+          { .argb = 0xCE }, // h=5  spring     (0,255,170)
+          { .argb = 0xCF }, // h=6  cyan       (0,255,255)
+          { .argb = 0xCB }, // h=7  sky blue   (0,170,255)
+          { .argb = 0xC3 }, // h=8  blue       (0,0,255)
+          { .argb = 0xE3 }, // h=9  violet     (170,0,255)
+          { .argb = 0xF3 }, // h=10 magenta    (255,0,255)
+          { .argb = 0xF2 }, // h=11 rose       (255,0,170)
         };
         num_draw_color = MONO_COLOR(s_rainbow_num_colors[h]);
       } else {

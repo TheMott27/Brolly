@@ -288,6 +288,7 @@ function DisplayTab({ s, set, onResetColours }: {
             { label: 'Single colour', value: 0 },
             { label: 'Weather-based colours', value: 1 },
             { label: 'Rainbow', value: 2 },
+            { label: 'Line shading', value: 3 },
           ]}
           onChange={v => set('KEY_ICON_COLOR_MODE', v)}
         />
