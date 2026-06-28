@@ -1,5 +1,9 @@
 // Brolly v2.0.0 — pkjs/index.js
 // PebbleKit JS: weather fetch (Open-Meteo) + config bridge
+//
+// IMPORTANT: Pebble.sendAppMessage() requires NUMERIC keys only.
+// String key names are NOT accepted. All message keys are mapped to their
+// numeric IDs from package.json messageKeys.
 
 'use strict';
 
@@ -41,6 +45,68 @@ var ICON = {
   HAZE:             31,
   FOG_N:            32,
   HAZE_N:           33
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Numeric message key IDs (from package.json messageKeys)
+// ALL Pebble.sendAppMessage calls must use these numbers, not string names.
+// ─────────────────────────────────────────────────────────────────────────────
+var KEY = {
+  // Weather / icons (0–23 = icon slots)
+  ICON_0:  0,  ICON_1:  1,  ICON_2:  2,  ICON_3:  3,
+  ICON_4:  4,  ICON_5:  5,  ICON_6:  6,  ICON_7:  7,
+  ICON_8:  8,  ICON_9:  9,  ICON_10: 10, ICON_11: 11,
+  ICON_12: 12, ICON_13: 13, ICON_14: 14, ICON_15: 15,
+  ICON_16: 16, ICON_17: 17, ICON_18: 18, ICON_19: 19,
+  ICON_20: 20, ICON_21: 21, ICON_22: 22, ICON_23: 23,
+  SUNRISE_HOUR:   25,
+  SUNRISE_MINUTE: 26,
+  SUNSET_HOUR:    27,
+  SUNSET_MINUTE:  28,
+  // Alerts / BT
+  BT_DISCONNECT_MIN_INNER_RED: 53,
+  VIBRATE_BT_DISCONNECT:       54,
+  VIBRATE_BT_RECONNECT:        55,
+  // Temperature
+  TEMP_C: 58,
+  TEMP_F: 59,
+  // Settings
+  SHAKE_MODE:              107,
+  TEMP_UNIT:               110,
+  HOUR_HAND_OUTER:         114,
+  HOUR_HAND_INNER:         115,
+  MIN_HAND_OUTER:          116,
+  MIN_HAND_INNER:          117,
+  DATE_VISIBLE:            118,
+  TEMP_VISIBLE:            119,
+  NUMBER_FONT:             121,
+  BACKGROUND_COLOR:        126,
+  NUMBER_COLOR:            127,
+  ICON_COLOR:              128,
+  HOUR_MARKER_COLOR:       129,
+  MINUTE_MARKER_COLOR:     130,
+  DATE_COLOR:              134,
+  TEMP_COLOR:              135,
+  BT_DISCONNECT_OUTER_COLOR: 136,
+  BT_DISCONNECT_INNER_COLOR: 137,
+  BATTERY_RING_THRESHOLD:  138,
+  BATTERY_CENTER_THRESHOLD:139,
+  SECONDS_HAND_COLOR:      141,
+  SECONDS_HAND_MODE:       142,
+  SECONDS_SHAKE_DUR:       143,
+  // Test buttons
+  TEST_BATTERY_ALERT:          144,
+  TEST_BT_DISCONNECT:          145,
+  TEST_CRITICAL_BATTERY_ALERT: 146,
+  // Sunrise/sunset markers
+  SUNRISE_MARKER_VISIBLE: 147,
+  SUNRISE_MARKER_COLOR:   148,
+  SUNSET_MARKER_COLOR:    149,
+  // Appearance
+  NUMBER_SIZE:    150,
+  ICON_SIZE:      151,
+  ICON_COLOR_MODE:153,
+  DISPLAY_MODE:   158
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,15 +230,12 @@ function processWeatherData(data) {
   // Build 24-hour icon array
   var icons = new Array(24);
   var now = new Date();
-  var curHour = now.getHours();
 
   // Find today's start index in hourly data
-  // hourly.time is array of ISO strings like "2024-01-01T00:00"
   var times = data.hourly.time;
   var codes = data.hourly.weather_code;
   var isDays = data.hourly.is_day;
 
-  // Find the index corresponding to today 00:00
   var todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
   var startIdx = 0;
   for (var i = 0; i < times.length; i++) {
@@ -205,17 +268,17 @@ function processWeatherData(data) {
   var ssHour = parseInt(ssParts[0], 10);
   var ssMin  = parseInt(ssParts[1], 10);
 
-  // Build message
+  // Build message using NUMERIC keys only
   var msg = {};
   for (var k = 0; k < 24; k++) {
-    msg['KEY_ICON_' + k] = icons[k];
+    msg[k] = icons[k]; // KEY_ICON_0..23 = numeric keys 0..23
   }
-  msg.KEY_TEMP_C       = tempC;
-  msg.KEY_TEMP_F       = tempF;
-  msg.KEY_SUNRISE_HOUR = srHour;
-  msg.KEY_SUNRISE_MINUTE = srMin;
-  msg.KEY_SUNSET_HOUR  = ssHour;
-  msg.KEY_SUNSET_MINUTE = ssMin;
+  msg[KEY.TEMP_C]          = tempC;
+  msg[KEY.TEMP_F]          = tempF;
+  msg[KEY.SUNRISE_HOUR]    = srHour;
+  msg[KEY.SUNRISE_MINUTE]  = srMin;
+  msg[KEY.SUNSET_HOUR]     = ssHour;
+  msg[KEY.SUNSET_MINUTE]   = ssMin;
 
   Pebble.sendAppMessage(msg, function() {
     console.log('Weather sent to watch');
@@ -283,71 +346,88 @@ function doWeatherFetch() {
 // Config / settings bridge
 // ─────────────────────────────────────────────────────────────────────────────
 function sendSettingsToWatch(settings) {
+  // Test buttons: send ONLY the test key using its numeric ID, then return.
+  // These must be checked FIRST before building the regular settings message.
+  if (settings.KEY_TEST_BATTERY_ALERT) {
+    var msg144 = {};
+    msg144[KEY.TEST_BATTERY_ALERT] = 1;
+    Pebble.sendAppMessage(msg144, function() {
+      console.log('Test battery alert sent');
+    }, function(e) {
+      console.log('Test battery alert failed: ' + JSON.stringify(e));
+    });
+    return;
+  }
+  if (settings.KEY_TEST_BT_DISCONNECT) {
+    var msg145 = {};
+    msg145[KEY.TEST_BT_DISCONNECT] = 1;
+    Pebble.sendAppMessage(msg145, function() {
+      console.log('Test BT disconnect sent');
+    }, function(e) {
+      console.log('Test BT disconnect failed: ' + JSON.stringify(e));
+    });
+    return;
+  }
+  if (settings.KEY_TEST_CRITICAL_BATTERY_ALERT) {
+    var msg146 = {};
+    msg146[KEY.TEST_CRITICAL_BATTERY_ALERT] = 1;
+    Pebble.sendAppMessage(msg146, function() {
+      console.log('Test critical battery alert sent');
+    }, function(e) {
+      console.log('Test critical battery alert failed: ' + JSON.stringify(e));
+    });
+    return;
+  }
+
+  // Regular settings: build numeric-keyed message
   var msg = {};
 
-  // Map each setting key to its numeric message key
+  // Map string setting names → numeric key IDs
   var keyMap = {
-    KEY_DISPLAY_HOUR_MARKERS:    40,
-    KEY_DISPLAY_MINOR_MARKERS:   41,
-    KEY_BT_DISCONNECT_MIN_INNER_RED: 53,
-    KEY_VIBRATE_BT_DISCONNECT:   54,
-    KEY_VIBRATE_BT_RECONNECT:    55,
-    KEY_SHAKE_MODE:              107,
-    KEY_TEMP_UNIT:               110,
-    KEY_HOUR_HAND_OUTER:         114,
-    KEY_HOUR_HAND_INNER:         115,
-    KEY_MIN_HAND_OUTER:          116,
-    KEY_MIN_HAND_INNER:          117,
-    KEY_DATE_VISIBLE:            118,
-    KEY_TEMP_VISIBLE:            119,
-    KEY_NUMBER_FONT:             121,
-    KEY_BACKGROUND_COLOR:        126,
-    KEY_NUMBER_COLOR:            127,
-    KEY_ICON_COLOR:              128,
-    KEY_HOUR_MARKER_COLOR:       129,
-    KEY_MINUTE_MARKER_COLOR:     130,
-    KEY_DATE_COLOR:              134,
-    KEY_TEMP_COLOR:              135,
-    KEY_BT_DISCONNECT_OUTER_COLOR: 136,
-    KEY_BT_DISCONNECT_INNER_COLOR: 137,
-    KEY_BATTERY_RING_THRESHOLD:  138,
-    KEY_BATTERY_CENTER_THRESHOLD:139,
-    KEY_SECONDS_HAND_COLOR:      141,
-    KEY_SECONDS_HAND_MODE:       142,
-    KEY_SECONDS_SHAKE_DUR:       143,
-    KEY_SUNRISE_MARKER_VISIBLE:  147,
-    KEY_SUNRISE_MARKER_COLOR:    148,
-    KEY_SUNSET_MARKER_COLOR:     149,
-    KEY_NUMBER_SIZE:             150,
-    KEY_ICON_SIZE:               151,
-    KEY_ICON_COLOR_MODE:         153,
-    KEY_DISPLAY_MODE:            158
+    KEY_BT_DISCONNECT_MIN_INNER_RED: KEY.BT_DISCONNECT_MIN_INNER_RED,
+    KEY_VIBRATE_BT_DISCONNECT:       KEY.VIBRATE_BT_DISCONNECT,
+    KEY_VIBRATE_BT_RECONNECT:        KEY.VIBRATE_BT_RECONNECT,
+    KEY_SHAKE_MODE:                  KEY.SHAKE_MODE,
+    KEY_TEMP_UNIT:                   KEY.TEMP_UNIT,
+    KEY_HOUR_HAND_OUTER:             KEY.HOUR_HAND_OUTER,
+    KEY_HOUR_HAND_INNER:             KEY.HOUR_HAND_INNER,
+    KEY_MIN_HAND_OUTER:              KEY.MIN_HAND_OUTER,
+    KEY_MIN_HAND_INNER:              KEY.MIN_HAND_INNER,
+    KEY_DATE_VISIBLE:                KEY.DATE_VISIBLE,
+    KEY_TEMP_VISIBLE:                KEY.TEMP_VISIBLE,
+    KEY_NUMBER_FONT:                 KEY.NUMBER_FONT,
+    KEY_BACKGROUND_COLOR:            KEY.BACKGROUND_COLOR,
+    KEY_NUMBER_COLOR:                KEY.NUMBER_COLOR,
+    KEY_ICON_COLOR:                  KEY.ICON_COLOR,
+    KEY_HOUR_MARKER_COLOR:           KEY.HOUR_MARKER_COLOR,
+    KEY_MINUTE_MARKER_COLOR:         KEY.MINUTE_MARKER_COLOR,
+    KEY_DATE_COLOR:                  KEY.DATE_COLOR,
+    KEY_TEMP_COLOR:                  KEY.TEMP_COLOR,
+    KEY_BT_DISCONNECT_OUTER_COLOR:   KEY.BT_DISCONNECT_OUTER_COLOR,
+    KEY_BT_DISCONNECT_INNER_COLOR:   KEY.BT_DISCONNECT_INNER_COLOR,
+    KEY_BATTERY_RING_THRESHOLD:      KEY.BATTERY_RING_THRESHOLD,
+    KEY_BATTERY_CENTER_THRESHOLD:    KEY.BATTERY_CENTER_THRESHOLD,
+    KEY_SECONDS_HAND_COLOR:          KEY.SECONDS_HAND_COLOR,
+    KEY_SECONDS_HAND_MODE:           KEY.SECONDS_HAND_MODE,
+    KEY_SECONDS_SHAKE_DUR:           KEY.SECONDS_SHAKE_DUR,
+    KEY_SUNRISE_MARKER_VISIBLE:      KEY.SUNRISE_MARKER_VISIBLE,
+    KEY_SUNRISE_MARKER_COLOR:        KEY.SUNRISE_MARKER_COLOR,
+    KEY_SUNSET_MARKER_COLOR:         KEY.SUNSET_MARKER_COLOR,
+    KEY_NUMBER_SIZE:                 KEY.NUMBER_SIZE,
+    KEY_ICON_SIZE:                   KEY.ICON_SIZE,
+    KEY_ICON_COLOR_MODE:             KEY.ICON_COLOR_MODE,
+    KEY_DISPLAY_MODE:                KEY.DISPLAY_MODE
   };
 
-  Object.keys(keyMap).forEach(function(key) {
-    if (settings.hasOwnProperty(key)) {
-      msg[key] = parseInt(settings[key], 10);
+  Object.keys(keyMap).forEach(function(strKey) {
+    if (settings.hasOwnProperty(strKey)) {
+      msg[keyMap[strKey]] = parseInt(settings[strKey], 10);
     }
   });
 
   // Custom location: store locally for weather fetch (trimmed).
-  // The actual fetch is triggered from webviewclosed after this returns.
   if (settings.KEY_CUSTOM_LOCATION !== undefined) {
     s_customLocation = String(settings.KEY_CUSTOM_LOCATION).trim();
-  }
-
-  // Test buttons — send directly without saving
-  if (settings.KEY_TEST_BATTERY_ALERT) {
-    Pebble.sendAppMessage({ KEY_TEST_BATTERY_ALERT: 1 });
-    return;
-  }
-  if (settings.KEY_TEST_BT_DISCONNECT) {
-    Pebble.sendAppMessage({ KEY_TEST_BT_DISCONNECT: 1 });
-    return;
-  }
-  if (settings.KEY_TEST_CRITICAL_BATTERY_ALERT) {
-    Pebble.sendAppMessage({ KEY_TEST_CRITICAL_BATTERY_ALERT: 1 });
-    return;
   }
 
   if (Object.keys(msg).length > 0) {
@@ -368,13 +448,10 @@ Pebble.addEventListener('ready', function(e) {
 });
 
 Pebble.addEventListener('appmessage', function(e) {
-  // Watch requesting weather refresh (not used in this version)
   console.log('AppMessage from watch: ' + JSON.stringify(e.payload));
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-  // Build config URL with current settings as query params
-  // The settings page reads these on load
   var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/';
   Pebble.openURL(configUrl);
 });
@@ -393,11 +470,17 @@ Pebble.addEventListener('webviewclosed', function(e) {
         s_storedLon = null;
       }
 
+      // Check if this is a test-button-only payload — if so, don't re-fetch weather.
+      var isTestAction = payload.KEY_TEST_BATTERY_ALERT ||
+                         payload.KEY_TEST_BT_DISCONNECT ||
+                         payload.KEY_TEST_CRITICAL_BATTERY_ALERT;
+
       sendSettingsToWatch(payload);
 
-      // Always re-fetch weather after settings close so a new city name
-      // (or clearing the field to revert to GPS) takes effect immediately.
-      doWeatherFetch();
+      // Only re-fetch weather for real settings saves, not test button presses.
+      if (!isTestAction) {
+        doWeatherFetch();
+      }
 
     } catch (err) {
       console.log('Config parse error: ' + err);
