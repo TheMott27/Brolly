@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.1.9
+ * Brolly Settings Page — v2.2.0
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.9'
+const VERSION = 'v2.2.0'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
