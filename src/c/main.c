@@ -79,7 +79,7 @@ typedef struct {
   uint8_t number_size;    // 1–5 → {18,22,26,30,36}
   GColor  number_color;
   // Icons
-  uint8_t icon_size;      // 1–5 → {16,24,32,40,48}
+  uint8_t icon_size;      // 1–5 → {18,22,26,30,36} (matches font sizes)
   GColor  icon_color;
   // Watch hands
   GColor hour_hand_outer;
@@ -691,7 +691,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
 
   // Determine icon size in pixels
-  static const int s_icon_sizes[5] = {16, 24, 32, 40, 48};
+  static const int s_icon_sizes[5] = {18, 22, 26, 30, 36};
   int icon_sz_idx = (s_settings.icon_size >= 1 && s_settings.icon_size <= 5)
                       ? s_settings.icon_size - 1 : 2;
   int icon_sz = s_icon_sizes[icon_sz_idx];
@@ -729,14 +729,14 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // Top group: top edge of icon `icon_gap` from top edge.
         oy = icon_gap;
         ox = i_edge.x - icon_sz / 2;
-        if (h == 11) ox += icon_sz / 2;   // shift 11 right by half width
-        if (h == 1)  ox -= icon_sz / 2;   // shift 1 left by half width
+        if (h == 11) ox += icon_sz / 4;   // shift 11 right by 25% of width
+        if (h == 1)  ox -= icon_sz / 4;   // shift 1 left by 25% of width
       } else if (h == 5 || h == 6 || h == 7) {
         // Bottom group: bottom edge `icon_gap` from bottom edge.
         oy = sh - icon_gap - icon_sz;
         ox = i_edge.x - icon_sz / 2;
-        if (h == 7) ox += icon_sz / 2;   // shift 7 right by half width
-        if (h == 5) ox -= icon_sz / 2;   // shift 5 left by half width
+        if (h == 7) ox += icon_sz / 4;   // shift 7 right by 25% of width
+        if (h == 5) ox -= icon_sz / 4;   // shift 5 left by 25% of width
       } else if (h == 8 || h == 9 || h == 10) {
         // Left group: left edge `icon_gap` from left edge.
         ox = icon_gap;
@@ -804,13 +804,13 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // All digits use the group max box_h so the box origin is consistent.
         ry = gap - ib.top;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 11) rx += ink_w / 2;   // shift 11 right by half its own ink width
+        if (h == 11) rx += ink_w / 4;   // shift 11 right by 25% of its own ink width
         if (h == 1) {
-          // shift 1 left by half of 11's ink width
+          // shift 1 left by 25% of 11's ink width
           InkBounds ib11 = s_ink[11];
           int ink_w_11 = ib11.box_w - ib11.left - ib11.right;
           if (ink_w_11 < 1) ink_w_11 = 1;
-          rx -= ink_w_11 / 2;
+          rx -= ink_w_11 / 4;
         }
       } else if (h == 5 || h == 6 || h == 7) {
         // Bottom group: shared baseline = digit with smallest ib.bottom.
@@ -818,8 +818,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         // per-digit SDK box height variation (fixes Thin 5/7 too low).
         ry = sh - gap - 80 + ib.bottom;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 7) rx += ink_w / 2;   // shift 7 right by half ink width
-        if (h == 5) rx -= ink_w / 2;   // shift 5 left by half ink width
+        if (h == 7) rx += ink_w / 4;   // shift 7 right by 25% of ink width
+        if (h == 5) rx -= ink_w / 4;   // shift 5 left by 25% of ink width
       } else if (h == 8 || h == 9 || h == 10) {
         // Left group: shared baseline = digit with smallest ib.left.
         // Use group max box_w so all digits share the same rx regardless of
