@@ -591,7 +591,7 @@ static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy
 
 // Shading gap in native-grid units (will be scaled with the icon).
 // 12px gap at native 23 → scales proportionally.
-#define SHADE_GAP_NATIVE 3
+#define SHADE_GAP_NATIVE 4
 
 // Descriptor for one fill region used in shading.
 typedef struct {
@@ -636,21 +636,18 @@ static const GPoint s_shade_sun_small[] = {
 static const GPoint s_shade_cloud_partly[] = {
   {0,23},{0,18},{3,15},{7,15},{10,12},{14,12},{17,15},{21,15},{23,18},{23,23}
 };
-// Moon outer polygon (TIMELINE_MOON)
-static const GPoint s_shade_moon_outer[] = {
-  {16,0},{23,7},{23,16},{16,23},{7,23},{0,16}
+// Moon crescent polygon (TIMELINE_MOON)
+// Outer arc forward: (16,0)→(23,7)→(23,16)→(16,23)→(7,23)→(0,16)
+// Inner arc backward: (0,16)→(9,16)→(16,9)→(16,0)
+// Combined into one closed crescent shape — no cutout needed.
+static const GPoint s_shade_moon_crescent[] = {
+  {16,0},{23,7},{23,16},{16,23},{7,23},{0,16},{9,16},{16,9}
 };
-// Moon inner cutout polygon (TIMELINE_MOON)
-static const GPoint s_shade_moon_inner[] = {
-  {16,0},{16,9},{9,16},{0,16}
-};
-// Small moon outer (PARTLY_CLOUDY_NIGHT)
-static const GPoint s_shade_moon_sm_outer[] = {
-  {20,0},{23,3},{23,8},{20,11},{15,11},{12,8}
-};
-// Small moon inner cutout (PARTLY_CLOUDY_NIGHT)
-static const GPoint s_shade_moon_sm_inner[] = {
-  {20,0},{20,4},{16,8},{12,8}
+// Small moon crescent polygon (PARTLY_CLOUDY_NIGHT)
+// Outer arc forward: (20,0)→(23,3)→(23,8)→(20,11)→(15,11)→(12,8)
+// Inner arc backward: (12,8)→(16,8)→(20,4)→(20,0)
+static const GPoint s_shade_moon_sm_crescent[] = {
+  {20,0},{23,3},{23,8},{20,11},{15,11},{12,8},{16,8},{20,4}
 };
 
 // Per-icon fill descriptor arrays
@@ -685,13 +682,11 @@ static const ShadeFill s_shade_timeline_sun[] = {
   { s_shade_sun_oct, 8, WC_AMBER, SHADE_NW_SE, false },
 };
 static const ShadeFill s_shade_timeline_moon[] = {
-  { s_shade_moon_outer, 6, WC_PALE, SHADE_NW_SE, false  },
-  { s_shade_moon_inner, 4, WC_PALE, SHADE_NW_SE, true   },  // cutout
+  { s_shade_moon_crescent, 8, WC_PALE, SHADE_NW_SE, false },
 };
 static const ShadeFill s_shade_partly_cloudy_night[] = {
-  { s_shade_moon_sm_outer, 6, WC_PALE, SHADE_NW_SE, false },
-  { s_shade_moon_sm_inner, 4, WC_PALE, SHADE_NW_SE, true  },  // cutout
-  { s_shade_cloud_partly, 10, WC_GREY, SHADE_NE_SW, false },
+  { s_shade_moon_sm_crescent, 8, WC_PALE, SHADE_NW_SE, false },
+  { s_shade_cloud_partly,    10, WC_GREY, SHADE_NE_SW, false },
 };
 // Unknown: no fill entries (outline only)
 
