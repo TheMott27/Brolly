@@ -403,7 +403,7 @@ static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
 #define WC_SBLUE  0xC7  // #5555ff light rain
 #define WC_CYAN   0xCF  // #aaffff snow cyan
 #define WC_WHITE  0xFF  // #ffffff heavy snow
-#define WC_PALE   0xCB  // #aaaaff moon pale blue
+#define WC_PALE   0xEB  // #aaaaff moon pale blue
 #define WC_DGREY  0xD5  // #555555 unknown dark grey
 
 // Per-path colour tables indexed by [icon_id][path_index]
