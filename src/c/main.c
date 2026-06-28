@@ -40,6 +40,7 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 // ─────────────────────────────────────────────────────────────────────────────
 #define PERSIST_ICONS    0
 #define PERSIST_SETTINGS 1
+#define PERSIST_CITY     2
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppMessage inbox/outbox sizes
@@ -111,6 +112,9 @@ typedef struct {
   GColor bt_disconnect_inner_color;
   // Shake mode (for icons)
   uint8_t shake_mode;   // 0=Show on shake 1=Always show 2=Always hide
+  // City name display
+  uint8_t city_display_mode; // 0=Off 1=Shake 2=Always
+  GColor  city_color;
 } Settings;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -127,6 +131,7 @@ static Settings  s_settings;
 static int8_t    s_icons[24];
 static int8_t    s_temp_c = 0;
 static int8_t    s_temp_f = 32;
+static char      s_city_name[32] = "";
 static int8_t    s_sunrise_hour = 6,  s_sunrise_min = 0;
 static int8_t    s_sunset_hour  = 18, s_sunset_min  = 0;
 
@@ -929,6 +934,31 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     graphics_draw_text(ctx, temp_buf, comp_font, tr,
                        GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
   }
+
+  // City name: show on the opposite side from date/temp
+  if (s_settings.city_display_mode != 0 && s_city_name[0] != '\0') {
+    bool show_city = false;
+    if (s_settings.city_display_mode == 2) {
+      show_city = true;
+    } else if (s_settings.city_display_mode == 1) {
+      show_city = s_showing_icons; // same shake gate as icons
+    }
+    if (show_city) {
+      // comp_y is POS_Y(45) or POS_Y(105). Opposite side:
+      int city_y;
+      if (comp_y < s_screen_h / 2) {
+        // date/temp is near top → city near bottom
+        city_y = POS_Y(105);
+      } else {
+        // date/temp is near bottom → city near top
+        city_y = POS_Y(45);
+      }
+      GRect cr = GRect(0, city_y - 10, sw, 20);
+      graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.city_color));
+      graphics_draw_text(ctx, s_city_name, comp_font, cr,
+                         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    }
+  }
 }
 
 // Hour hand layer
@@ -1335,6 +1365,16 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   t = dict_find(iter, 158); // KEY_DISPLAY_MODE
   if (t) { s_settings.display_mode = (uint8_t)t->value->int32; settings_changed = true; }
+  t = dict_find(iter, 159); // KEY_CITY_NAME (string)
+  if (t && t->type == TUPLE_CSTRING) {
+    strncpy(s_city_name, t->value->cstring, sizeof(s_city_name) - 1);
+    s_city_name[sizeof(s_city_name) - 1] = '\0';
+    persist_write_string(PERSIST_CITY, s_city_name);
+  }
+  t = dict_find(iter, 160); // KEY_CITY_DISPLAY_MODE
+  if (t) { s_settings.city_display_mode = (uint8_t)t->value->int32; settings_changed = true; }
+  t = dict_find(iter, 161); // KEY_CITY_COLOR
+  if (t) { s_settings.city_color = rgb_to_gcolor(t->value->int32); settings_changed = true; }
 
   // Shake mode also controls accel subscription
   if (settings_changed) {
@@ -1396,6 +1436,8 @@ static void load_default_settings(void) {
   s_settings.bt_disconnect_outer_color   = GColorRed;
   s_settings.bt_disconnect_inner_color   = GColorRed;
   s_settings.shake_mode             = 0;   // Show on shake
+  s_settings.city_display_mode      = 1;   // Shake
+  s_settings.city_color             = GColorFromRGB(0x55, 0x55, 0x55);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1420,6 +1462,10 @@ static void window_load(Window *window) {
     persist_read_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
   } else {
     memset(s_icons, ICON_UNKNOWN, sizeof(s_icons));
+  }
+  // Load persisted city name
+  if (persist_exists(PERSIST_CITY)) {
+    persist_read_string(PERSIST_CITY, s_city_name, sizeof(s_city_name));
   }
 
   // Compute marker caches

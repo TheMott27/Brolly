@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.1.4
+ * Brolly Settings Page — v2.1.5
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.4'
+const VERSION = 'v2.1.5'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -254,10 +254,10 @@ function DisplayTab({ s, set, onResetColours }: {
           value={s.KEY_NUMBER_FONT}
           options={[
             { label: 'Digital', value: 0 },
-            { label: 'Standard', value: 1 },
+            { label: 'Regular', value: 1 },
             { label: 'Traditional', value: 2 },
             { label: 'Thin', value: 3 },
-            { label: 'Oversize', value: 4 },
+            { label: 'Tall', value: 4 },
           ]}
           onChange={v => set('KEY_NUMBER_FONT', v)}
         />
@@ -419,6 +419,26 @@ function WeatherTab({ s, set }: {
           >
             {updatingGps ? 'Detecting GPS…' : 'Update GPS Location'}
           </button>
+          <div style={{ marginTop: 16 }}>
+            <Sep />
+            <SelectRow
+              label="City name on dial"
+              desc="Show the current weather city on the opposite side from date/temp"
+              value={s.KEY_CITY_DISPLAY_MODE}
+              options={[
+                { label: 'Off', value: 0 },
+                { label: 'Show on shake', value: 1 },
+                { label: 'Always show', value: 2 },
+              ]}
+              onChange={v => set('KEY_CITY_DISPLAY_MODE', v)}
+            />
+            <Sep />
+            <ColorRow
+              label="City name colour"
+              value={s.KEY_CITY_COLOR}
+              onChange={v => set('KEY_CITY_COLOR', v)}
+            />
+          </div>
         </div>
       </Card>
 

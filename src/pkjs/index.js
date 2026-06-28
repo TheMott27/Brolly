@@ -106,7 +106,11 @@ var KEY = {
   NUMBER_SIZE:    150,
   ICON_SIZE:      151,
   ICON_COLOR_MODE:153,
-  DISPLAY_MODE:   158
+  DISPLAY_MODE:   158,
+  // City name display
+  CITY_NAME:         159,
+  CITY_DISPLAY_MODE: 160,
+  CITY_COLOR:        161
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,6 +147,7 @@ var s_customLocation = '';
 var s_useLatLon = false;
 var s_storedLat = null;
 var s_storedLon = null;
+var s_resolvedCityName = '';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Geocoding helper
@@ -157,7 +162,9 @@ function geocodeCity(cityName, callback) {
       try {
         var data = JSON.parse(xhr.responseText);
         if (data.results && data.results.length > 0) {
-          callback(null, data.results[0].latitude, data.results[0].longitude);
+          var r = data.results[0];
+          s_resolvedCityName = r.name || cityName;
+          callback(null, r.latitude, r.longitude);
         } else {
           callback('No results for: ' + cityName);
         }
@@ -169,6 +176,32 @@ function geocodeCity(cityName, callback) {
     }
   };
   xhr.onerror = function() { callback('Geocode network error'); };
+  xhr.send();
+}
+
+// Reverse geocode lat/lon to city name using Open-Meteo
+function reverseGeocode(lat, lon, callback) {
+  var url = 'https://geocoding-api.open-meteo.com/v1/reverse?latitude=' +
+            lat + '&longitude=' + lon + '&language=en&format=json';
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.results && data.results.length > 0) {
+          callback(null, data.results[0].name || '');
+        } else {
+          callback(null, '');
+        }
+      } catch (e) {
+        callback(null, '');
+      }
+    } else {
+      callback(null, '');
+    }
+  };
+  xhr.onerror = function() { callback(null, ''); };
   xhr.send();
 }
 
@@ -279,6 +312,10 @@ function processWeatherData(data) {
   msg[KEY.SUNRISE_MINUTE]  = srMin;
   msg[KEY.SUNSET_HOUR]     = ssHour;
   msg[KEY.SUNSET_MINUTE]   = ssMin;
+  // Send city name if we have one
+  if (s_resolvedCityName) {
+    msg[KEY.CITY_NAME] = s_resolvedCityName.substring(0, 31);
+  }
 
   Pebble.sendAppMessage(msg, function() {
     console.log('Weather sent to watch');
@@ -317,18 +354,40 @@ function resolveLocation(callback) {
         s_storedLat = pos.coords.latitude;
         s_storedLon = pos.coords.longitude;
         s_useLatLon = true;
-        callback(null, s_storedLat, s_storedLon);
+        // Reverse geocode to get city name
+        reverseGeocode(s_storedLat, s_storedLon, function(err2, cityName) {
+          if (cityName) s_resolvedCityName = cityName;
+          callback(null, s_storedLat, s_storedLon);
+        });
       },
       function(err) {
         console.log('GPS error: ' + err.message + ', falling back to IP');
         // 4. IP fallback
-        ipGeolocate(callback);
+        ipGeolocate(function(err2, lat, lon) {
+          if (!err2) {
+            reverseGeocode(lat, lon, function(err3, cityName) {
+              if (cityName) s_resolvedCityName = cityName;
+              callback(null, lat, lon);
+            });
+          } else {
+            callback(err2);
+          }
+        });
       },
       { timeout: 15000 }
     );
   } else {
     // 4. IP fallback
-    ipGeolocate(callback);
+    ipGeolocate(function(err2, lat, lon) {
+      if (!err2) {
+        reverseGeocode(lat, lon, function(err3, cityName) {
+          if (cityName) s_resolvedCityName = cityName;
+          callback(null, lat, lon);
+        });
+      } else {
+        callback(err2);
+      }
+    });
   }
 }
 
@@ -416,7 +475,9 @@ function sendSettingsToWatch(settings) {
     KEY_NUMBER_SIZE:                 KEY.NUMBER_SIZE,
     KEY_ICON_SIZE:                   KEY.ICON_SIZE,
     KEY_ICON_COLOR_MODE:             KEY.ICON_COLOR_MODE,
-    KEY_DISPLAY_MODE:                KEY.DISPLAY_MODE
+    KEY_DISPLAY_MODE:                KEY.DISPLAY_MODE,
+    KEY_CITY_DISPLAY_MODE:           KEY.CITY_DISPLAY_MODE,
+    KEY_CITY_COLOR:                  KEY.CITY_COLOR
   };
 
   Object.keys(keyMap).forEach(function(strKey) {

@@ -376,7 +376,10 @@
       "KEY_ICON_SIZE": 151,
       "KEY_ICON_COLOR_MODE": 153,
       "KEY_OWM_API_KEY": 156,
-      "KEY_DISPLAY_MODE": 158
+      "KEY_DISPLAY_MODE": 158,
+      "KEY_CITY_NAME": 159,
+      "KEY_CITY_DISPLAY_MODE": 160,
+      "KEY_CITY_COLOR": 161
     },
     "configureUrl": "https://themott27.github.io/Test_Brolly_v2_Settings/"
   }
