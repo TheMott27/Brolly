@@ -179,21 +179,20 @@ function geocodeCity(cityName, callback) {
   xhr.send();
 }
 
-// Reverse geocode lat/lon to city name using Open-Meteo
+// Reverse geocode lat/lon to city name using Nominatim (OpenStreetMap)
 function reverseGeocode(lat, lon, callback) {
-  var url = 'https://geocoding-api.open-meteo.com/v1/reverse?latitude=' +
-            lat + '&longitude=' + lon + '&language=en&format=json';
+  var url = 'https://nominatim.openstreetmap.org/reverse?lat=' +
+            lat + '&lon=' + lon + '&format=json&accept-language=en';
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
+  xhr.setRequestHeader('Accept-Language', 'en');
   xhr.onload = function() {
     if (xhr.status === 200) {
       try {
         var data = JSON.parse(xhr.responseText);
-        if (data.results && data.results.length > 0) {
-          callback(null, data.results[0].name || '');
-        } else {
-          callback(null, '');
-        }
+        var addr = data.address || {};
+        var city = addr.city || addr.town || addr.village || addr.hamlet || addr.county || '';
+        callback(null, city);
       } catch (e) {
         callback(null, '');
       }
@@ -513,7 +512,7 @@ Pebble.addEventListener('appmessage', function(e) {
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-  var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/';
+  var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/?v=' + Date.now();
   Pebble.openURL(configUrl);
 });
 
