@@ -399,8 +399,8 @@ static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
 #define WC_GREY   0xEA  // #aaaaaa cloud grey
 #define WC_AMBER  0xFC  // #ffaa00 sun amber
 #define WC_YELLOW 0xFC  // #ffff00 lightning yellow
-#define WC_BBLUE  0xC3  // #0055ff heavy rain
-#define WC_SBLUE  0xC7  // #5555ff light rain
+#define WC_BBLUE  0xCB  // #00aaff heavy rain (lighter blue)
+#define WC_SBLUE  0xCB  // #00aaff light rain (same lighter blue)
 #define WC_CYAN   0xCF  // #aaffff snow cyan
 #define WC_WHITE  0xFF  // #ffffff heavy snow
 #define WC_PALE   0xDB  // #55aaff moon light blue
@@ -947,7 +947,22 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
     }
   }
 
-  // ── Step 1b: For thunderstorm, erase bolt area with black then redraw bolt ──
+  // ── Step 1b: For cloudy day, erase front-cloud area from back cloud then redraw front cloud ──
+  // The back cloud and front cloud overlap. Erase the overlap region with black
+  // then redraw the front cloud hatching so lines don't double up.
+  if (icon_id == GPATH_ID_CLOUDY_DAY) {
+    GPoint front_scaled[10];
+    for (int i = 0; i < 10; i++) {
+      front_scaled[i] = GPoint(ox + (s_shade_cloud_front[i].x * scale256) / 256,
+                               oy + (s_shade_cloud_front[i].y * scale256) / 256);
+    }
+    // Erase back-cloud lines inside front-cloud area with black
+    shade_draw_fill_multi(ctx, front_scaled, 10, gap, SHADE_NE_SW, s_black_color, 1);
+    // Redraw front cloud hatching in multi-colour
+    shade_draw_fill_multi(ctx, front_scaled, 10, gap, SHADE_NE_SW, s_cloud_colors, 3);
+  }
+
+  // ── Step 1c: For thunderstorm, erase bolt area with black then redraw bolt ──
   // Draw black hatching over the bolt polygon to erase cloud lines behind it,
   // then redraw bolt hatching in yellow on top.
   if (icon_id == GPATH_ID_THUNDERSTORM) {
