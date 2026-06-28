@@ -693,21 +693,40 @@ static const ShadeFill s_shade_partly_cloudy_night[] = {
 typedef struct {
   const ShadeFill *fills;
   int              n_fills;
+  // stroke_first: path index from which paths are stroke-only (rays, rain, snow).
+  // Paths 0..(stroke_first-1) are fill-boundary paths — NOT redrawn as outlines.
+  // Paths stroke_first..num_paths-1 are stroke-only — drawn as plain lines.
+  // -1 means draw NO outline paths (all paths define fill boundaries).
+  // num_paths means draw ALL paths as outlines (Unknown — no fill).
+  int              stroke_first;
 } ShadeIconDef;
 
 static const ShadeIconDef s_shade_icons[GPATH_ID_COUNT] = {
-  [GPATH_ID_CLOUDY_DAY]          = { s_shade_cloudy_day,          2 },
-  [GPATH_ID_THUNDERSTORM]        = { s_shade_thunderstorm,         2 },
-  [GPATH_ID_HEAVY_RAIN]          = { s_shade_heavy_rain,           1 },
-  [GPATH_ID_HEAVY_SNOW]          = { s_shade_heavy_snow,           1 },
-  [GPATH_ID_LIGHT_RAIN]          = { s_shade_light_rain,           1 },
-  [GPATH_ID_LIGHT_SNOW]          = { s_shade_light_snow,           1 },
-  [GPATH_ID_RAINING_AND_SNOWING] = { s_shade_rain_snow,            1 },
-  [GPATH_ID_PARTLY_CLOUDY]       = { s_shade_partly_cloudy,        2 },
-  [GPATH_ID_TIMELINE_SUN]        = { s_shade_timeline_sun,         1 },
-  [GPATH_ID_TIMELINE_MOON]       = { s_shade_timeline_moon,        2 },
-  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { s_shade_partly_cloudy_night,  3 },
-  [GPATH_ID_UNKNOWN]             = { NULL,                         0 },
+  // CLOUDY_DAY: 4 paths (back arc, back bottom, front arc, front bottom) — all fill boundary, no extra strokes
+  [GPATH_ID_CLOUDY_DAY]          = { s_shade_cloudy_day,         2, -1 },
+  // THUNDERSTORM: 7 paths (left arc, right arc, stub, left bottom, right bottom, right close, bolt) — all fill boundary
+  [GPATH_ID_THUNDERSTORM]        = { s_shade_thunderstorm,        2, -1 },
+  // HEAVY_RAIN: 6 paths — paths 0-1 cloud fill boundary, paths 2-5 rain lines (stroke only)
+  [GPATH_ID_HEAVY_RAIN]          = { s_shade_heavy_rain,          1,  2 },
+  // HEAVY_SNOW: 8 paths — paths 0-1 cloud fill boundary, paths 2-7 snowflake arms (stroke only)
+  [GPATH_ID_HEAVY_SNOW]          = { s_shade_heavy_snow,          1,  2 },
+  // LIGHT_RAIN: 5 paths — paths 0-1 cloud fill boundary, paths 2-4 rain lines (stroke only)
+  [GPATH_ID_LIGHT_RAIN]          = { s_shade_light_rain,          1,  2 },
+  // LIGHT_SNOW: 6 paths — paths 0-1 cloud fill boundary, paths 2-5 snowflake arms (stroke only)
+  [GPATH_ID_LIGHT_SNOW]          = { s_shade_light_snow,          1,  2 },
+  // RAINING_AND_SNOWING: 6 paths — paths 0-1 cloud fill boundary, paths 2-5 rain+snow strokes
+  [GPATH_ID_RAINING_AND_SNOWING] = { s_shade_rain_snow,           1,  2 },
+  // PARTLY_CLOUDY: 11 paths — path 0 sun octagon (fill), paths 1-8 rays (stroke), paths 9-10 cloud (fill)
+  // Rays are paths 1-8; cloud paths 9-10 are fill boundary. Draw only rays (1-8) as strokes.
+  [GPATH_ID_PARTLY_CLOUDY]       = { s_shade_partly_cloudy,       2,  1 },
+  // TIMELINE_SUN: 9 paths — path 0 octagon (fill), paths 1-8 rays (stroke only)
+  [GPATH_ID_TIMELINE_SUN]        = { s_shade_timeline_sun,        1,  1 },
+  // TIMELINE_MOON: 4 paths — paths 0-1 arcs (fill boundary), paths 2-3 star cross (stroke only)
+  [GPATH_ID_TIMELINE_MOON]       = { s_shade_timeline_moon,       1,  2 },
+  // PARTLY_CLOUDY_NIGHT: 4 paths — paths 0-1 moon arcs (fill), paths 2-3 cloud (fill). No extra strokes.
+  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { s_shade_partly_cloudy_night, 2, -1 },
+  // UNKNOWN: 3 paths — no fill, draw all as outlines
+  [GPATH_ID_UNKNOWN]             = { NULL,                        0,  0 },
 };
 
 // ── Scanline polygon clipper for diagonal lines ───────────────────────────────
@@ -866,18 +885,27 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
     }
   }
 
-  // ── Step 2: Draw all original gpath outlines on top ───────────────────────
-  graphics_context_set_stroke_width(ctx, 1);
-  for (int p = 0; p < def->num_paths; p++) {
-    GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
-    graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
-    const GPathInfo *pi = &def->paths[p];
-    for (int i = 0; i < (int)pi->num_points - 1; i++) {
-      GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
-                        oy + (pi->points[i].y   * scale256) / 256);
-      GPoint b = GPoint(ox + (pi->points[i+1].x * scale256) / 256,
-                        oy + (pi->points[i+1].y * scale256) / 256);
-      graphics_draw_line(ctx, a, b);
+  // ── Step 2: Draw stroke-only paths (rays, rain, snow, star cross) ──────────
+  // Only paths from stroke_first onwards are drawn; fill-boundary paths are
+  // already implied by the hatching and must NOT be redrawn (avoids doubling).
+  // stroke_first == -1: skip all outlines.
+  // stroke_first == 0 (Unknown): draw all paths.
+  int sf_idx = sdef->stroke_first;
+  if (sf_idx >= 0) {
+    graphics_context_set_stroke_width(ctx, 1);
+    for (int p = sf_idx; p < def->num_paths; p++) {
+      // For PARTLY_CLOUDY, skip cloud paths 9-10 (they are fill boundary)
+      if (icon_id == GPATH_ID_PARTLY_CLOUDY && p >= 9) continue;
+      GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
+      graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
+      const GPathInfo *pi = &def->paths[p];
+      for (int i = 0; i < (int)pi->num_points - 1; i++) {
+        GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
+                          oy + (pi->points[i].y   * scale256) / 256);
+        GPoint b = GPoint(ox + (pi->points[i+1].x * scale256) / 256,
+                          oy + (pi->points[i+1].y * scale256) / 256);
+        graphics_draw_line(ctx, a, b);
+      }
     }
   }
 }
