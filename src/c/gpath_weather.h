@@ -591,7 +591,7 @@ static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy
 
 // Shading gap in native-grid units (will be scaled with the icon).
 // 12px gap at native 23 → scales proportionally.
-#define SHADE_GAP_NATIVE 12
+#define SHADE_GAP_NATIVE 3
 
 // Descriptor for one fill region used in shading.
 typedef struct {
