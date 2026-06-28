@@ -458,18 +458,76 @@ static inline GPathIconID icon_code_to_gpath(int icon_code) {
   }
 }
 
-// Draw a weather icon at (ox, oy) scaled to sz×sz, using the given color
-static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy, int sz, GColor color) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-icon per-path colour table for weather-based colour mode.
+// Each row corresponds to a GPathIconID. Each column is a path index (0-based).
+// Colours are packed as 0xRRGGBB. Up to 11 paths per icon (partly_cloudy has 11).
+// Unused path slots are 0xFFFFFF (white fallback).
+// ─────────────────────────────────────────────────────────────────────────────
+// Colour constants (0xRRGGBB)
+#define WC_GREY    0xAAAAAA  // cloud body
+#define WC_AMBER   0xFFAA00  // sun / warm
+#define WC_BLUE    0x0055FF  // heavy rain / blue sky
+#define WC_LBLUE   0x5555FF  // light rain
+#define WC_CYAN    0xAAFFFF  // snow crystals
+#define WC_WHITE   0xFFFFFF  // heavy snow / white
+#define WC_YELLOW  0xFFFF00  // lightning bolt
+#define WC_PALBLUE 0xAAAAFF  // moon / night sky
+#define WC_DKGREY  0x555555  // unknown diamond
+
+// [icon_id][path_index] = 0xRRGGBB
+static const uint32_t s_icon_path_colors[GPATH_ID_COUNT][11] = {
+  // GPATH_ID_CLOUDY_DAY (4 paths: back-cloud-arc, back-cloud-bottom, front-cloud-arc, front-cloud-bottom)
+  [GPATH_ID_CLOUDY_DAY]          = { WC_GREY, WC_GREY, WC_GREY, WC_GREY },
+  // GPATH_ID_THUNDERSTORM (5 paths: cloud-arc, left-bottom, right-bottom, bolt, bolt-bottom)
+  [GPATH_ID_THUNDERSTORM]        = { WC_GREY, WC_GREY, WC_GREY, WC_YELLOW, WC_YELLOW },
+  // GPATH_ID_HEAVY_RAIN (6 paths: cloud-arc, cloud-bottom, 4 rain lines)
+  [GPATH_ID_HEAVY_RAIN]          = { WC_GREY, WC_GREY, WC_BLUE, WC_BLUE, WC_BLUE, WC_BLUE },
+  // GPATH_ID_HEAVY_SNOW (8 paths: cloud-arc, cloud-bottom, 3 snowflakes × 2 lines each)
+  [GPATH_ID_HEAVY_SNOW]          = { WC_GREY, WC_GREY, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE },
+  // GPATH_ID_LIGHT_RAIN (5 paths: cloud-arc, cloud-bottom, 3 rain lines)
+  [GPATH_ID_LIGHT_RAIN]          = { WC_GREY, WC_GREY, WC_LBLUE, WC_LBLUE, WC_LBLUE },
+  // GPATH_ID_LIGHT_SNOW (6 paths: cloud-arc, cloud-bottom, 2 snowflakes × 2 lines each)
+  [GPATH_ID_LIGHT_SNOW]          = { WC_GREY, WC_GREY, WC_CYAN, WC_CYAN, WC_CYAN, WC_CYAN },
+  // GPATH_ID_RAINING_AND_SNOWING (6 paths: cloud-arc, cloud-bottom, 2 rain, 1 snowflake × 2)
+  [GPATH_ID_RAINING_AND_SNOWING] = { WC_GREY, WC_GREY, WC_LBLUE, WC_LBLUE, WC_CYAN, WC_CYAN },
+  // GPATH_ID_PARTLY_CLOUDY (11 paths: sun-circle, 8 sun-rays, cloud-arc, cloud-bottom)
+  [GPATH_ID_PARTLY_CLOUDY]       = { WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
+                                      WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_GREY, WC_GREY },
+  // GPATH_ID_TIMELINE_SUN (9 paths: sun-circle, N/S/W/E rays, NW/NE/SW/SE rays)
+  [GPATH_ID_TIMELINE_SUN]        = { WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
+                                      WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER },
+  // GPATH_ID_TIMELINE_MOON (4 paths: outer-arc, inner-arc, star-H, star-V)
+  [GPATH_ID_TIMELINE_MOON]       = { WC_PALBLUE, WC_PALBLUE, WC_WHITE, WC_WHITE },
+  // GPATH_ID_PARTLY_CLOUDY_NIGHT (4 paths: moon-outer, moon-inner, cloud-arc, cloud-bottom)
+  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { WC_PALBLUE, WC_PALBLUE, WC_GREY, WC_GREY },
+  // GPATH_ID_UNKNOWN (3 paths: diamond, question-arc, dot)
+  [GPATH_ID_UNKNOWN]             = { WC_DKGREY, WC_GREY, WC_GREY },
+};
+
+// Draw a weather icon at (ox, oy) scaled to sz×sz.
+// If use_weather_colors is true, each path uses its weather-based colour;
+// otherwise all paths use the single `color` argument.
+static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy, int sz, GColor color, bool use_weather_colors) {
   if (icon_id >= GPATH_ID_COUNT) return;
   const WeatherIconDef *def = &s_weather_icons[icon_id];
   int native_max = def->native_w > def->native_h ? def->native_w : def->native_h;
   if (native_max == 0) return;
   int scale256 = (sz * 256) / native_max;
 
-  graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 1);
 
   for (int p = 0; p < def->num_paths; p++) {
+    if (use_weather_colors) {
+      uint32_t rgb = s_icon_path_colors[icon_id][p];
+      GColor path_color = GColorFromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+#ifndef PBL_COLOR
+      path_color = gcolor_equal(path_color, GColorBlack) ? GColorBlack : GColorWhite;
+#endif
+      graphics_context_set_stroke_color(ctx, path_color);
+    } else {
+      graphics_context_set_stroke_color(ctx, color);
+    }
     const GPathInfo *pi = &def->paths[p];
     for (int i = 0; i < (int)pi->num_points - 1; i++) {
       GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
