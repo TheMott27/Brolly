@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.1.7
+ * Brolly Settings Page — v2.1.8
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.7'
+const VERSION = 'v2.1.8'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -196,18 +196,22 @@ async function resolveGpsLabel(): Promise<string> {
     }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const { latitude, longitude } = pos.coords
         try {
-          const { latitude, longitude } = pos.coords
           const res = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=en&format=json`
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`,
+            { headers: { 'Accept-Language': 'en' } }
           )
           const data = await res.json()
-          if (data && data.name) {
-            // Format: City, Country, Postcode
-            const parts: string[] = [data.name]
-            if (data.country) parts.push(data.country)
-            else if (data.country_code) parts.push(data.country_code.toUpperCase())
-            if (data.postcode) parts.push(data.postcode)
+          const addr = data.address || {}
+          const city = addr.city || addr.town || addr.village || addr.hamlet || addr.county || ''
+          const country = addr.country || ''
+          const postcode = addr.postcode || ''
+          const parts: string[] = []
+          if (city) parts.push(city)
+          if (country) parts.push(country)
+          if (postcode) parts.push(postcode)
+          if (parts.length > 0) {
             resolve(`(GPS: ${parts.join(', ')})`)
           } else {
             resolve(`(GPS: ${latitude.toFixed(3)}, ${longitude.toFixed(3)})`)
@@ -217,7 +221,7 @@ async function resolveGpsLabel(): Promise<string> {
         }
       },
       () => resolve('(GPS: permission denied)'),
-      { timeout: 8000, maximumAge: 60000 }
+      { timeout: 10000, maximumAge: 60000 }
     )
   })
 }
