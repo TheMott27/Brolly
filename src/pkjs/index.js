@@ -345,6 +345,10 @@ function sendSettingsToWatch(settings) {
     Pebble.sendAppMessage({ KEY_TEST_BT_DISCONNECT: 1 });
     return;
   }
+  if (settings.KEY_TEST_CRITICAL_BATTERY_ALERT) {
+    Pebble.sendAppMessage({ KEY_TEST_CRITICAL_BATTERY_ALERT: 1 });
+    return;
+  }
 
   if (Object.keys(msg).length > 0) {
     Pebble.sendAppMessage(msg, function() {

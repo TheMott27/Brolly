@@ -3,8 +3,8 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Weather icon GPath data for Brolly v2.0.0
-// All coordinates are post-crop (origin at top-left of drawn area).
-// Native dimensions (w×h) are given per icon for scaling.
+// All coordinates are on a 0–23 grid (24 lines × 24 lines).
+// native_w and native_h are both 23 for all new icons.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Icon IDs ─────────────────────────────────────────────────────────────────
@@ -33,72 +33,107 @@ typedef struct {
 } WeatherIconDef;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_CLOUDY_DAY — native 23×14
+// GPATH_CLOUDY_DAY — two overlapping scaled cloud sprites, native 23×23
+// Back cloud (top-left): x=0..19, y=0..13
+// Front cloud (bottom-right): x=4..23, y=10..23
+// Back cloud bottom line clipped where it falls behind front cloud.
 // ─────────────────────────────────────────────────────────────────────────────
+// Back cloud outline (visible portion — right side clipped behind front cloud)
 static const GPoint s_cloudy_day_0_pts[] = {
-  {21,14},{23,12},{23,8},{20,4},{16,4},{13,0},{8,0},{4,4},{2,4},{0,6},{0,12},{2,14},{21,14}
+  {0,13},{0,9},{0,7},{2,4},{6,4},{8,0},{12,0},{14,4},{17,4},{19,7},{19,9},{19,13}
 };
+// Back cloud bottom line (left portion only, before front cloud starts)
 static const GPoint s_cloudy_day_1_pts[] = {
-  {4,4},{7,7}
+  {0,13},{4,13}
+};
+// Front cloud outline
+static const GPoint s_cloudy_day_2_pts[] = {
+  {4,23},{4,19},{4,17},{6,14},{10,14},{12,10},{16,10},{18,14},{21,14},{23,17},{23,19},{23,23}
+};
+// Front cloud bottom line
+static const GPoint s_cloudy_day_3_pts[] = {
+  {4,23},{23,23}
 };
 static const GPathInfo s_cloudy_day_paths[] = {
   { ARRAY_LENGTH(s_cloudy_day_0_pts), (GPoint *)s_cloudy_day_0_pts },
-  { ARRAY_LENGTH(s_cloudy_day_1_pts), (GPoint *)s_cloudy_day_1_pts }
+  { ARRAY_LENGTH(s_cloudy_day_1_pts), (GPoint *)s_cloudy_day_1_pts },
+  { ARRAY_LENGTH(s_cloudy_day_2_pts), (GPoint *)s_cloudy_day_2_pts },
+  { ARRAY_LENGTH(s_cloudy_day_3_pts), (GPoint *)s_cloudy_day_3_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_THUNDERSTORM — native 23×18
+// GPATH_THUNDERSTORM — native 23×23
+// Cloud upper path with bolt cut-out gaps at y=16
+// Bolt: (14,0)→(14,10)→(18,10)→(10,23)→(10,14)→(6,14)→(14,0)
+// left_x at y=16 ≈ 10.0, right_x at y=16 ≈ 13.54, gap=1.0
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_thunderstorm_0_pts[] = {
-  {8,0},{4,4},{2,4},{0,6},{0,12},{2,14},{7,14}
+  {0,16},{0,14},{0,11},{3,8},{7,8},{10,5},{14,5},{17,8},{21,8},{23,11},{23,14},{23,16}
 };
+// Left bottom segment (0,16)→(9,16)
 static const GPoint s_thunderstorm_1_pts[] = {
-  {18,14},{21,14},{23,12},{23,8},{20,4},{17,4}
+  {0,16},{9,16}
 };
+// Right bottom segment (~14.54+1=15.54 → 16, 16)→(23,16)
 static const GPoint s_thunderstorm_2_pts[] = {
-  {17,4},{13,0},{8,0}
+  {15,16},{23,16}
 };
+// Right close line (23,11)→(23,16)
 static const GPoint s_thunderstorm_3_pts[] = {
-  {12,2},{6,10},{10,10},{7,18},{18,8},{13,8},{12,2}
+  {23,11},{23,16}
+};
+// Bolt
+static const GPoint s_thunderstorm_4_pts[] = {
+  {14,0},{14,10},{18,10},{10,23},{10,14},{6,14},{14,0}
 };
 static const GPathInfo s_thunderstorm_paths[] = {
   { ARRAY_LENGTH(s_thunderstorm_0_pts), (GPoint *)s_thunderstorm_0_pts },
   { ARRAY_LENGTH(s_thunderstorm_1_pts), (GPoint *)s_thunderstorm_1_pts },
   { ARRAY_LENGTH(s_thunderstorm_2_pts), (GPoint *)s_thunderstorm_2_pts },
-  { ARRAY_LENGTH(s_thunderstorm_3_pts), (GPoint *)s_thunderstorm_3_pts }
+  { ARRAY_LENGTH(s_thunderstorm_3_pts), (GPoint *)s_thunderstorm_3_pts },
+  { ARRAY_LENGTH(s_thunderstorm_4_pts), (GPoint *)s_thunderstorm_4_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_HEAVY_RAIN — native 23×22
+// GPATH_HEAVY_RAIN — native 23×23
+// Standard cloud (top at y=0, bottom at y=11), 4 diagonal rain lines y=11..23
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_heavy_rain_0_pts[] = {
-  {21,11},{23,9},{23,6},{20,3},{16,3},{13,0},{8,0},{5,3},{3,3},{0,6},{0,9},{2,11},{21,11}
+  {0,11},{0,8},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,8},{23,11}
 };
-static const GPoint s_heavy_rain_1_pts[] = { {1,22},{3,14} };
-static const GPoint s_heavy_rain_2_pts[] = { {6,22},{8,14} };
-static const GPoint s_heavy_rain_3_pts[] = { {12,18},{13,14} };
-static const GPoint s_heavy_rain_4_pts[] = { {17,18},{18,14} };
+static const GPoint s_heavy_rain_1_pts[] = { {0,11},{23,11} };  // cloud bottom
+static const GPoint s_heavy_rain_2_pts[] = { {0,11},{5,23} };
+static const GPoint s_heavy_rain_3_pts[] = { {6,11},{11,23} };
+static const GPoint s_heavy_rain_4_pts[] = { {12,11},{17,23} };
+static const GPoint s_heavy_rain_5_pts[] = { {18,11},{23,23} };
 static const GPathInfo s_heavy_rain_paths[] = {
   { ARRAY_LENGTH(s_heavy_rain_0_pts), (GPoint *)s_heavy_rain_0_pts },
   { ARRAY_LENGTH(s_heavy_rain_1_pts), (GPoint *)s_heavy_rain_1_pts },
   { ARRAY_LENGTH(s_heavy_rain_2_pts), (GPoint *)s_heavy_rain_2_pts },
   { ARRAY_LENGTH(s_heavy_rain_3_pts), (GPoint *)s_heavy_rain_3_pts },
-  { ARRAY_LENGTH(s_heavy_rain_4_pts), (GPoint *)s_heavy_rain_4_pts }
+  { ARRAY_LENGTH(s_heavy_rain_4_pts), (GPoint *)s_heavy_rain_4_pts },
+  { ARRAY_LENGTH(s_heavy_rain_5_pts), (GPoint *)s_heavy_rain_5_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_HEAVY_SNOW — native 23×23
+// Standard cloud (top at y=0, bottom at y=11), 3 snowflakes
+// Left (3,20), Middle (11,16), Right (20,20), half_len=3
+// Outer arms extended to x=0 and x=23
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_heavy_snow_0_pts[] = {
-  {21,11},{23,9},{23,5},{21,3},{16,3},{13,0},{7,0},{4,3},{2,3},{0,5},{0,9},{2,11},{21,11}
+  {0,11},{0,8},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,8},{23,11}
 };
-static const GPoint s_heavy_snow_1_pts[] = { {4,3},{7,6} };
-static const GPoint s_heavy_snow_2_pts[] = { {4,18},{4,14} };
-static const GPoint s_heavy_snow_3_pts[] = { {2,16},{6,16} };
-static const GPoint s_heavy_snow_4_pts[] = { {10,23},{10,19} };
-static const GPoint s_heavy_snow_5_pts[] = { {8,21},{12,21} };
-static const GPoint s_heavy_snow_6_pts[] = { {15,18},{15,14} };
-static const GPoint s_heavy_snow_7_pts[] = { {13,16},{17,16} };
+static const GPoint s_heavy_snow_1_pts[] = { {0,11},{23,11} };  // cloud bottom
+// Left flake (3,20) half=3
+static const GPoint s_heavy_snow_2_pts[] = { {3,17},{3,23} };
+static const GPoint s_heavy_snow_3_pts[] = { {0,20},{6,20} };
+// Middle flake (11,16) half=3
+static const GPoint s_heavy_snow_4_pts[] = { {11,13},{11,19} };
+static const GPoint s_heavy_snow_5_pts[] = { {8,16},{14,16} };
+// Right flake (20,20) half=3
+static const GPoint s_heavy_snow_6_pts[] = { {20,17},{20,23} };
+static const GPoint s_heavy_snow_7_pts[] = { {17,20},{23,20} };
 static const GPathInfo s_heavy_snow_paths[] = {
   { ARRAY_LENGTH(s_heavy_snow_0_pts), (GPoint *)s_heavy_snow_0_pts },
   { ARRAY_LENGTH(s_heavy_snow_1_pts), (GPoint *)s_heavy_snow_1_pts },
@@ -112,35 +147,38 @@ static const GPathInfo s_heavy_snow_paths[] = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_LIGHT_RAIN — native 23×23
+// Standard cloud (top at y=0, bottom at y=11), 3 diagonal rain lines y=11..23
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_light_rain_0_pts[] = {
-  {21,11},{23,9},{23,5},{21,3},{16,3},{13,0},{7,0},{4,3},{2,3},{0,5},{0,9},{2,11},{21,11}
+  {0,11},{0,8},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,8},{23,11}
 };
-static const GPoint s_light_rain_1_pts[] = { {4,3},{7,6} };
-static const GPoint s_light_rain_2_pts[] = { {13,17},{13,14} };
-static const GPoint s_light_rain_3_pts[] = { {3,17},{3,14} };
-static const GPoint s_light_rain_4_pts[] = { {8,20},{8,17} };
-static const GPoint s_light_rain_5_pts[] = { {3,23},{3,20} };
+static const GPoint s_light_rain_1_pts[] = { {0,11},{23,11} };  // cloud bottom
+static const GPoint s_light_rain_2_pts[] = { {0,11},{5,23} };
+static const GPoint s_light_rain_3_pts[] = { {9,11},{14,23} };
+static const GPoint s_light_rain_4_pts[] = { {18,11},{23,23} };
 static const GPathInfo s_light_rain_paths[] = {
   { ARRAY_LENGTH(s_light_rain_0_pts), (GPoint *)s_light_rain_0_pts },
   { ARRAY_LENGTH(s_light_rain_1_pts), (GPoint *)s_light_rain_1_pts },
   { ARRAY_LENGTH(s_light_rain_2_pts), (GPoint *)s_light_rain_2_pts },
   { ARRAY_LENGTH(s_light_rain_3_pts), (GPoint *)s_light_rain_3_pts },
-  { ARRAY_LENGTH(s_light_rain_4_pts), (GPoint *)s_light_rain_4_pts },
-  { ARRAY_LENGTH(s_light_rain_5_pts), (GPoint *)s_light_rain_5_pts }
+  { ARRAY_LENGTH(s_light_rain_4_pts), (GPoint *)s_light_rain_4_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_LIGHT_SNOW — native 23×23
+// Standard cloud (top at y=0, bottom at y=11), 2 snowflakes
+// Left flake centre (5,15) half=4; Right flake centre (18,19) half=4 (bottom at y=23)
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_light_snow_0_pts[] = {
-  {21,11},{23,9},{23,5},{21,3},{16,3},{13,0},{7,0},{4,3},{2,3},{0,5},{0,9},{2,11},{21,11}
+  {0,11},{0,8},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,8},{23,11}
 };
-static const GPoint s_light_snow_1_pts[] = { {4,3},{7,6} };
-static const GPoint s_light_snow_2_pts[] = { {4,18},{4,14} };
-static const GPoint s_light_snow_3_pts[] = { {2,16},{6,16} };
-static const GPoint s_light_snow_4_pts[] = { {10,23},{10,19} };
-static const GPoint s_light_snow_5_pts[] = { {8,21},{12,21} };
+static const GPoint s_light_snow_1_pts[] = { {0,11},{23,11} };  // cloud bottom
+// Left flake (5,15) half=4
+static const GPoint s_light_snow_2_pts[] = { {5,11},{5,19} };
+static const GPoint s_light_snow_3_pts[] = { {1,15},{9,15} };
+// Right flake (18,19) half=4, bottom at y=23
+static const GPoint s_light_snow_4_pts[] = { {18,15},{18,23} };
+static const GPoint s_light_snow_5_pts[] = { {14,19},{22,19} };
 static const GPathInfo s_light_snow_paths[] = {
   { ARRAY_LENGTH(s_light_snow_0_pts), (GPoint *)s_light_snow_0_pts },
   { ARRAY_LENGTH(s_light_snow_1_pts), (GPoint *)s_light_snow_1_pts },
@@ -152,15 +190,18 @@ static const GPathInfo s_light_snow_paths[] = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_RAINING_AND_SNOWING — native 23×23
+// Standard cloud (top at y=0, bottom at y=11)
+// 2 rain lines (left half), 1 snowflake centre (19,17) half=4
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_rain_snow_0_pts[] = {
-  {21,11},{23,9},{23,5},{21,3},{16,3},{13,0},{7,0},{4,3},{2,3},{0,5},{0,9},{2,11},{21,11}
+  {0,11},{0,8},{0,6},{3,3},{7,3},{10,0},{14,0},{17,3},{21,3},{23,6},{23,8},{23,11}
 };
-static const GPoint s_rain_snow_1_pts[] = { {4,3},{7,6} };
-static const GPoint s_rain_snow_2_pts[] = { {4,18},{4,14} };
-static const GPoint s_rain_snow_3_pts[] = { {10,23},{10,19} };
-static const GPoint s_rain_snow_4_pts[] = { {15,18},{15,14} };
-static const GPoint s_rain_snow_5_pts[] = { {13,16},{17,16} };
+static const GPoint s_rain_snow_1_pts[] = { {0,11},{23,11} };  // cloud bottom
+static const GPoint s_rain_snow_2_pts[] = { {0,11},{5,23} };
+static const GPoint s_rain_snow_3_pts[] = { {8,11},{13,23} };
+// Snowflake (19,17) half=4
+static const GPoint s_rain_snow_4_pts[] = { {19,13},{19,21} };
+static const GPoint s_rain_snow_5_pts[] = { {15,17},{23,17} };
 static const GPathInfo s_rain_snow_paths[] = {
   { ARRAY_LENGTH(s_rain_snow_0_pts), (GPoint *)s_rain_snow_0_pts },
   { ARRAY_LENGTH(s_rain_snow_1_pts), (GPoint *)s_rain_snow_1_pts },
@@ -171,45 +212,65 @@ static const GPathInfo s_rain_snow_paths[] = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_PARTLY_CLOUDY — native 23×24
+// GPATH_PARTLY_CLOUDY — native 23×23
+// Small sun octagon (centre 5,5 radius 4) with rays, large cloud bottom (y=12..23)
 // ─────────────────────────────────────────────────────────────────────────────
+// Small sun octagon
 static const GPoint s_partly_cloudy_0_pts[] = {
-  {12,4},{10,6},{10,9},{12,11},{15,11},{17,9},{17,6},{15,4},{12,4}
+  {3,1},{1,3},{1,7},{3,9},{7,9},{9,7},{9,3},{7,1},{3,1}
 };
-static const GPoint s_partly_cloudy_1_pts[] = { {6,1},{8,3} };
-static const GPoint s_partly_cloudy_2_pts[] = { {21,1},{19,3} };
-static const GPoint s_partly_cloudy_3_pts[] = {
-  {21,24},{23,22},{23,18},{21,16},{15,16},{12,13},{8,13},{5,16},{2,16},{0,18},{0,22},{2,24},{21,24}
+// Cardinal rays
+static const GPoint s_partly_cloudy_1_pts[] = { {5,0},{5,1} };   // N
+static const GPoint s_partly_cloudy_2_pts[] = { {0,5},{1,5} };   // W
+static const GPoint s_partly_cloudy_3_pts[] = { {10,5},{9,5} };  // E
+static const GPoint s_partly_cloudy_4_pts[] = { {5,10},{5,9} };  // S
+// Diagonal rays
+static const GPoint s_partly_cloudy_5_pts[] = { {9,1},{10,0} };  // NE
+static const GPoint s_partly_cloudy_6_pts[] = { {9,9},{10,10} }; // SE
+static const GPoint s_partly_cloudy_7_pts[] = { {0,0},{1,1} };   // NW
+static const GPoint s_partly_cloudy_8_pts[] = { {0,10},{1,9} };  // SW
+// Large cloud (top at y=12, bottom at y=23)
+static const GPoint s_partly_cloudy_9_pts[] = {
+  {0,23},{0,20},{0,18},{3,15},{7,15},{10,12},{14,12},{17,15},{21,15},{23,18},{23,20},{23,23}
 };
-static const GPoint s_partly_cloudy_4_pts[] = { {5,16},{8,19} };
-static const GPoint s_partly_cloudy_5_pts[] = { {20,8},{23,8} };
-static const GPoint s_partly_cloudy_6_pts[] = { {4,8},{7,8} };
-static const GPoint s_partly_cloudy_7_pts[] = { {13,0},{13,3} };
+static const GPoint s_partly_cloudy_10_pts[] = { {0,23},{23,23} }; // cloud bottom
 static const GPathInfo s_partly_cloudy_paths[] = {
-  { ARRAY_LENGTH(s_partly_cloudy_0_pts), (GPoint *)s_partly_cloudy_0_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_1_pts), (GPoint *)s_partly_cloudy_1_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_2_pts), (GPoint *)s_partly_cloudy_2_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_3_pts), (GPoint *)s_partly_cloudy_3_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_4_pts), (GPoint *)s_partly_cloudy_4_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_5_pts), (GPoint *)s_partly_cloudy_5_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_6_pts), (GPoint *)s_partly_cloudy_6_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_7_pts), (GPoint *)s_partly_cloudy_7_pts }
+  { ARRAY_LENGTH(s_partly_cloudy_0_pts),  (GPoint *)s_partly_cloudy_0_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_1_pts),  (GPoint *)s_partly_cloudy_1_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_2_pts),  (GPoint *)s_partly_cloudy_2_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_3_pts),  (GPoint *)s_partly_cloudy_3_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_4_pts),  (GPoint *)s_partly_cloudy_4_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_5_pts),  (GPoint *)s_partly_cloudy_5_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_6_pts),  (GPoint *)s_partly_cloudy_6_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_7_pts),  (GPoint *)s_partly_cloudy_7_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_8_pts),  (GPoint *)s_partly_cloudy_8_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_9_pts),  (GPoint *)s_partly_cloudy_9_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_10_pts), (GPoint *)s_partly_cloudy_10_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_TIMELINE_SUN — native 22×23
+// GPATH_TIMELINE_SUN — native 23×23
+// Octagon centre (12,12) radius 7, 8 rays to grid edges
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_timeline_sun_0_pts[] = {
-  {9,5},{5,9},{5,13},{9,17},{13,17},{17,13},{17,9},{13,5},{9,5}
+  {9,5},{15,5},{19,9},{19,15},{15,19},{9,19},{5,15},{5,9},{9,5}
 };
-static const GPoint s_timeline_sun_1_pts[] = { {11,0},{11,2} };
-static const GPoint s_timeline_sun_2_pts[] = { {11,23},{11,20} };
-static const GPoint s_timeline_sun_3_pts[] = { {0,22},{4,18} };
-static const GPoint s_timeline_sun_4_pts[] = { {2,2},{4,4} };
-static const GPoint s_timeline_sun_5_pts[] = { {22,22},{18,18} };
-static const GPoint s_timeline_sun_6_pts[] = { {20,2},{18,4} };
-static const GPoint s_timeline_sun_7_pts[] = { {2,11},{0,11} };
-static const GPoint s_timeline_sun_8_pts[] = { {22,11},{20,11} };
+// N ray
+static const GPoint s_timeline_sun_1_pts[] = { {12,0},{12,5} };
+// S ray
+static const GPoint s_timeline_sun_2_pts[] = { {12,19},{12,23} };
+// W ray
+static const GPoint s_timeline_sun_3_pts[] = { {0,12},{5,12} };
+// E ray
+static const GPoint s_timeline_sun_4_pts[] = { {19,12},{23,12} };
+// NW ray
+static const GPoint s_timeline_sun_5_pts[] = { {0,0},{3,3} };
+// NE ray
+static const GPoint s_timeline_sun_6_pts[] = { {23,0},{20,3} };
+// SW ray
+static const GPoint s_timeline_sun_7_pts[] = { {0,23},{3,20} };
+// SE ray
+static const GPoint s_timeline_sun_8_pts[] = { {23,23},{20,20} };
 static const GPathInfo s_timeline_sun_paths[] = {
   { ARRAY_LENGTH(s_timeline_sun_0_pts), (GPoint *)s_timeline_sun_0_pts },
   { ARRAY_LENGTH(s_timeline_sun_1_pts), (GPoint *)s_timeline_sun_1_pts },
@@ -223,46 +284,63 @@ static const GPathInfo s_timeline_sun_paths[] = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_TIMELINE_MOON — native 15×22
+// GPATH_TIMELINE_MOON — native 23×23
+// Outer arc: (16,0)→(23,7)→(23,16)→(16,23)→(7,23)→(0,16)
+// Inner arc: (16,0)→(16,9)→(9,16)→(0,16)
+// Star cross: H=(2,6)→(10,6), V=(6,2)→(6,10)  [shifted +2x +2y from (0,4)→(8,4),(4,0)→(4,8)]
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_timeline_moon_0_pts[] = {
-  {0,1},{3,0},{5,0},{7,0},{9,1},{10,2},{12,3},{13,5},{14,7},{15,9},{15,11},
-  {15,13},{14,15},{13,17},{12,19},{10,20},{9,21},{7,22},{5,22},{3,22},{1,21},
-  {2,21},{4,20},{5,18},{6,17},{7,15},{8,13},{8,11},{8,9},{7,7},{6,5},{5,4},
-  {4,2},{2,1},{1,1},{0,1}
+  {16,0},{23,7},{23,16},{16,23},{7,23},{0,16}
 };
+static const GPoint s_timeline_moon_1_pts[] = {
+  {16,0},{16,9},{9,16},{0,16}
+};
+static const GPoint s_timeline_moon_2_pts[] = { {2,6},{10,6} };  // star H
+static const GPoint s_timeline_moon_3_pts[] = { {6,2},{6,10} };  // star V
 static const GPathInfo s_timeline_moon_paths[] = {
-  { ARRAY_LENGTH(s_timeline_moon_0_pts), (GPoint *)s_timeline_moon_0_pts }
+  { ARRAY_LENGTH(s_timeline_moon_0_pts), (GPoint *)s_timeline_moon_0_pts },
+  { ARRAY_LENGTH(s_timeline_moon_1_pts), (GPoint *)s_timeline_moon_1_pts },
+  { ARRAY_LENGTH(s_timeline_moon_2_pts), (GPoint *)s_timeline_moon_2_pts },
+  { ARRAY_LENGTH(s_timeline_moon_3_pts), (GPoint *)s_timeline_moon_3_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GPATH_PARTLY_CLOUDY_NIGHT — native 23×23
+// Small moon (no star) top-right, scaled 0.48 offset (12,0)
+// Large cloud bottom (y=12..23)
 // ─────────────────────────────────────────────────────────────────────────────
+// Small moon outer arc (scaled 0.48, offset 12,0)
 static const GPoint s_partly_cloudy_night_0_pts[] = {
-  {12,0},{13,0},{14,0},{15,0},{16,0},{17,1},{18,2},{19,3},{19,4},{19,5},{19,6},
-  {19,7},{18,8},{17,9},{16,10},{15,10},{14,10},{13,10},{12,10},{13,10},{13,9},
-  {14,9},{15,8},{15,7},{15,6},{15,5},{15,4},{15,3},{15,2},{14,1},{13,1},{13,0},{12,0}
+  {20,0},{23,3},{23,8},{20,11},{15,11},{12,8}
 };
+// Small moon inner arc
 static const GPoint s_partly_cloudy_night_1_pts[] = {
-  {21,23},{23,21},{23,17},{21,15},{15,15},{12,12},{8,12},{5,15},{2,15},{0,17},{0,21},{2,23},{21,23}
+  {20,0},{20,4},{16,8},{12,8}
 };
-static const GPoint s_partly_cloudy_night_2_pts[] = { {5,15},{8,18} };
+// Large cloud
+static const GPoint s_partly_cloudy_night_2_pts[] = {
+  {0,23},{0,20},{0,18},{3,15},{7,15},{10,12},{14,12},{17,15},{21,15},{23,18},{23,20},{23,23}
+};
+static const GPoint s_partly_cloudy_night_3_pts[] = { {0,23},{23,23} }; // cloud bottom
 static const GPathInfo s_partly_cloudy_night_paths[] = {
   { ARRAY_LENGTH(s_partly_cloudy_night_0_pts), (GPoint *)s_partly_cloudy_night_0_pts },
   { ARRAY_LENGTH(s_partly_cloudy_night_1_pts), (GPoint *)s_partly_cloudy_night_1_pts },
-  { ARRAY_LENGTH(s_partly_cloudy_night_2_pts), (GPoint *)s_partly_cloudy_night_2_pts }
+  { ARRAY_LENGTH(s_partly_cloudy_night_2_pts), (GPoint *)s_partly_cloudy_night_2_pts },
+  { ARRAY_LENGTH(s_partly_cloudy_night_3_pts), (GPoint *)s_partly_cloudy_night_3_pts }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPATH_UNKNOWN — native 22×22
+// GPATH_UNKNOWN — native 23×23
+// Diamond (12,0)→(23,12)→(12,23)→(0,12)→(12,0)
+// Question mark (shifted right 1px, down 1px)
 // ─────────────────────────────────────────────────────────────────────────────
 static const GPoint s_unknown_0_pts[] = {
-  {11,0},{22,11},{11,22},{0,11},{11,0}
+  {12,0},{23,12},{12,23},{0,12},{12,0}
 };
 static const GPoint s_unknown_1_pts[] = {
-  {8,7},{9,5},{11,4},{13,5},{13,8},{11,10},{11,13}
+  {9,9},{9,7},{11,5},{13,5},{15,7},{15,10},{13,13},{12,15}
 };
-static const GPoint s_unknown_2_pts[] = { {11,16},{11,17} };
+static const GPoint s_unknown_2_pts[] = { {12,18},{12,19} };
 static const GPathInfo s_unknown_paths[] = {
   { ARRAY_LENGTH(s_unknown_0_pts), (GPoint *)s_unknown_0_pts },
   { ARRAY_LENGTH(s_unknown_1_pts), (GPoint *)s_unknown_1_pts },
@@ -273,18 +351,18 @@ static const GPathInfo s_unknown_paths[] = {
 // Master icon table
 // ─────────────────────────────────────────────────────────────────────────────
 static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
-  [GPATH_ID_CLOUDY_DAY]          = { 23, 14, 2,  s_cloudy_day_paths },
-  [GPATH_ID_THUNDERSTORM]        = { 23, 18, 4,  s_thunderstorm_paths },
-  [GPATH_ID_HEAVY_RAIN]          = { 23, 22, 5,  s_heavy_rain_paths },
+  [GPATH_ID_CLOUDY_DAY]          = { 23, 23, 4,  s_cloudy_day_paths },
+  [GPATH_ID_THUNDERSTORM]        = { 23, 23, 5,  s_thunderstorm_paths },
+  [GPATH_ID_HEAVY_RAIN]          = { 23, 23, 6,  s_heavy_rain_paths },
   [GPATH_ID_HEAVY_SNOW]          = { 23, 23, 8,  s_heavy_snow_paths },
-  [GPATH_ID_LIGHT_RAIN]          = { 23, 23, 6,  s_light_rain_paths },
+  [GPATH_ID_LIGHT_RAIN]          = { 23, 23, 5,  s_light_rain_paths },
   [GPATH_ID_LIGHT_SNOW]          = { 23, 23, 6,  s_light_snow_paths },
   [GPATH_ID_RAINING_AND_SNOWING] = { 23, 23, 6,  s_rain_snow_paths },
-  [GPATH_ID_PARTLY_CLOUDY]       = { 23, 24, 8,  s_partly_cloudy_paths },
-  [GPATH_ID_TIMELINE_SUN]        = { 22, 23, 9,  s_timeline_sun_paths },
-  [GPATH_ID_TIMELINE_MOON]       = { 15, 22, 1,  s_timeline_moon_paths },
-  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { 23, 23, 3,  s_partly_cloudy_night_paths },
-  [GPATH_ID_UNKNOWN]             = { 22, 22, 3,  s_unknown_paths }
+  [GPATH_ID_PARTLY_CLOUDY]       = { 23, 23, 11, s_partly_cloudy_paths },
+  [GPATH_ID_TIMELINE_SUN]        = { 23, 23, 9,  s_timeline_sun_paths },
+  [GPATH_ID_TIMELINE_MOON]       = { 23, 23, 4,  s_timeline_moon_paths },
+  [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { 23, 23, 4,  s_partly_cloudy_night_paths },
+  [GPATH_ID_UNKNOWN]             = { 23, 23, 3,  s_unknown_paths }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
