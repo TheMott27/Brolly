@@ -398,7 +398,7 @@ static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
 // GColor8 argb format: 0b11rrggbb (top 2 bits always 1).
 #define WC_GREY   0xEA  // #aaaaaa cloud grey
 #define WC_AMBER  0xFC  // #ffaa00 sun amber
-#define WC_YELLOW 0xFF  // #ffff00 lightning yellow
+#define WC_YELLOW 0xFC  // #ffff00 lightning yellow
 #define WC_BBLUE  0xC3  // #0055ff heavy rain
 #define WC_SBLUE  0xC7  // #5555ff light rain
 #define WC_CYAN   0xCF  // #aaffff snow cyan
@@ -424,11 +424,11 @@ static const uint8_t s_weather_colors[GPATH_ID_COUNT][WEATHER_COLOR_MAX_PATHS] =
   // LIGHT_RAIN: 5 paths — cloud arc, cloud bottom, rain×3
   [GPATH_ID_LIGHT_RAIN] = { WC_GREY, WC_GREY, WC_SBLUE, WC_SBLUE, WC_SBLUE },
 
-  // LIGHT_SNOW: 6 paths — cloud arc, cloud bottom, snowflake×2 (V+H each)
-  [GPATH_ID_LIGHT_SNOW] = { WC_GREY, WC_GREY, WC_CYAN, WC_CYAN, WC_CYAN, WC_CYAN },
+  // LIGHT_SNOW: 6 paths — cloud arc, cloud bottom, snowflake×2 (V+H each) — arms all white
+  [GPATH_ID_LIGHT_SNOW] = { WC_GREY, WC_GREY, WC_WHITE, WC_WHITE, WC_WHITE, WC_WHITE },
 
-  // RAINING_AND_SNOWING: 6 paths — cloud arc, cloud bottom, rain×2, snowflake V, snowflake H
-  [GPATH_ID_RAINING_AND_SNOWING] = { WC_GREY, WC_GREY, WC_SBLUE, WC_SBLUE, WC_CYAN, WC_CYAN },
+  // RAINING_AND_SNOWING: 6 paths — cloud arc, cloud bottom, rain×2, snowflake V, snowflake H — snow arms white
+  [GPATH_ID_RAINING_AND_SNOWING] = { WC_GREY, WC_GREY, WC_SBLUE, WC_SBLUE, WC_WHITE, WC_WHITE },
 
   // PARTLY_CLOUDY: 11 paths — sun octagon, N/W/E/S rays, NE/SE/NW/SW rays, cloud arc, cloud bottom
   [GPATH_ID_PARTLY_CLOUDY] = { WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER, WC_AMBER,
@@ -445,8 +445,8 @@ static const uint8_t s_weather_colors[GPATH_ID_COUNT][WEATHER_COLOR_MAX_PATHS] =
   // PARTLY_CLOUDY_NIGHT: 4 paths — moon outer arc, moon inner arc, cloud arc, cloud bottom
   [GPATH_ID_PARTLY_CLOUDY_NIGHT] = { WC_PALE, WC_PALE, WC_GREY, WC_GREY },
 
-  // UNKNOWN: 3 paths — diamond, question mark, dot
-  [GPATH_ID_UNKNOWN] = { WC_DGREY, WC_DGREY, WC_DGREY }
+  // UNKNOWN: 3 paths — diamond, question mark, dot — all white
+  [GPATH_ID_UNKNOWN] = { WC_WHITE, WC_WHITE, WC_WHITE }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -591,7 +591,7 @@ static void draw_weather_icon(GContext *ctx, GPathIconID icon_id, int ox, int oy
 
 // Shading gap in native-grid units (will be scaled with the icon).
 // 12px gap at native 23 → scales proportionally.
-#define SHADE_GAP_NATIVE 4
+#define SHADE_GAP_NATIVE 3
 
 // Descriptor for one fill region used in shading.
 typedef struct {
@@ -874,38 +874,42 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
 
     GColor8 wc; wc.argb = sf->color;
     GColor fill_color = (GColor){ .argb = wc.argb };
-
-    if (sf->cutout) {
-      // Erase interior with black hatching (effectively a cutout)
-      graphics_context_set_stroke_color(ctx, GColorBlack);
-      shade_draw_fill(ctx, scaled, n, gap, sf->dir);
-    } else {
-      graphics_context_set_stroke_color(ctx, fill_color);
-      shade_draw_fill(ctx, scaled, n, gap, sf->dir);
-    }
+    graphics_context_set_stroke_color(ctx, fill_color);
+    shade_draw_fill(ctx, scaled, n, gap, sf->dir);
   }
 
-  // ── Step 2: Draw stroke-only paths (rays, rain, snow, star cross) ──────────
-  // Only paths from stroke_first onwards are drawn; fill-boundary paths are
-  // already implied by the hatching and must NOT be redrawn (avoids doubling).
-  // stroke_first == -1: skip all outlines.
-  // stroke_first == 0 (Unknown): draw all paths.
-  int sf_idx = sdef->stroke_first;
-  if (sf_idx >= 0) {
-    graphics_context_set_stroke_width(ctx, 1);
-    for (int p = sf_idx; p < def->num_paths; p++) {
-      // For PARTLY_CLOUDY, skip cloud paths 9-10 (they are fill boundary)
-      if (icon_id == GPATH_ID_PARTLY_CLOUDY && p >= 9) continue;
-      GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
-      graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
-      const GPathInfo *pi = &def->paths[p];
-      for (int i = 0; i < (int)pi->num_points - 1; i++) {
-        GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
-                          oy + (pi->points[i].y   * scale256) / 256);
-        GPoint b = GPoint(ox + (pi->points[i+1].x * scale256) / 256,
-                          oy + (pi->points[i+1].y * scale256) / 256);
-        graphics_draw_line(ctx, a, b);
-      }
+  // ── Step 1b: For thunderstorm, erase bolt area with black then redraw bolt ──
+  // Draw black hatching over the bolt polygon to erase cloud lines behind it,
+  // then redraw bolt hatching in yellow on top.
+  if (icon_id == GPATH_ID_THUNDERSTORM) {
+    GPoint bolt_scaled[6];
+    for (int i = 0; i < 6; i++) {
+      bolt_scaled[i] = GPoint(ox + (s_shade_bolt[i].x * scale256) / 256,
+                              oy + (s_shade_bolt[i].y * scale256) / 256);
+    }
+    // Erase cloud lines inside bolt with black
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    shade_draw_fill(ctx, bolt_scaled, 6, gap, SHADE_NE_SW);
+    // Redraw bolt hatching in yellow
+    graphics_context_set_stroke_color(ctx, (GColor){ .argb = WC_YELLOW });
+    shade_draw_fill(ctx, bolt_scaled, 6, gap, SHADE_NW_SE);
+  }
+
+  // ── Step 2: Draw ALL gpath outlines on top ───────────────────────────────────
+  // All paths are drawn as outlines using their weather colours.
+  // For thunderstorm, cloud arc paths are drawn in grey and bolt in yellow.
+  // For Unknown, all paths drawn in white.
+  graphics_context_set_stroke_width(ctx, 1);
+  for (int p = 0; p < def->num_paths; p++) {
+    GColor8 wc; wc.argb = s_weather_colors[icon_id][p];
+    graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
+    const GPathInfo *pi = &def->paths[p];
+    for (int i = 0; i < (int)pi->num_points - 1; i++) {
+      GPoint a = GPoint(ox + (pi->points[i].x   * scale256) / 256,
+                        oy + (pi->points[i].y   * scale256) / 256);
+      GPoint b = GPoint(ox + (pi->points[i+1].x * scale256) / 256,
+                        oy + (pi->points[i+1].y * scale256) / 256);
+      graphics_draw_line(ctx, a, b);
     }
   }
 }
