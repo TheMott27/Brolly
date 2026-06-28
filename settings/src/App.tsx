@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.2.0
+ * Brolly Settings Page — v2.1.0
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.3.0'
+const VERSION = 'v2.1.0'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -286,9 +286,9 @@ function DisplayTab({ s, set, onResetColours }: {
           value={s.KEY_ICON_COLOR_MODE}
           options={[
             { label: 'Single colour', value: 0 },
-            { label: 'Weather-based colours', value: 1 },
+            { label: 'Coloured icons', value: 1 },
+            { label: 'Coloured w/shading', value: 3 },
             { label: 'Rainbow', value: 2 },
-            { label: 'Line shading', value: 3 },
           ]}
           onChange={v => set('KEY_ICON_COLOR_MODE', v)}
         />

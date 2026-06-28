@@ -1489,7 +1489,7 @@ static void load_default_settings(void) {
   s_settings.bt_disconnect_inner_color   = GColorRed;
   s_settings.shake_mode             = 0;   // Show on shake
   s_settings.city_display_mode      = 1;   // Shake
-  s_settings.city_color             = GColorFromRGB(0x55, 0x55, 0x55);
+  s_settings.city_color             = GColorFromRGB(0x00, 0x00, 0xaa);
   s_settings.icon_color_mode        = 0;   // Single colour
 }
 

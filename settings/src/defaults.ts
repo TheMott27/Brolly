@@ -93,7 +93,7 @@ export const DEFAULTS: BrollySettings = {
 
   KEY_CUSTOM_LOCATION: '',
   KEY_CITY_DISPLAY_MODE: 1,        // shake (same as date/temp default)
-  KEY_CITY_COLOR: 0x555555,        // mid-grey (same as date/temp)
+  KEY_CITY_COLOR: 0x0000aa,        // navy blue
 
   KEY_SUNRISE_MARKER_VISIBLE: 0,
   KEY_SUNRISE_MARKER_COLOR: 0xff5500,  // orange-red (user request)
