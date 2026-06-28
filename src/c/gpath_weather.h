@@ -403,8 +403,9 @@ static const WeatherIconDef s_weather_icons[GPATH_ID_COUNT] = {
 #define WC_SBLUE  0xC7  // #5555ff light rain
 #define WC_CYAN   0xCF  // #aaffff snow cyan
 #define WC_WHITE  0xFF  // #ffffff heavy snow
-#define WC_PALE   0xEB  // #aaaaff moon pale blue
+#define WC_PALE   0xDB  // #55aaff moon light blue
 #define WC_DGREY  0xD5  // #555555 unknown dark grey
+#define WC_DBLUE  0xD7  // #5555ff cloud blue-grey
 
 // Per-path colour tables indexed by [icon_id][path_index]
 // Stored as raw argb bytes; cast to GColor8 at point of use.
@@ -729,6 +730,11 @@ static const ShadeIconDef s_shade_icons[GPATH_ID_COUNT] = {
   [GPATH_ID_UNKNOWN]             = { NULL,                        0,  0 },
 };
 
+// Cloud multi-colour pattern: mid-grey, blue-grey, dark-grey (3 colours, cycling per line)
+static const uint8_t s_cloud_colors[3] = { WC_GREY, WC_DBLUE, WC_DGREY };
+// Black colour array for bolt-area erase pass (GColorBlack argb = 0xC0)
+static const uint8_t s_black_color[1] = { 0xC0 };
+
 // ── Scanline polygon clipper for diagonal lines ───────────────────────────────
 // Clips 45° diagonal lines (NE→SW or NW→SE) to a convex-or-concave polygon
 // using a simple even-odd edge-intersection scan.
@@ -748,6 +754,65 @@ static bool shade_edge_x(int x0, int y0, int x1, int y1, int scan_y, int *out_x)
 // Sort two ints ascending.
 static void shade_sort2(int *a, int *b) {
   if (*a > *b) { int t = *a; *a = *b; *b = t; }
+}
+
+// Draw hatching lines with a cycling colour palette (one colour per line).
+static void shade_draw_fill_multi(GContext *ctx, const GPoint *poly_scaled, int n,
+                                  int gap, int dir,
+                                  const uint8_t *colors, int n_colors) {
+  if (n < 3) return;
+  int min_x = poly_scaled[0].x, max_x = poly_scaled[0].x;
+  int min_y = poly_scaled[0].y, max_y = poly_scaled[0].y;
+  for (int i = 1; i < n; i++) {
+    if (poly_scaled[i].x < min_x) min_x = poly_scaled[i].x;
+    if (poly_scaled[i].x > max_x) max_x = poly_scaled[i].x;
+    if (poly_scaled[i].y < min_y) min_y = poly_scaled[i].y;
+    if (poly_scaled[i].y > max_y) max_y = poly_scaled[i].y;
+  }
+  int c_start, c_end;
+  if (dir == SHADE_NE_SW) { c_start = min_x + min_y; c_end = max_x + max_y; }
+  else                    { c_start = min_x - max_y; c_end = max_x - min_y; }
+  c_start = c_start - ((c_start % gap + gap) % gap);
+  int max_lines = (c_end - c_start) / gap + 1;
+  if (max_lines > 64) max_lines = 64;
+  int xs[16];
+  int line_count = 0;
+  for (int c = c_start; c <= c_end && line_count < max_lines; c += gap, line_count++) {
+    GColor8 wc; wc.argb = colors[line_count % n_colors];
+    graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
+    int n_xs = 0;
+    for (int i = 0; i < n; i++) {
+      int j = (i + 1) % n;
+      int u0, v0, u1, v1;
+      if (dir == SHADE_NE_SW) {
+        u0 = poly_scaled[i].x + poly_scaled[i].y; v0 = poly_scaled[i].x - poly_scaled[i].y;
+        u1 = poly_scaled[j].x + poly_scaled[j].y; v1 = poly_scaled[j].x - poly_scaled[j].y;
+      } else {
+        u0 = poly_scaled[i].x - poly_scaled[i].y; v0 = poly_scaled[i].x + poly_scaled[i].y;
+        u1 = poly_scaled[j].x - poly_scaled[j].y; v1 = poly_scaled[j].x + poly_scaled[j].y;
+      }
+      int vx;
+      if (shade_edge_x(v0, u0, v1, u1, c, &vx)) {
+        if (n_xs < 16) xs[n_xs++] = vx;
+      }
+    }
+    if (n_xs < 2) continue;
+    for (int a = 0; a < n_xs - 1; a++)
+      for (int b = a + 1; b < n_xs; b++)
+        shade_sort2(&xs[a], &xs[b]);
+    for (int k = 0; k + 1 < n_xs; k += 2) {
+      int va = xs[k], vb = xs[k+1];
+      GPoint pa, pb;
+      if (dir == SHADE_NE_SW) {
+        pa = GPoint((c + va) / 2, (c - va) / 2);
+        pb = GPoint((c + vb) / 2, (c - vb) / 2);
+      } else {
+        pa = GPoint((c + va) / 2, (va - c) / 2);
+        pb = GPoint((c + vb) / 2, (vb - c) / 2);
+      }
+      graphics_draw_line(ctx, pa, pb);
+    }
+  }
 }
 
 // Draw hatching lines for one fill polygon.
@@ -872,10 +937,14 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
                          oy + (sf->pts[i].y * scale256) / 256);
     }
 
-    GColor8 wc; wc.argb = sf->color;
-    GColor fill_color = (GColor){ .argb = wc.argb };
-    graphics_context_set_stroke_color(ctx, fill_color);
-    shade_draw_fill(ctx, scaled, n, gap, sf->dir);
+    if (sf->dir == SHADE_NE_SW) {
+      // Cloud fills: use multi-colour cycling pattern
+      shade_draw_fill_multi(ctx, scaled, n, gap, sf->dir, s_cloud_colors, 3);
+    } else {
+      GColor8 wc; wc.argb = sf->color;
+      graphics_context_set_stroke_color(ctx, (GColor){ .argb = wc.argb });
+      shade_draw_fill(ctx, scaled, n, gap, sf->dir);
+    }
   }
 
   // ── Step 1b: For thunderstorm, erase bolt area with black then redraw bolt ──
@@ -888,8 +957,7 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
                               oy + (s_shade_bolt[i].y * scale256) / 256);
     }
     // Erase cloud lines inside bolt with black
-    graphics_context_set_stroke_color(ctx, GColorBlack);
-    shade_draw_fill(ctx, bolt_scaled, 6, gap, SHADE_NE_SW);
+    shade_draw_fill_multi(ctx, bolt_scaled, 6, gap, SHADE_NE_SW, s_black_color, 1);
     // Redraw bolt hatching in yellow
     graphics_context_set_stroke_color(ctx, (GColor){ .argb = WC_YELLOW });
     shade_draw_fill(ctx, bolt_scaled, 6, gap, SHADE_NW_SE);
