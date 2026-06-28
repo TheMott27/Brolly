@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.1.8
+ * Brolly Settings Page — v2.1.9
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.8'
+const VERSION = 'v2.1.9'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -199,7 +199,7 @@ async function resolveGpsLabel(): Promise<string> {
         const { latitude, longitude } = pos.coords
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=10&accept-language=en`,
             { headers: { 'Accept-Language': 'en' } }
           )
           const data = await res.json()

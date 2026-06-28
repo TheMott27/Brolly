@@ -182,7 +182,7 @@ function geocodeCity(cityName, callback) {
 // Reverse geocode lat/lon to city name using Nominatim (OpenStreetMap)
 function reverseGeocode(lat, lon, callback) {
   var url = 'https://nominatim.openstreetmap.org/reverse?lat=' +
-            lat + '&lon=' + lon + '&format=json&accept-language=en';
+            lat + '&lon=' + lon + '&format=json&zoom=10&accept-language=en';
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
   xhr.setRequestHeader('Accept-Language', 'en');
