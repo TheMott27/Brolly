@@ -1,5 +1,5 @@
 /**
- * Brolly Settings Page — v2.1.5
+ * Brolly Settings Page — v2.1.6
  * Weather: Open-Meteo only (no API key).
  * Location: empty field = GPS; placeholder shows live GPS city.
  * Reset All: resets every field to DEFAULTS and clears localStorage.
@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.5'
+const VERSION = 'v2.1.6'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -392,7 +392,7 @@ function WeatherTab({ s, set }: {
         <div>
           <RowLabel
             label="Custom location"
-            desc="Type a city to override GPS. Leave blank to use GPS automatically."
+            desc="LEAVE BLANK FOR GPS. Type city or country & postcode for custom location."
           />
           <input
             type="text"
