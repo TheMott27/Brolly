@@ -505,6 +505,7 @@ function sendSettingsToWatch(settings) {
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready');
   doWeatherFetch();
+  setInterval(doWeatherFetch, 30 * 60 * 1000);
 });
 
 Pebble.addEventListener('appmessage', function(e) {

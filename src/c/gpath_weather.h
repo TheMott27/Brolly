@@ -928,6 +928,10 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
   // ── Step 1: Draw shaded fill regions ─────────────────────────────────────
   for (int f = 0; f < sdef->n_fills; f++) {
     const ShadeFill *sf = &sdef->fills[f];
+    
+    // For cloudy day, we handle the two clouds specially to avoid overlap double-density
+    if (icon_id == GPATH_ID_CLOUDY_DAY) continue; 
+
     // Scale polygon to screen coords
     GPoint scaled[16];
     int n = sf->n;
@@ -947,18 +951,20 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
     }
   }
 
-  // ── Step 1b: For cloudy day, erase front-cloud area from back cloud then redraw front cloud ──
-  // The back cloud and front cloud overlap. Erase the overlap region with black
-  // then redraw the front cloud hatching so lines don't double up.
+  // ── Step 1b: For cloudy day, draw back cloud, erase overlap, draw front cloud ──
   if (icon_id == GPATH_ID_CLOUDY_DAY) {
-    GPoint front_scaled[10];
+    GPoint back_scaled[10], front_scaled[10];
     for (int i = 0; i < 10; i++) {
+      back_scaled[i] = GPoint(ox + (s_shade_cloud_back[i].x * scale256) / 256,
+                              oy + (s_shade_cloud_back[i].y * scale256) / 256);
       front_scaled[i] = GPoint(ox + (s_shade_cloud_front[i].x * scale256) / 256,
                                oy + (s_shade_cloud_front[i].y * scale256) / 256);
     }
-    // Erase back-cloud lines inside front-cloud area with black
+    // 1. Draw back cloud hatching
+    shade_draw_fill_multi(ctx, back_scaled, 10, gap, SHADE_NE_SW, s_cloud_colors, 3);
+    // 2. Erase back-cloud lines inside front-cloud area with black
     shade_draw_fill_multi(ctx, front_scaled, 10, gap, SHADE_NE_SW, s_black_color, 1);
-    // Redraw front cloud hatching in multi-colour
+    // 3. Draw front cloud hatching
     shade_draw_fill_multi(ctx, front_scaled, 10, gap, SHADE_NE_SW, s_cloud_colors, 3);
   }
 
