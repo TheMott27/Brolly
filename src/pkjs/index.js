@@ -312,7 +312,7 @@ function processWeatherData(data) {
   msg[KEY.SUNSET_HOUR]     = ssHour;
   msg[KEY.SUNSET_MINUTE]   = ssMin;
   // Send city name if we have one
-  if (s_resolvedCityName) {
+  if (s_resolvedCityName !== undefined) {
     msg[KEY.CITY_NAME] = s_resolvedCityName.substring(0, 31);
   }
 
@@ -355,7 +355,7 @@ function resolveLocation(callback) {
         s_useLatLon = true;
         // Reverse geocode to get city name
         reverseGeocode(s_storedLat, s_storedLon, function(err2, cityName) {
-          if (cityName) s_resolvedCityName = cityName;
+          if (cityName) { s_resolvedCityName = cityName; } else { s_resolvedCityName = ""; }
           callback(null, s_storedLat, s_storedLon);
         });
       },
@@ -365,7 +365,7 @@ function resolveLocation(callback) {
         ipGeolocate(function(err2, lat, lon) {
           if (!err2) {
             reverseGeocode(lat, lon, function(err3, cityName) {
-              if (cityName) s_resolvedCityName = cityName;
+              if (cityName) { s_resolvedCityName = cityName; } else { s_resolvedCityName = ""; }
               callback(null, lat, lon);
             });
           } else {
@@ -380,7 +380,7 @@ function resolveLocation(callback) {
     ipGeolocate(function(err2, lat, lon) {
       if (!err2) {
         reverseGeocode(lat, lon, function(err3, cityName) {
-          if (cityName) s_resolvedCityName = cityName;
+          if (cityName) { s_resolvedCityName = cityName; } else { s_resolvedCityName = ""; }
           callback(null, lat, lon);
         });
       } else {
@@ -526,6 +526,7 @@ Pebble.addEventListener('webviewclosed', function(e) {
       // s_customLocation is already set when doWeatherFetch runs.
       if (payload.KEY_CUSTOM_LOCATION !== undefined) {
         s_customLocation = String(payload.KEY_CUSTOM_LOCATION).trim();
+        s_resolvedCityName = "";
         s_useLatLon = false;  // discard any cached GPS coords
         s_storedLat = null;
         s_storedLon = null;
