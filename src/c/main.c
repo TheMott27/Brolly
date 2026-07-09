@@ -117,6 +117,7 @@ typedef struct {
   GColor  city_color;
   // Icon/number colour mode
   uint8_t icon_color_mode;   // 0=Single colour 1=Weather based 2=Rainbow
+  uint8_t complication_layer; // 0=Behind hands 1=On top of hands
 } Settings;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -201,6 +202,7 @@ static AppTimer *s_seconds_timer   = NULL;
 
 // Convert 0xRRGGBB integer to GColor
 static GColor rgb_to_gcolor(int32_t rgb) {
+  if (rgb == -1) return GColorClear;
   return GColorFromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 }
 
@@ -446,6 +448,11 @@ static GPoint number_position(int h, GFont font) {
 // ─────────────────────────────────────────────────────────────────────────────
 static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
                                 GColor outer_color, GColor inner_color) {
+  // Transparent sentinel: -1 in settings maps to GColorClear in rgb_to_gcolor
+  if (gcolor_equal(outer_color, GColorClear) && gcolor_equal(inner_color, GColorClear)) {
+    return;
+  }
+
   // base_pt = POS_Y(20) pixels from center toward tip
   int dx = tip.x - center.x;
   int dy = tip.y - center.y;
@@ -459,25 +466,29 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
     base_pt = center;
   }
 
-  graphics_context_set_stroke_color(ctx, MONO_COLOR(outer_color));
+  if (!gcolor_equal(outer_color, GColorClear)) {
+    graphics_context_set_stroke_color(ctx, MONO_COLOR(outer_color));
 
-  // Narrow stub from pivot to base
-  graphics_context_set_stroke_width(ctx, FIXED_HAND_BASE_WIDTH);
-  graphics_draw_line(ctx, center, base_pt);
+    // Narrow stub from pivot to base
+    graphics_context_set_stroke_width(ctx, FIXED_HAND_BASE_WIDTH);
+    graphics_draw_line(ctx, center, base_pt);
 
-  // Thick main body
-  graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
-  graphics_draw_line(ctx, base_pt, tip);
+    // Thick main body
+    graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
+    graphics_draw_line(ctx, base_pt, tip);
 
-  // Filled circles at base and tip
-  graphics_context_set_fill_color(ctx, MONO_COLOR(outer_color));
-  graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
-  graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
+    // Filled circles at base and tip
+    graphics_context_set_fill_color(ctx, MONO_COLOR(outer_color));
+    graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
+    graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
+  }
 
-  // Thin inner stripe
-  graphics_context_set_stroke_color(ctx, MONO_COLOR(inner_color));
-  graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
-  graphics_draw_line(ctx, base_pt, tip);
+  if (!gcolor_equal(inner_color, GColorClear)) {
+    // Thin inner stripe
+    graphics_context_set_stroke_color(ctx, MONO_COLOR(inner_color));
+    graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
+    graphics_draw_line(ctx, base_pt, tip);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1428,6 +1439,25 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, 153); // KEY_ICON_COLOR_MODE
   if (t) { s_settings.icon_color_mode = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true; }
 
+  t = dict_find(iter, 162); // KEY_COMPLICATION_LAYER
+  if (t) {
+    uint8_t new_layer = (uint8_t)t->value->int32;
+    if (new_layer != s_settings.complication_layer) {
+      s_settings.complication_layer = new_layer;
+      // Re-order layers
+      Layer *root = window_get_root_layer(s_window);
+      layer_remove_from_parent(s_complication_layer);
+      if (s_settings.complication_layer == 0) {
+        // Behind hands: after bg
+        layer_insert_below_sibling(s_complication_layer, s_hour_layer);
+      } else {
+        // On top of hands: after minute (below seconds)
+        layer_insert_below_sibling(s_complication_layer, s_seconds_layer);
+      }
+    }
+    settings_changed = true;
+  }
+
   // Shake mode also controls accel subscription
   if (settings_changed) {
     persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
@@ -1491,6 +1521,7 @@ static void load_default_settings(void) {
   s_settings.city_display_mode      = 1;   // Shake
   s_settings.city_color             = GColorFromRGB(0x00, 0x00, 0xaa);
   s_settings.icon_color_mode        = 0;   // Single colour
+  s_settings.complication_layer     = 0;   // Behind hands
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1529,10 +1560,6 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_bg_layer, bg_layer_update);
   layer_add_child(root, s_bg_layer);
 
-  s_complication_layer = layer_create(bounds);
-  layer_set_update_proc(s_complication_layer, complication_layer_update);
-  layer_add_child(root, s_complication_layer);
-
   s_hour_layer = layer_create(bounds);
   layer_set_update_proc(s_hour_layer, hour_layer_update);
   layer_add_child(root, s_hour_layer);
@@ -1540,6 +1567,14 @@ static void window_load(Window *window) {
   s_minute_layer = layer_create(bounds);
   layer_set_update_proc(s_minute_layer, minute_layer_update);
   layer_add_child(root, s_minute_layer);
+
+  s_complication_layer = layer_create(bounds);
+  layer_set_update_proc(s_complication_layer, complication_layer_update);
+  if (s_settings.complication_layer == 0) {
+    layer_insert_below_sibling(s_complication_layer, s_hour_layer);
+  } else {
+    layer_add_child(root, s_complication_layer);
+  }
 
   s_seconds_layer = layer_create(bounds);
   layer_set_update_proc(s_seconds_layer, seconds_layer_update);

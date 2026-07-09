@@ -44,7 +44,8 @@ export interface BrollySettings {
   KEY_CUSTOM_LOCATION: string      // 113 — city name string; empty = use GPS
   KEY_CITY_DISPLAY_MODE: number    // 160 — 0=off 1=shake 2=always
   KEY_CITY_COLOR: number           // 161
-
+  KEY_COMPLICATION_LAYER: number   // 162 — 0=behind hands 1=on top of hands
+}
   // ── Sunrise / Sunset ─────────────────────────────────────────────────────
   KEY_SUNRISE_MARKER_VISIBLE: number // 147 — 0=always 1=with icons only 2=off
   KEY_SUNRISE_MARKER_COLOR: number   // 148
@@ -94,7 +95,8 @@ export const DEFAULTS: BrollySettings = {
   KEY_CUSTOM_LOCATION: '',
   KEY_CITY_DISPLAY_MODE: 1,        // shake (same as date/temp default)
   KEY_CITY_COLOR: 0x0000aa,        // navy blue
-
+  KEY_COMPLICATION_LAYER: 0,
+}
   KEY_SUNRISE_MARKER_VISIBLE: 0,
   KEY_SUNRISE_MARKER_COLOR: 0xff5500,  // orange-red (user request)
   KEY_SUNSET_MARKER_COLOR:  0x0055ff,  // blue       (user request)

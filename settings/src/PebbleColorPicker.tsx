@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toHex(rgb: number): string {
+  if (rgb === -1) return 'transparent'
   return '#' + rgb.toString(16).padStart(6, '0')
 }
 
@@ -23,7 +24,7 @@ function toHex(rgb: number): string {
 const N = null
 
 const GRID: (number | null)[][] = [
-  [N,        N,        N,        0xff0000, 0xaa0000, N,        N,        N       ],  // row 0
+  [N,        N,        N,        0xff0000, 0xaa0000, N,        N,        -1      ],  // row 0 (-1 is transparent)
   [N,        0x550000, 0xff5555, 0xaa5555, 0xffaaaa, 0xffffff, 0xaaaaaa, N       ],  // row 1
   [0x555555, 0x000000, 0xff5500, 0xaa5500, 0xffaa55, 0xffaa00, 0xffff00, 0xaaaa00],  // row 2
   [0x555500, 0xffff55, 0xaaaa55, 0xffffaa, 0xaaff00, 0x55aa00, 0xaaff55, 0x55ff00],  // row 3
@@ -114,14 +115,17 @@ export function PebbleColorPicker({ label, value, onChange }: Props) {
                     )
                   }
                   const isSelected = colour === value
+                  const isTransparent = colour === -1
                   return (
                     <button
                       key={`${ri}-${ci}`}
                       onClick={() => { onChange(colour); setOpen(false) }}
-                      title={toHex(colour)}
+                      title={isTransparent ? 'Transparent' : toHex(colour)}
                       style={{
                         aspectRatio: '1',
-                        background: toHex(colour),
+                        background: isTransparent 
+                          ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 8px 8px'
+                          : toHex(colour),
                         border: isSelected
                           ? '2px solid #fff'
                           : colour === 0x000000

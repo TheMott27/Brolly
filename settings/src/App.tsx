@@ -500,6 +500,17 @@ function WeatherTab({ s, set }: {
         <ColorRow label="Date colour" value={s.KEY_DATE_COLOR} onChange={v => set('KEY_DATE_COLOR', v)} />
         <Sep />
         <ColorRow label="Temperature colour" value={s.KEY_TEMP_COLOR} onChange={v => set('KEY_TEMP_COLOR', v)} />
+        <Sep />
+        <SelectRow
+          label="Layering"
+          desc="Display date and temperature behind or on top of watch hands"
+          value={s.KEY_COMPLICATION_LAYER}
+          options={[
+            { label: 'Behind hands', value: 0 },
+            { label: 'On top of hands', value: 1 },
+          ]}
+          onChange={v => set('KEY_COMPLICATION_LAYER', v)}
+        />
       </Card>
 
       <Card>
