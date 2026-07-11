@@ -1,6 +1,6 @@
 {
   "name": "brolly",
-  "version": "2.26.0",
+  "version": "2.27.0",
   "author": "mrjamieraymusic",
   "keywords": [
     "pebble-app"
@@ -10,9 +10,9 @@
     "displayName": "Brolly",
     "uuid": "53a30793-7406-44e0-b02e-35fad4314fc5",
     "shortName": "Brolly",
-    "longName": "Brolly v2.26.0",
+    "longName": "Brolly v2.27.0",
     "companyName": "mrjamieraymusic",
-    "versionLabel": "2.26.0",
+    "versionLabel": "2.27.0",
     "watchapp": {
       "watchface": true
     },

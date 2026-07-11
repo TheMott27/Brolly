@@ -1281,10 +1281,16 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   // Icons on shake (shake_mode == 0)
   if (s_settings.shake_mode == 0) {
     if (!s_showing_icons) {
-      // Show immediately — no delay, so re-shaking works instantly
-      show_icons_callback(NULL);
+      // 500ms delay before showing icons.
+      // If the delay timer is already running (e.g. rapid shake), reschedule it
+      // rather than ignoring the shake, so there is no lockout period.
+      if (s_shake_delay_timer) {
+        app_timer_reschedule(s_shake_delay_timer, SHAKE_DELAY_MS);
+      } else {
+        s_shake_delay_timer = app_timer_register(SHAKE_DELAY_MS, show_icons_callback, NULL);
+      }
     } else {
-      // Already showing: extend timer
+      // Already showing: extend the hide timer so icons stay visible
       if (s_shake_timer) {
         app_timer_reschedule(s_shake_timer, SHAKE_DISPLAY_MS);
       }
