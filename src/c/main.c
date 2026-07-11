@@ -196,6 +196,24 @@ static AppTimer *s_shake_delay_timer = NULL;
 static bool     s_seconds_visible = false;
 static AppTimer *s_seconds_timer   = NULL;
 
+// Test-mode restore state
+static uint8_t   s_test_saved_battery = 0;
+static bool      s_test_saved_bt      = true;
+static AppTimer *s_test_battery_timer  = NULL;
+static AppTimer *s_test_bt_timer       = NULL;
+
+static void test_battery_restore_callback(void *data) {
+  s_test_battery_timer = NULL;
+  s_battery_pct = s_test_saved_battery;
+  layer_mark_dirty(s_minute_layer);
+}
+
+static void test_bt_restore_callback(void *data) {
+  s_test_bt_timer = NULL;
+  s_bt_connected  = s_test_saved_bt;
+  layer_mark_dirty(s_minute_layer);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1466,28 +1484,33 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   t = dict_find(iter, 144); // KEY_TEST_BATTERY_ALERT
   if (t && t->value->int32) {
-    // Temporarily show battery alert
-    uint8_t saved = s_battery_pct;
-    s_battery_pct = 5;
+    // Show ring-threshold battery alert for 3 seconds, then restore
+    if (s_test_battery_timer) { app_timer_cancel(s_test_battery_timer); }
+    s_test_saved_battery = s_battery_pct;
+    s_battery_pct = 5;  // below ring threshold
     layer_mark_dirty(s_minute_layer);
-    s_battery_pct = saved;
+    s_test_battery_timer = app_timer_register(3000, test_battery_restore_callback, NULL);
   }
 
   t = dict_find(iter, 145); // KEY_TEST_BT_DISCONNECT
   if (t && t->value->int32) {
-    bool saved = s_bt_connected;
+    // Show BT disconnect state for 3 seconds (with vibration), then restore
+    if (s_test_bt_timer) { app_timer_cancel(s_test_bt_timer); }
+    s_test_saved_bt = s_bt_connected;
     s_bt_connected = false;
+    if (s_settings.vibrate_bt_disconnect) { vibes_long_pulse(); }
     layer_mark_dirty(s_minute_layer);
-    s_bt_connected = saved;
+    s_test_bt_timer = app_timer_register(3000, test_bt_restore_callback, NULL);
   }
 
   t = dict_find(iter, 146); // KEY_TEST_CRITICAL_BATTERY_ALERT
   if (t && t->value->int32) {
-    // Temporarily show critical battery alert (below center threshold)
-    uint8_t saved = s_battery_pct;
-    s_battery_pct = 1;
+    // Show center-threshold battery alert for 3 seconds, then restore
+    if (s_test_battery_timer) { app_timer_cancel(s_test_battery_timer); }
+    s_test_saved_battery = s_battery_pct;
+    s_battery_pct = 1;  // below center threshold
     layer_mark_dirty(s_minute_layer);
-    s_battery_pct = saved;
+    s_test_battery_timer = app_timer_register(3000, test_battery_restore_callback, NULL);
   }
 
   t = dict_find(iter, 147); // KEY_SUNRISE_MARKER_VISIBLE
