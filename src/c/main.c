@@ -555,10 +555,10 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
 
   // ── Inner colour line: drawn LAST so it sits on top of the cap fills ───────────
   // Runs the full interior length from base_pt to tip.
-  // Width = 2*PILL_LINE_OFF - PILL_STROKE = exact gap width (6px).
-  // Rounded ends: filled circles at each endpoint (radius = gap/2 = 3px).
-#define INNER_LINE_WIDTH  (2 * PILL_LINE_OFF - PILL_STROKE)  // 6px
-#define INNER_END_R       (INNER_LINE_WIDTH / 2)              // 3px
+  // Width = 4px (gap is 6px, leaving 1px clearance each side for visual centring).
+  // Rounded ends: filled circles at each endpoint (radius = width/2 = 2px).
+#define INNER_LINE_WIDTH  4  // 4px — centred in the 6px gap
+#define INNER_END_R       2  // 2px end cap radius
   if (!gcolor_equal(inner_color, GColorClear)) {
     GColor ic = MONO_COLOR(inner_color);
     graphics_context_set_stroke_color(ctx, ic);
@@ -1267,6 +1267,12 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   // Seconds hand on shake
   if (s_settings.seconds_hand_mode == 2) {
+    // Refresh s_last_time from the system clock so the first draw shows the
+    // correct second position, not the stale value from the last minute tick.
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    if (t) s_last_time = *t;
+
     s_seconds_visible = true;
     update_tick_subscription();
     if (s_seconds_timer) {
