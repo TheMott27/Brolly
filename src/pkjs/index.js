@@ -508,8 +508,13 @@ Pebble.addEventListener('ready', function(e) {
   setInterval(doWeatherFetch, 30 * 60 * 1000);
 });
 
+Pebble.addEventListener('appmessage', function(e) {
+  console.log('AppMessage from watch: ' + JSON.stringify(e.payload));
+});
+
 Pebble.addEventListener('showConfiguration', function(e) {
-  Pebble.openURL('https://themott27.github.io/Test_Brolly_v2_Settings/');
+  var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/?v=' + Date.now();
+  Pebble.openURL(configUrl);
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
