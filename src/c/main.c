@@ -463,8 +463,9 @@ static GPoint number_position(int h, GFont font) {
 #define STEM_STROKE     2    // centre stem stroke width
 #define PILL_CAP_SEGS   12   // segments per semicircle (12 = smoother at 4px radius)
 
-// Path points: base cap (SEGS+1) + tip left + tip cap (SEGS+1) + base right = 2*SEGS+4
-#define HAND_PATH_PTS  (2 * PILL_CAP_SEGS + 4)
+// Path points: base right + base arc interior + base left + left wall +
+//   tip left (dup) + tip arc interior + tip right + right wall = 2*SEGS+6
+#define HAND_PATH_PTS  (2 * PILL_CAP_SEGS + 6)
 
 static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
                                 GColor hand_color, GColor inner_color) {
@@ -503,33 +504,16 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
     graphics_draw_line(ctx, center, stem_end);
   }
 
-  // ── Inner colour line: fills the gap, drawn BEFORE the pill outline walls ──
-  // Runs from base cap flat edge to tip cap flat edge, width = gap (5px)
-  if (!gcolor_equal(inner_color, GColorClear)) {
-    GColor ic = MONO_COLOR(inner_color);
-    // Inset endpoints by PILL_CAP_R from base_pt and tip (same as pill wall endpoints)
-    GPoint inner_start = GPoint(
-      base_pt.x + PILL_CAP_R * dx / dist,
-      base_pt.y + PILL_CAP_R * dy / dist
-    );
-    GPoint inner_end = GPoint(
-      tip.x - PILL_CAP_R * dx / dist,
-      tip.y - PILL_CAP_R * dy / dist
-    );
-    graphics_context_set_stroke_color(ctx, ic);
-    graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);  // 5px = gap width
-    graphics_draw_line(ctx, inner_start, inner_end);
-  }
-
-  // ── Pill outline: single continuous polyline ───────────────────────────────
+  // ── Pill outline: single continuous polyline ─────────────────────────────────────────────
   // Sequence: base cap (inward) → left side → tip cap (outward) → right side
   // The path is open (not closed back to centre) — stem handles that visually.
   GPoint pts[HAND_PATH_PTS];
   int n = 0;
 
-  // Base cap: inward semicircle, arc from (ha+90°) to (ha+270°)
-  // Starts at right side of base_pt, sweeps around to left side
-  for (int i = 0; i <= PILL_CAP_SEGS; i++) {
+  // Base cap: inward semicircle, arc from (ha+90°) to (ha+270°).
+  // Force first/last points to exact wall endpoints to eliminate integer-rounding gaps.
+  pts[n++] = GPoint(base_pt.x + ox, base_pt.y + oy);  // exact right wall start
+  for (int i = 1; i < PILL_CAP_SEGS; i++) {
     int32_t a = (ha + (TRIG_MAX_ANGLE / 4))
                 + (TRIG_MAX_ANGLE / 2) * i / PILL_CAP_SEGS;
     pts[n++] = GPoint(
@@ -537,12 +521,15 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
       base_pt.y - PILL_CAP_R * cos_lookup(a) / TRIG_MAX_RATIO
     );
   }
-  // Now at left side of base_pt — draw left wall to tip left
+  pts[n++] = GPoint(base_pt.x - ox, base_pt.y - oy);  // exact left wall start
+
+  // Left wall to tip left
   pts[n++] = GPoint(tip.x - ox, tip.y - oy);
 
-  // Tip cap: outward semicircle, arc from (ha-90°) to (ha+90°)
-  // Starts at left side of tip, sweeps around to right side
-  for (int i = 0; i <= PILL_CAP_SEGS; i++) {
+  // Tip cap: outward semicircle, arc from (ha-90°) to (ha+90°).
+  // Force first/last points to exact wall endpoints.
+  pts[n++] = GPoint(tip.x - ox, tip.y - oy);  // exact left wall end (duplicate for join)
+  for (int i = 1; i < PILL_CAP_SEGS; i++) {
     int32_t a = (ha - (TRIG_MAX_ANGLE / 4))
                 + (TRIG_MAX_ANGLE / 2) * i / PILL_CAP_SEGS;
     pts[n++] = GPoint(
@@ -550,7 +537,9 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
       tip.y - PILL_CAP_R * cos_lookup(a) / TRIG_MAX_RATIO
     );
   }
-  // Now at right side of tip — draw right wall back to base right
+  pts[n++] = GPoint(tip.x + ox, tip.y + oy);  // exact right wall end
+
+  // Right wall back to base right
   pts[n++] = GPoint(base_pt.x + ox, base_pt.y + oy);
 
   // Draw the pill outline as one connected polyline
@@ -558,6 +547,27 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
   graphics_context_set_stroke_width(ctx, PILL_STROKE);
   for (int i = 0; i < n - 1; i++) {
     graphics_draw_line(ctx, pts[i], pts[i + 1]);
+  }
+  // Fill circles at cap centres in hand colour to seal any pixel gaps
+  graphics_context_set_fill_color(ctx, hc);
+  graphics_fill_circle(ctx, base_pt, PILL_CAP_R);
+  graphics_fill_circle(ctx, tip,     PILL_CAP_R);
+
+  // ── Inner colour line: drawn LAST so it sits on top of the cap fills ───────────
+  // Runs the full interior length from base_pt to tip.
+  // Width = 2*PILL_LINE_OFF - PILL_STROKE = exact gap width (6px).
+  // Rounded ends: filled circles at each endpoint (radius = gap/2 = 3px).
+#define INNER_LINE_WIDTH  (2 * PILL_LINE_OFF - PILL_STROKE)  // 6px
+#define INNER_END_R       (INNER_LINE_WIDTH / 2)              // 3px
+  if (!gcolor_equal(inner_color, GColorClear)) {
+    GColor ic = MONO_COLOR(inner_color);
+    graphics_context_set_stroke_color(ctx, ic);
+    graphics_context_set_stroke_width(ctx, INNER_LINE_WIDTH);
+    graphics_draw_line(ctx, base_pt, tip);
+    // Rounded ends on top of cap fills
+    graphics_context_set_fill_color(ctx, ic);
+    graphics_fill_circle(ctx, base_pt, INNER_END_R);
+    graphics_fill_circle(ctx, tip,     INNER_END_R);
   }
 }
 
@@ -1110,7 +1120,7 @@ static void hour_layer_update(Layer *layer, GContext *ctx) {
                      s_settings.hour_hand_inner);
 }
 
-// Minute hand + centre cap layer
+// Minute hand + seconds hand (below centre rings) + centre cap layer
 static void minute_layer_update(Layer *layer, GContext *ctx) {
   int sw = s_screen_w;
   int sh = s_screen_h;
@@ -1129,6 +1139,17 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   }
 
   draw_inittick_hand(ctx, center, tip, min_outer, min_inner);
+
+  // ── Seconds hand — drawn here so it appears BELOW the centre rings ──────────
+  if (s_seconds_visible) {
+    int32_t sec_angle = angle_for_minute(s_last_time.tm_sec);
+    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+    int32_t tail_angle = sec_angle + (TRIG_MAX_ANGLE / 2);
+    GPoint sec_tail = polar_to_point(center, tail_angle, POS_Y(18));
+    graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_draw_line(ctx, sec_tail, sec_tip);
+  }
 
   // Centre cap — five concentric circles
   // Battery alert colours
@@ -1161,23 +1182,11 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, POS_X(1));
 }
 
-// Seconds hand layer
+// Seconds hand layer — intentionally empty.
+// The seconds hand is drawn inside minute_layer_update (before the centre rings)
+// so it always appears below the centre ring/dot.
 static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  if (!s_seconds_visible) return;
-
-  int sw = s_screen_w;
-  int sh = s_screen_h;
-  GPoint center = GPoint(sw / 2, sh / 2);
-
-  int32_t angle = angle_for_minute(s_last_time.tm_sec);
-  GPoint tip  = square_perimeter_point(center, angle, 0, 0);
-  // Tail: short counterbalance behind pivot
-  int32_t tail_angle = angle + (TRIG_MAX_ANGLE / 2);
-  GPoint tail = polar_to_point(center, tail_angle, POS_Y(18));
-
-  graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, tail, tip);
+  (void)layer; (void)ctx;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1240,7 +1249,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_last_time = *tick_time;
 
   if (units_changed & SECOND_UNIT) {
-    layer_mark_dirty(s_seconds_layer);
+    layer_mark_dirty(s_minute_layer);  // seconds drawn inside minute layer
   }
   if (units_changed & MINUTE_UNIT) {
     layer_mark_dirty(s_minute_layer);
@@ -1266,16 +1275,14 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
       s_seconds_timer = app_timer_register(
         s_settings.seconds_shake_dur * 1000, hide_seconds_callback, NULL);
     }
-    layer_mark_dirty(s_seconds_layer);
+    layer_mark_dirty(s_minute_layer);  // seconds drawn inside minute layer
   }
 
   // Icons on shake (shake_mode == 0)
   if (s_settings.shake_mode == 0) {
     if (!s_showing_icons) {
-      // Start 500ms delay then show icons
-      if (!s_shake_delay_timer) {
-        s_shake_delay_timer = app_timer_register(SHAKE_DELAY_MS, show_icons_callback, NULL);
-      }
+      // Show immediately — no delay, so re-shaking works instantly
+      show_icons_callback(NULL);
     } else {
       // Already showing: extend timer
       if (s_shake_timer) {
@@ -1514,14 +1521,13 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     uint8_t new_layer = (uint8_t)t->value->int32;
     if (new_layer != s_settings.complication_layer) {
       s_settings.complication_layer = new_layer;
-      // Re-order layers
-      Layer *root = window_get_root_layer(s_window);
+      // Re-order layers: remove then re-insert at correct position
       layer_remove_from_parent(s_complication_layer);
       if (s_settings.complication_layer == 0) {
-        // Behind hands: after bg
+        // Behind hands: insert below hour layer (above bg)
         layer_insert_below_sibling(s_complication_layer, s_hour_layer);
       } else {
-        // On top of hands: after minute (below seconds)
+        // On top of hands: insert below seconds_layer (which is topmost)
         layer_insert_below_sibling(s_complication_layer, s_seconds_layer);
       }
     }
@@ -1640,14 +1646,18 @@ static void window_load(Window *window) {
 
   s_complication_layer = layer_create(bounds);
   layer_set_update_proc(s_complication_layer, complication_layer_update);
+  // Always add to root first (will be reordered below)
+  layer_add_child(root, s_complication_layer);
   if (s_settings.complication_layer == 0) {
+    // Behind hands: insert below hour layer
+    layer_remove_from_parent(s_complication_layer);
     layer_insert_below_sibling(s_complication_layer, s_hour_layer);
-  } else {
-    layer_add_child(root, s_complication_layer);
   }
+  // complication_layer == 1: already on top (added last before seconds)
 
   s_seconds_layer = layer_create(bounds);
   layer_set_update_proc(s_seconds_layer, seconds_layer_update);
+  // seconds_layer is kept for timer/dirty tracking but draws nothing itself
   layer_add_child(root, s_seconds_layer);
 
   // Get initial time
@@ -1691,7 +1701,7 @@ static void window_unload(Window *window) {
 
   // Cancel timers
   if (s_shake_timer)       { app_timer_cancel(s_shake_timer);       s_shake_timer = NULL; }
-  if (s_shake_delay_timer) { app_timer_cancel(s_shake_delay_timer); s_shake_delay_timer = NULL; }
+  if (s_shake_delay_timer) { app_timer_cancel(s_shake_delay_timer); s_shake_delay_timer = NULL; }  // kept for safety
   if (s_seconds_timer)     { app_timer_cancel(s_seconds_timer);     s_seconds_timer = NULL; }
 
   // Unsubscribe
