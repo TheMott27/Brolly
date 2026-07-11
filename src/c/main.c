@@ -128,7 +128,6 @@ static Layer    *s_bg_layer;
 static Layer    *s_complication_layer;
 static Layer    *s_hour_layer;
 static Layer    *s_minute_layer;
-static Layer    *s_seconds_layer;
 
 static Settings  s_settings;
 static int8_t    s_icons[24];
@@ -195,6 +194,7 @@ static AppTimer *s_shake_delay_timer = NULL;
 // Seconds visibility
 static bool     s_seconds_visible = false;
 static AppTimer *s_seconds_timer   = NULL;
+static AppTimer *s_alert_test_timer = NULL;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -468,26 +468,37 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
 
   if (!gcolor_equal(outer_color, GColorClear)) {
     graphics_context_set_stroke_color(ctx, MONO_COLOR(outer_color));
+    graphics_context_set_fill_color(ctx, MONO_COLOR(outer_color));
 
     // Narrow stub from pivot to base
     graphics_context_set_stroke_width(ctx, FIXED_HAND_BASE_WIDTH);
     graphics_draw_line(ctx, center, base_pt);
 
-    // Thick main body
-    graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
-    graphics_draw_line(ctx, base_pt, tip);
-
-    // Filled circles at base and tip
-    graphics_context_set_fill_color(ctx, MONO_COLOR(outer_color));
-    graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
-    graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
-  }
-
-  if (!gcolor_equal(inner_color, GColorClear)) {
-    // Thin inner stripe
-    graphics_context_set_stroke_color(ctx, MONO_COLOR(inner_color));
-    graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
-    graphics_draw_line(ctx, base_pt, tip);
+    if (gcolor_equal(inner_color, GColorClear)) {
+      // HOLLOW HAND: two parallel outline lines with capped ends
+      int offset_x = -(tip.y - base_pt.y);
+      int offset_y = (tip.x - base_pt.x);
+      int dist_main = isqrt_int(offset_x * offset_x + offset_y * offset_y);
+      if (dist_main > 0) {
+        int off = (FIXED_HAND_OUTER_WIDTH - FIXED_HAND_INNER_WIDTH) / 2;
+        int ox = offset_x * off / dist_main;
+        int oy = offset_y * off / dist_main;
+        graphics_context_set_stroke_width(ctx, 1);
+        graphics_draw_line(ctx, GPoint(base_pt.x + ox, base_pt.y + oy), GPoint(tip.x + ox, tip.y + oy));
+        graphics_draw_line(ctx, GPoint(base_pt.x - ox, base_pt.y - oy), GPoint(tip.x - ox, tip.y - oy));
+        graphics_draw_line(ctx, GPoint(base_pt.x + ox, base_pt.y + oy), GPoint(base_pt.x - ox, base_pt.y - oy));
+        graphics_draw_line(ctx, GPoint(tip.x + ox, tip.y + oy), GPoint(tip.x - ox, tip.y - oy));
+      }
+    } else {
+      // SOLID HAND: thick body with inner stripe
+      graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
+      graphics_draw_line(ctx, base_pt, tip);
+      graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
+      graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
+      graphics_context_set_stroke_color(ctx, MONO_COLOR(inner_color));
+      graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
+      graphics_draw_line(ctx, base_pt, tip);
+    }
   }
 }
 
@@ -928,7 +939,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 // Complication layer: date + temperature
 static void complication_layer_update(Layer *layer, GContext *ctx) {
   int sw = s_screen_w;
-  (void)sw;
   int cur_min = s_last_time.tm_min;
 
   // Determine y position (avoid minute hand)
@@ -981,14 +991,12 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   }
 
   int line_gap = 18;
-  int x = sw / 2;
 
   if (show_date) {
     GRect dr = GRect(0, comp_y - 10, sw, 20);
     graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.date_color));
     graphics_draw_text(ctx, date_buf, comp_font, dr,
                        GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-    (void)x;
   }
 
   if (show_temp) {
@@ -1060,6 +1068,19 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
 
   draw_inittick_hand(ctx, center, tip, min_outer, min_inner);
 
+  // Draw seconds hand BEFORE the centre cap
+  if (s_seconds_visible) {
+    int32_t sec_angle = angle_for_minute(s_last_time.tm_sec);
+    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+    // Tail: short counterbalance behind pivot
+    int32_t tail_angle = sec_angle + (TRIG_MAX_ANGLE / 2);
+    GPoint tail = polar_to_point(center, tail_angle, POS_Y(18));
+
+    graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_draw_line(ctx, tail, sec_tip);
+  }
+
   // Centre cap — five concentric circles
   // Battery alert colours
   GColor battery_ring = GColorWhite;
@@ -1091,23 +1112,13 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, POS_X(1));
 }
 
-// Seconds hand layer
-static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  if (!s_seconds_visible) return;
-
-  int sw = s_screen_w;
-  int sh = s_screen_h;
-  GPoint center = GPoint(sw / 2, sh / 2);
-
-  int32_t angle = angle_for_minute(s_last_time.tm_sec);
-  GPoint tip  = square_perimeter_point(center, angle, 0, 0);
-  // Tail: short counterbalance behind pivot
-  int32_t tail_angle = angle + (TRIG_MAX_ANGLE / 2);
-  GPoint tail = polar_to_point(center, tail_angle, POS_Y(18));
-
-  graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, tail, tip);
+static void restore_alert_state_callback(void *data) {
+  s_alert_test_timer = NULL;
+  // Restore actual states
+  BatteryChargeState bcs = battery_state_service_peek();
+  s_battery_pct = bcs.charge_percent;
+  s_bt_connected = connection_service_peek_pebble_app_connection();
+  layer_mark_dirty(s_minute_layer);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1159,7 +1170,7 @@ static void hide_seconds_callback(void *data) {
   s_seconds_timer = NULL;
   s_seconds_visible = false;
   update_tick_subscription();
-  layer_mark_dirty(s_seconds_layer);
+  layer_mark_dirty(s_minute_layer);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1170,7 +1181,8 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   s_last_time = *tick_time;
 
   if (units_changed & SECOND_UNIT) {
-    layer_mark_dirty(s_seconds_layer);
+    // Seconds hand is drawn in minute_layer, so dirty that
+    layer_mark_dirty(s_minute_layer);
   }
   if (units_changed & MINUTE_UNIT) {
     layer_mark_dirty(s_minute_layer);
@@ -1196,7 +1208,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
       s_seconds_timer = app_timer_register(
         s_settings.seconds_shake_dur * 1000, hide_seconds_callback, NULL);
     }
-    layer_mark_dirty(s_seconds_layer);
+    layer_mark_dirty(s_minute_layer);
   }
 
   // Icons on shake (shake_mode == 0)
@@ -1297,9 +1309,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, 110); // KEY_TEMP_UNIT
   if (t) { s_settings.temp_unit = (uint8_t)t->value->int32; settings_changed = true; }
 
-  t = dict_find(iter, 113); // KEY_CUSTOM_LOCATION (string, handled by JS)
-  // No C-side action needed
-
   t = dict_find(iter, 114); // KEY_HOUR_HAND_OUTER
   if (t) { s_settings.hour_hand_outer = rgb_to_gcolor(t->value->int32); settings_changed = true; }
 
@@ -1375,30 +1384,35 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, 143); // KEY_SECONDS_SHAKE_DUR
   if (t) { s_settings.seconds_shake_dur = (uint8_t)t->value->int32; settings_changed = true; }
 
+  bool alert_tested = false;
+
   t = dict_find(iter, 144); // KEY_TEST_BATTERY_ALERT
   if (t && t->value->int32) {
     // Temporarily show battery alert
-    uint8_t saved = s_battery_pct;
     s_battery_pct = 5;
-    layer_mark_dirty(s_minute_layer);
-    s_battery_pct = saved;
+    alert_tested = true;
   }
 
   t = dict_find(iter, 145); // KEY_TEST_BT_DISCONNECT
   if (t && t->value->int32) {
-    bool saved = s_bt_connected;
     s_bt_connected = false;
-    layer_mark_dirty(s_minute_layer);
-    s_bt_connected = saved;
+    alert_tested = true;
   }
 
   t = dict_find(iter, 146); // KEY_TEST_CRITICAL_BATTERY_ALERT
   if (t && t->value->int32) {
     // Temporarily show critical battery alert (below center threshold)
-    uint8_t saved = s_battery_pct;
     s_battery_pct = 1;
+    alert_tested = true;
+  }
+
+  if (alert_tested) {
     layer_mark_dirty(s_minute_layer);
-    s_battery_pct = saved;
+    if (s_alert_test_timer) {
+      app_timer_reschedule(s_alert_test_timer, 5000);
+    } else {
+      s_alert_test_timer = app_timer_register(5000, restore_alert_state_callback, NULL);
+    }
   }
 
   t = dict_find(iter, 147); // KEY_SUNRISE_MARKER_VISIBLE
@@ -1448,11 +1462,11 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
       Layer *root = window_get_root_layer(s_window);
       layer_remove_from_parent(s_complication_layer);
       if (s_settings.complication_layer == 0) {
-        // Behind hands: after bg
+        // Behind hands: below hour hand
         layer_insert_below_sibling(s_complication_layer, s_hour_layer);
       } else {
-        // On top of hands: after minute (below seconds)
-        layer_insert_below_sibling(s_complication_layer, s_seconds_layer);
+        // On top of hands: above seconds hand (add to root)
+        layer_add_child(root, s_complication_layer);
       }
     }
     settings_changed = true;
@@ -1472,10 +1486,11 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (bg_dirty || weather_changed) {
     layer_mark_dirty(s_bg_layer);
   }
-  layer_mark_dirty(s_complication_layer);
-  layer_mark_dirty(s_hour_layer);
-  layer_mark_dirty(s_minute_layer);
-  layer_mark_dirty(s_seconds_layer);
+  if (settings_changed || weather_changed) {
+    layer_mark_dirty(s_complication_layer);
+    layer_mark_dirty(s_hour_layer);
+    layer_mark_dirty(s_minute_layer);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1570,15 +1585,12 @@ static void window_load(Window *window) {
 
   s_complication_layer = layer_create(bounds);
   layer_set_update_proc(s_complication_layer, complication_layer_update);
+
   if (s_settings.complication_layer == 0) {
     layer_insert_below_sibling(s_complication_layer, s_hour_layer);
   } else {
     layer_add_child(root, s_complication_layer);
   }
-
-  s_seconds_layer = layer_create(bounds);
-  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
-  layer_add_child(root, s_seconds_layer);
 
   // Get initial time
   time_t now = time(NULL);
@@ -1623,6 +1635,7 @@ static void window_unload(Window *window) {
   if (s_shake_timer)       { app_timer_cancel(s_shake_timer);       s_shake_timer = NULL; }
   if (s_shake_delay_timer) { app_timer_cancel(s_shake_delay_timer); s_shake_delay_timer = NULL; }
   if (s_seconds_timer)     { app_timer_cancel(s_seconds_timer);     s_seconds_timer = NULL; }
+  if (s_alert_test_timer)  { app_timer_cancel(s_alert_test_timer);  s_alert_test_timer = NULL; }
 
   // Unsubscribe
   tick_timer_service_unsubscribe();
@@ -1631,7 +1644,6 @@ static void window_unload(Window *window) {
   accel_tap_service_unsubscribe();
 
   // Destroy layers
-  layer_destroy(s_seconds_layer);
   layer_destroy(s_minute_layer);
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);
