@@ -110,7 +110,11 @@ var KEY = {
   // City name display
   CITY_NAME:         159,
   CITY_DISPLAY_MODE: 160,
-  CITY_COLOR:        161
+  CITY_COLOR:        161,
+  COMPLICATION_LAYER:162,
+  // Markers
+  DISPLAY_HOUR_MARKERS:  40,
+  DISPLAY_MINOR_MARKERS: 41
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -476,7 +480,10 @@ function sendSettingsToWatch(settings) {
     KEY_ICON_COLOR_MODE:             KEY.ICON_COLOR_MODE,
     KEY_DISPLAY_MODE:                KEY.DISPLAY_MODE,
     KEY_CITY_DISPLAY_MODE:           KEY.CITY_DISPLAY_MODE,
-    KEY_CITY_COLOR:                  KEY.CITY_COLOR
+    KEY_CITY_COLOR:                  KEY.CITY_COLOR,
+    KEY_COMPLICATION_LAYER:          KEY.COMPLICATION_LAYER,
+    KEY_DISPLAY_HOUR_MARKERS:        KEY.DISPLAY_HOUR_MARKERS,
+    KEY_DISPLAY_MINOR_MARKERS:       KEY.DISPLAY_MINOR_MARKERS
   };
 
   Object.keys(keyMap).forEach(function(strKey) {

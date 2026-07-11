@@ -74,7 +74,7 @@ export const DEFAULTS: BrollySettings = {
   KEY_BACKGROUND_COLOR: 0x000000,
 
   KEY_HOUR_HAND_OUTER:  0xffffff,   // white  (matches C GColorWhite)
-  KEY_HOUR_HAND_INNER:  0x000000,   // black  (matches C GColorBlack)
+  KEY_HOUR_HAND_INNER:  -1,          // transparent/clear (matches C GColorClear, rgb_to_gcolor(-1) = GColorClear)
   KEY_MIN_HAND_OUTER:   0x000000,   // black  (matches C GColorBlack)
   KEY_MIN_HAND_INNER:   0x0055ff,   // blue   (nearest Pebble colour to C 0x0061fe)
   KEY_SECONDS_HAND_COLOR: 0xffffff, // white  (matches C GColorWhite)
