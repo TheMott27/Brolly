@@ -474,27 +474,21 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
     graphics_context_set_stroke_width(ctx, FIXED_HAND_BASE_WIDTH);
     graphics_draw_line(ctx, center, base_pt);
 
+    // Draw outer body — same dimensions for both solid and hollow hands
+    graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
+    graphics_draw_line(ctx, base_pt, tip);
+    graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
+    graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
+
     if (gcolor_equal(inner_color, GColorClear)) {
-      // HOLLOW HAND: two parallel outline lines with capped ends
-      int offset_x = -(tip.y - base_pt.y);
-      int offset_y = (tip.x - base_pt.x);
-      int dist_main = isqrt_int(offset_x * offset_x + offset_y * offset_y);
-      if (dist_main > 0) {
-        int off = (FIXED_HAND_OUTER_WIDTH - FIXED_HAND_INNER_WIDTH) / 2;
-        int ox = offset_x * off / dist_main;
-        int oy = offset_y * off / dist_main;
-        graphics_context_set_stroke_width(ctx, 1);
-        graphics_draw_line(ctx, GPoint(base_pt.x + ox, base_pt.y + oy), GPoint(tip.x + ox, tip.y + oy));
-        graphics_draw_line(ctx, GPoint(base_pt.x - ox, base_pt.y - oy), GPoint(tip.x - ox, tip.y - oy));
-        graphics_draw_line(ctx, GPoint(base_pt.x + ox, base_pt.y + oy), GPoint(base_pt.x - ox, base_pt.y - oy));
-        graphics_draw_line(ctx, GPoint(tip.x + ox, tip.y + oy), GPoint(tip.x - ox, tip.y - oy));
-      }
-    } else {
-      // SOLID HAND: thick body with inner stripe
-      graphics_context_set_stroke_width(ctx, FIXED_HAND_OUTER_WIDTH);
+      // HOLLOW HAND: punch a hole through the centre using the background colour
+      GColor bg = MONO_COLOR(s_settings.background_color);
+      graphics_context_set_stroke_color(ctx, bg);
+      graphics_context_set_fill_color(ctx, bg);
+      graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
       graphics_draw_line(ctx, base_pt, tip);
-      graphics_fill_circle(ctx, base_pt, FIXED_HAND_BASE_WIDTH);
-      graphics_fill_circle(ctx, tip, FIXED_HAND_OUTER_WIDTH / 2);
+    } else {
+      // SOLID HAND: inner stripe in the chosen colour
       graphics_context_set_stroke_color(ctx, MONO_COLOR(inner_color));
       graphics_context_set_stroke_width(ctx, FIXED_HAND_INNER_WIDTH);
       graphics_draw_line(ctx, base_pt, tip);
