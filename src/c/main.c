@@ -548,19 +548,18 @@ static void draw_inittick_hand(GContext *ctx, GPoint center, GPoint tip,
   for (int i = 0; i < n - 1; i++) {
     graphics_draw_line(ctx, pts[i], pts[i + 1]);
   }
-  // Fill circles at cap centres in hand colour to seal any pixel gaps
-  graphics_context_set_fill_color(ctx, hc);
-  graphics_fill_circle(ctx, base_pt, PILL_CAP_R);
-  graphics_fill_circle(ctx, tip,     PILL_CAP_R);
-
-  // ── Inner colour line: drawn LAST so it sits on top of the cap fills ───────────
-  // Runs the full interior length from base_pt to tip.
-  // Width = 4px (gap is 6px, leaving 1px clearance each side for visual centring).
-  // Rounded ends: filled circles at each endpoint (radius = width/2 = 2px).
+  // ── Inner colour line + cap sealing ──────────────────────────────────────────
+  // Cap fill circles are only drawn when inner_color is set, so that a
+  // transparent inner colour does not leave visible dots at the cap ends.
 #define INNER_LINE_WIDTH  4  // 4px — centred in the 6px gap
 #define INNER_END_R       2  // 2px end cap radius
   if (!gcolor_equal(inner_color, GColorClear)) {
     GColor ic = MONO_COLOR(inner_color);
+    // Seal cap pixel gaps in hand colour first, then paint inner colour on top
+    graphics_context_set_fill_color(ctx, hc);
+    graphics_fill_circle(ctx, base_pt, PILL_CAP_R);
+    graphics_fill_circle(ctx, tip,     PILL_CAP_R);
+    // Inner colour line
     graphics_context_set_stroke_color(ctx, ic);
     graphics_context_set_stroke_width(ctx, INNER_LINE_WIDTH);
     graphics_draw_line(ctx, base_pt, tip);
