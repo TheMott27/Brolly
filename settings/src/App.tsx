@@ -292,6 +292,18 @@ function DisplayTab({ s, set, onResetColours }: {
           ]}
           onChange={v => set('KEY_ICON_COLOR_MODE', v)}
         />
+        <Sep />
+        <SelectRow
+          label="Dial display"
+          desc="Show numbers, icons, or both together"
+          value={s.KEY_DIAL_MODE}
+          options={[
+            { label: 'Numbers only', value: 0 },
+            { label: 'Icons only', value: 1 },
+            { label: 'Numbers and icons', value: 2 },
+          ]}
+          onChange={v => set('KEY_DIAL_MODE', v)}
+        />
       </Card>
 
       <Card>

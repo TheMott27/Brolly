@@ -13,6 +13,7 @@ export interface BrollySettings {
   KEY_ICON_SIZE: number            // 151 — 1–5
   KEY_ICON_COLOR_MODE: number      // 153 — 0=single colour 1=weather-based
   KEY_DISPLAY_MODE: number         // 158 — 0=both 1=temp 2=date 3=none
+  KEY_DIAL_MODE: number            // 163 — 0=numbers 1=icons 2=both
   KEY_SHAKE_MODE: number           // 107 — 0=show icons on shake 1=always show 2=always hide
 
   // ── Background ───────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ export const DEFAULTS: BrollySettings = {
   KEY_ICON_SIZE: 3,
   KEY_ICON_COLOR_MODE: 0,
   KEY_DISPLAY_MODE: 0,
+  KEY_DIAL_MODE: 0,
   KEY_SHAKE_MODE: 0,
 
   KEY_BACKGROUND_COLOR: 0x000000,

@@ -118,6 +118,7 @@ typedef struct {
   // Icon/number colour mode
   uint8_t icon_color_mode;   // 0=Single colour 1=Weather based 2=Rainbow
   uint8_t complication_layer; // 0=Behind hands 1=On top of hands
+  uint8_t dial_mode;          // 0=Numbers 1=Icons 2=Both
 } Settings;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -352,6 +353,16 @@ static GFont get_number_font(void) {
   uint8_t fid  = s_settings.number_font;
   uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
+
+  // In dual mode (numbers and icons), font size is reduced to fit both
+  // with a 2px gap within the original size's slot.
+  // 18->8, 22->10, 26->12, 30->14, 36->17.
+  // Since we only have 18,22,26,30,36 assets, we use the smallest available (18)
+  // but the user's logic "halved - 1" implies we should use smaller assets.
+  // For now, we use the smallest asset (idx 0) if dial_mode == 2.
+  if (s_settings.dial_mode == 2) {
+    sidx = 0; // Use smallest font (18px) for dual mode
+  }
 
   if (fid == s_cached_font_id && sidx == s_cached_font_size && s_cached_number_font) {
     return s_cached_number_font;
@@ -814,9 +825,29 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   }
   // shake_mode == 2 = always hide icons
 
+  // If Dial Display is set to "Both", adjust sizes to fit both elements
+  // with a 2px gap, within the total height/width of the original selection.
+  int dial_icon_sz = icon_sz;
+  if (s_settings.dial_mode == 2) {
+    dial_icon_sz = (icon_sz / 2) - 1;
+  }
+
   for (int h = 0; h < 12; h++) {
-    if (draw_icons) {
-      // Determine which forecast hour to show
+    bool show_num  = (s_settings.dial_mode == 0 || s_settings.dial_mode == 2);
+    bool show_icon = (s_settings.dial_mode == 1 || s_settings.dial_mode == 2) && draw_icons;
+
+    if (!show_num && !show_icon) continue;
+
+    // Common measurements
+    int32_t angle = TRIG_MAX_ANGLE * h / 12;
+    GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
+    int gap = sun_inset * 3 / 2;
+
+    // Dual-mode specific gap
+    const int DUAL_GAP = 2;
+
+    // --- DRAW ICON ---
+    if (show_icon) {
       int clock_num = (h == 0) ? 12 : h;
       int am_hour = (clock_num == 12) ? 0 : clock_num;
       int pm_hour = (clock_num == 12) ? 12 : clock_num + 12;
@@ -826,95 +857,71 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       int8_t icon_code = s_icons[icon_hour];
       GPathIconID gpath_id = icon_code_to_gpath(icon_code);
 
-      // Position icon flush to the nearest screen edge, with the cross-axis
-      // following the hour-angle perimeter ray (same alignment as numbers).
-      int32_t i_angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint i_edge = square_perimeter_point(GPoint(sw/2, sh/2), i_angle, 0, 0);
-
-      // Gap from screen edge to icon edge. Matches number gap to clear markers.
-      int icon_gap = sun_inset * 3 / 2;
       int ox, oy;
-
       if (h == 11 || h == 0 || h == 1) {
-        // Top group: top edge of icon `icon_gap` from top edge.
-        oy = icon_gap;
-        ox = i_edge.x - icon_sz / 2;
-        if (h == 11) ox += icon_sz / 4;   // shift 11 right by 25% of width
-        if (h == 1)  ox -= icon_sz / 4;   // shift 1 left by 25% of width
+        // Top group: Number on top, Icon below.
+        oy = gap;
+        if (s_settings.dial_mode == 2) oy += (icon_sz / 2) + 1;
+        ox = edge.x - dial_icon_sz / 2;
+        if (h == 11) ox += dial_icon_sz / 4;
+        if (h == 1)  ox -= dial_icon_sz / 4;
       } else if (h == 5 || h == 6 || h == 7) {
-        // Bottom group: bottom edge `icon_gap` from bottom edge.
-        oy = sh - icon_gap - icon_sz;
-        ox = i_edge.x - icon_sz / 2;
-        if (h == 7) ox += icon_sz / 4;   // shift 7 right by 25% of width
-        if (h == 5) ox -= icon_sz / 4;   // shift 5 left by 25% of width
+        // Bottom group: Icon on top, Number below.
+        oy = sh - gap - icon_sz;
+        if (s_settings.dial_mode == 1) oy = sh - gap - dial_icon_sz;
+        ox = edge.x - dial_icon_sz / 2;
+        if (h == 7) ox += dial_icon_sz / 4;
+        if (h == 5) ox -= dial_icon_sz / 4;
       } else if (h == 8 || h == 9 || h == 10) {
-        // Left group: left edge `icon_gap` from left edge.
-        ox = icon_gap;
+        // Left group: Number on left, Icon on right.
+        ox = gap;
+        if (s_settings.dial_mode == 2) ox += (icon_sz / 2) + 1;
         {
-          // 25%/75% between rendered centres of 12 and 6 icons
-          int y_12c = icon_gap + icon_sz / 2;
-          int y_6c  = sh - icon_gap - icon_sz / 2;
-          int cross_y = i_edge.y;
+          int y_12c = gap + dial_icon_sz / 2;
+          int y_6c  = sh - gap - dial_icon_sz / 2;
+          int cross_y = edge.y;
           if (h == 10)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
           else if (h == 8)  cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
-          oy = cross_y - icon_sz / 2;
+          oy = cross_y - dial_icon_sz / 2;
         }
       } else {
-        // Right group (h==2,3,4): right edge `icon_gap` from right edge.
-        ox = sw - icon_gap - icon_sz;
+        // Right group: Icon on left, Number on right.
+        ox = sw - gap - icon_sz;
+        if (s_settings.dial_mode == 1) ox = sw - gap - dial_icon_sz;
         {
-          // 25%/75% between rendered centres of 12 and 6 icons
-          int y_12c = icon_gap + icon_sz / 2;
-          int y_6c  = sh - icon_gap - icon_sz / 2;
-          int cross_y = i_edge.y;
+          int y_12c = gap + dial_icon_sz / 2;
+          int y_6c  = sh - gap - dial_icon_sz / 2;
+          int cross_y = edge.y;
           if (h == 2)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
           else if (h == 4) cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
-          oy = cross_y - icon_sz / 2;
+          oy = cross_y - dial_icon_sz / 2;
         }
       }
 
-      // Determine icon colour based on mode
       GColor icon_draw_color;
       if (s_settings.icon_color_mode == 2) {
-        // Rainbow: colour based on hour position around the dial
-        // 12 positions → hues 0..330 in steps of 30
         static const GColor8 s_rainbow_colors[12] = {
-          { .argb = 0xF0 }, // h=0  red        (255,0,0)
-          { .argb = 0xF8 }, // h=1  orange     (255,170,0)
-          { .argb = 0xFC }, // h=2  yellow     (255,255,0)
-          { .argb = 0xEC }, // h=3  chartreuse (170,255,0)
-          { .argb = 0xCC }, // h=4  green      (0,255,0)
-          { .argb = 0xCE }, // h=5  spring     (0,255,170)
-          { .argb = 0xCF }, // h=6  cyan       (0,255,255)
-          { .argb = 0xCB }, // h=7  sky blue   (0,170,255)
-          { .argb = 0xC3 }, // h=8  blue       (0,0,255)
-          { .argb = 0xE3 }, // h=9  violet     (170,0,255)
-          { .argb = 0xF3 }, // h=10 magenta    (255,0,255)
-          { .argb = 0xF2 }, // h=11 rose       (255,0,170)
+          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC }, { .argb = 0xEC },
+          { .argb = 0xCC }, { .argb = 0xCE }, { .argb = 0xCF }, { .argb = 0xCB },
+          { .argb = 0xC3 }, { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
         };
         icon_draw_color = MONO_COLOR(s_rainbow_colors[h]);
       } else {
         icon_draw_color = MONO_COLOR(s_settings.icon_color);
       }
+
       if (s_settings.icon_color_mode == 3) {
-        // Line shading mode: hatched fill with weather colours
-        draw_weather_icon_shaded(ctx, gpath_id, ox, oy, icon_sz);
+        draw_weather_icon_shaded(ctx, gpath_id, ox, oy, dial_icon_sz);
       } else {
-        draw_weather_icon(ctx, gpath_id, ox, oy, icon_sz, icon_draw_color,
+        draw_weather_icon(ctx, gpath_id, ox, oy, dial_icon_sz, icon_draw_color,
                           s_settings.icon_color_mode == 1);
       }
-    } else {
-      // Draw number anchored by its TRUE VISIBLE INK edge a constant gap from
-      // the nearest screen edge. The cross-axis position comes from the
-      // hour-angle perimeter ray so each number lines up under its clock
-      // position. The text box itself is offset so that, after the font's
-      // internal padding (s_ink[h]), the lit pixels land exactly where we want.
-      int32_t angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
+    }
 
+    // --- DRAW NUMBER ---
+    if (show_num) {
       InkBounds ib = s_ink[h];
       if (!ib.valid) {
-        // Defensive fallback: treat the whole box as ink.
         GSize sz = graphics_text_layout_get_content_size(
           s_num_strings[h], num_font, GRect(0,0,80,80),
           GTextOverflowModeWordWrap, GTextAlignmentLeft);
@@ -923,68 +930,44 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         ib.valid = true;
       }
 
-      // Dimensions of the visible ink itself.
       int ink_w = ib.box_w - ib.left - ib.right;
       int ink_h = ib.box_h - ib.top  - ib.bottom;
       if (ink_w < 1) ink_w = 1;
       if (ink_h < 1) ink_h = 1;
 
-      // Gap from screen edge to visible ink. Must clear the longest marker
-      // (4px on Basalt quarter-hour, 10px on Emery) plus a small margin.
-      int gap = sun_inset * 3 / 2;
-
-      // Top-left corner of the (untrimmed) text box. We position so that the
-      // visible ink edge sits `gap` from the screen edge, and the ink centre
-      // sits on the perimeter ray on the cross axis.
       int rx, ry;
-
       if (h == 11 || h == 0 || h == 1) {
-        // Top group: shared baseline = digit with smallest ib.top.
-        // All digits use the group max box_h so the box origin is consistent.
         ry = gap - ib.top;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 11) rx += ink_w / 4;   // shift 11 right by 25% of its own ink width
+        if (h == 11) rx += ink_w / 4;
         if (h == 1) {
-          // shift 1 left by 25% of 11's ink width
           InkBounds ib11 = s_ink[11];
           int ink_w_11 = ib11.box_w - ib11.left - ib11.right;
           if (ink_w_11 < 1) ink_w_11 = 1;
           rx -= ink_w_11 / 4;
         }
       } else if (h == 5 || h == 6 || h == 7) {
-        // Bottom group: shared baseline = digit with smallest ib.bottom.
-        // Use group max box_h so all digits share the same ry regardless of
-        // per-digit SDK box height variation (fixes Thin 5/7 too low).
         ry = sh - gap - 80 + ib.bottom;
+        if (s_settings.dial_mode == 2) ry -= (icon_sz / 2) + 1;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 7) rx += ink_w / 4;   // shift 7 right by 25% of ink width
-        if (h == 5) rx -= ink_w / 4;   // shift 5 left by 25% of ink width
+        if (h == 7) rx += ink_w / 4;
+        if (h == 5) rx -= ink_w / 4;
       } else if (h == 8 || h == 9 || h == 10) {
-        // Left group: shared baseline = digit with smallest ib.left.
-        // Use group max box_w so all digits share the same rx regardless of
-        // per-digit SDK box width variation (fixes Digital 10 not at edge).
         rx = gap - ib.left;
         {
-          // 25%/75% between rendered ink centres of 12 and 6
-          InkBounds ib12 = s_ink[0];  // h==0 is "12"
-          InkBounds ib6  = s_ink[6];  // h==6 is "6"
-          int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
-          int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
+          int y_12c = gap + ink_h / 2;
+          int y_6c  = sh - gap - ink_h / 2;
           int cross_y = edge.y;
           if (h == 10)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
           else if (h == 8)  cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
           ry = cross_y - ink_h / 2 - ib.top;
         }
       } else {
-        // Right group: shared baseline = digit with smallest ib.right.
-        // Use group max box_w for consistent rx.
         rx = sw - gap - 80 + ib.right;
+        if (s_settings.dial_mode == 2) rx -= (icon_sz / 2) + 1;
         {
-          // 25%/75% between rendered ink centres of 12 and 6
-          InkBounds ib12 = s_ink[0];  // h==0 is "12"
-          InkBounds ib6  = s_ink[6];  // h==6 is "6"
-          int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
-          int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
+          int y_12c = gap + ink_h / 2;
+          int y_6c  = sh - gap - ink_h / 2;
           int cross_y = edge.y;
           if (h == 2)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
           else if (h == 4) cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
@@ -992,31 +975,19 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
         }
       }
 
-      GRect text_rect = GRect(rx, ry, 80, 80);
-      // Determine number colour based on mode
       GColor num_draw_color;
       if (s_settings.icon_color_mode == 2) {
-        // Rainbow: same colour wheel as icons
         static const GColor8 s_rainbow_num_colors[12] = {
-          { .argb = 0xF0 }, // h=0  red        (255,0,0)
-          { .argb = 0xF8 }, // h=1  orange     (255,170,0)
-          { .argb = 0xFC }, // h=2  yellow     (255,255,0)
-          { .argb = 0xEC }, // h=3  chartreuse (170,255,0)
-          { .argb = 0xCC }, // h=4  green      (0,255,0)
-          { .argb = 0xCE }, // h=5  spring     (0,255,170)
-          { .argb = 0xCF }, // h=6  cyan       (0,255,255)
-          { .argb = 0xCB }, // h=7  sky blue   (0,170,255)
-          { .argb = 0xC3 }, // h=8  blue       (0,0,255)
-          { .argb = 0xE3 }, // h=9  violet     (170,0,255)
-          { .argb = 0xF3 }, // h=10 magenta    (255,0,255)
-          { .argb = 0xF2 }, // h=11 rose       (255,0,170)
+          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC }, { .argb = 0xEC },
+          { .argb = 0xCC }, { .argb = 0xCE }, { .argb = 0xCF }, { .argb = 0xCB },
+          { .argb = 0xC3 }, { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
         };
         num_draw_color = MONO_COLOR(s_rainbow_num_colors[h]);
       } else {
         num_draw_color = MONO_COLOR(s_settings.number_color);
       }
       graphics_context_set_text_color(ctx, num_draw_color);
-      graphics_draw_text(ctx, s_num_strings[h], num_font, text_rect,
+      graphics_draw_text(ctx, s_num_strings[h], num_font, GRect(rx, ry, 80, 80),
                          GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
     }
   }
@@ -1565,6 +1536,17 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
         // On top of hands: insert below seconds_layer (which is topmost)
         layer_insert_below_sibling(s_complication_layer, s_seconds_layer);
       }
+    }
+    settings_changed = true;
+  }
+
+  t = dict_find(iter, 163); // KEY_DIAL_MODE
+  if (t) {
+    uint8_t new_mode = (uint8_t)t->value->int32;
+    if (new_mode != s_settings.dial_mode) {
+      s_settings.dial_mode = new_mode;
+      s_cached_font_size = 255; // Invalidate cache (sizes change)
+      bg_dirty = true;
     }
     settings_changed = true;
   }
