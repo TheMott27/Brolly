@@ -821,14 +821,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   // shake_mode == 2 = always hide icons
   // shake_mode == 3 = side-by-side (both numbers and icons always visible)
 
-  // In side-by-side mode, size the icon to match the ink height of the number.
-  // Use digit "6" (h=6) as a representative cap-height reference.
-  int sbs_icon_sz;
-  {
-    InkBounds ref = s_ink[6];
-    int ink_h_ref = ref.box_h - ref.top - ref.bottom;
-    sbs_icon_sz = (ink_h_ref > 4) ? ink_h_ref : 14;  // fallback 14px if not yet measured
-  }
+  // In side-by-side mode, reduce icon size: (selected / 2) - 1
+  int sbs_icon_sz = (icon_sz / 2) - 1;
   if (sbs_icon_sz < 8) sbs_icon_sz = 8;
 
   for (int h = 0; h < 12; h++) {
