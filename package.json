@@ -1,6 +1,6 @@
 {
   "name": "brolly",
-  "version": "2.38.0",
+  "version": "2.39.0",
   "author": "mrjamieraymusic",
   "keywords": [
     "pebble-app"
@@ -10,9 +10,9 @@
     "displayName": "Brolly",
     "uuid": "53a30793-7406-44e0-b02e-35fad4314fc5",
     "shortName": "Brolly",
-    "longName": "Brolly v2.38.0",
+    "longName": "Brolly v2.39.0",
     "companyName": "mrjamieraymusic",
-    "versionLabel": "2.38.0",
+    "versionLabel": "2.39.0",
     "watchapp": {
       "watchface": true
     },
@@ -286,6 +286,281 @@
         {
           "type": "font",
           "name": "FONT_OVERSIZE_36",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_DIGITAL_8",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_DIGITAL_10",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_DIGITAL_12",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_DIGITAL_14",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_DIGITAL_17",
+          "file": "fonts/DSEG7Classic-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_STANDARD_8",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_STANDARD_10",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_STANDARD_12",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_STANDARD_14",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_STANDARD_17",
+          "file": "fonts/Roboto-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_TRADITIONAL_8",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_TRADITIONAL_10",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_TRADITIONAL_12",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_TRADITIONAL_14",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_TRADITIONAL_17",
+          "file": "fonts/Lora-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_THIN_8",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_THIN_10",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_THIN_12",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_THIN_14",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_THIN_17",
+          "file": "fonts/Raleway-Light.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_OVERSIZE_8",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_OVERSIZE_10",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_OVERSIZE_12",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_OVERSIZE_14",
+          "file": "fonts/Oswald-Regular.ttf",
+          "characterRegex": "[0-9]",
+          "compatibility": "2.7",
+          "targetPlatforms": [
+            "basalt",
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SBS_OVERSIZE_17",
           "file": "fonts/Oswald-Regular.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",

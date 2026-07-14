@@ -348,27 +348,48 @@ static uint32_t get_font_resource_id(uint8_t font_id, uint8_t size_idx) {
 #endif
 }
 
+static uint32_t get_sbs_font_resource_id(uint8_t font_id, uint8_t size_idx) {
+#ifdef PBL_PLATFORM_APLITE
+  return 0;
+#else
+  static const uint32_t sbs_font_resources[5][5] = {
+    { RESOURCE_ID_FONT_SBS_DIGITAL_8,  RESOURCE_ID_FONT_SBS_DIGITAL_10,
+      RESOURCE_ID_FONT_SBS_DIGITAL_12, RESOURCE_ID_FONT_SBS_DIGITAL_14,
+      RESOURCE_ID_FONT_SBS_DIGITAL_17 },
+    { RESOURCE_ID_FONT_SBS_STANDARD_8,  RESOURCE_ID_FONT_SBS_STANDARD_10,
+      RESOURCE_ID_FONT_SBS_STANDARD_12, RESOURCE_ID_FONT_SBS_STANDARD_14,
+      RESOURCE_ID_FONT_SBS_STANDARD_17 },
+    { RESOURCE_ID_FONT_SBS_TRADITIONAL_8,  RESOURCE_ID_FONT_SBS_TRADITIONAL_10,
+      RESOURCE_ID_FONT_SBS_TRADITIONAL_12, RESOURCE_ID_FONT_SBS_TRADITIONAL_14,
+      RESOURCE_ID_FONT_SBS_TRADITIONAL_17 },
+    { RESOURCE_ID_FONT_SBS_THIN_8,  RESOURCE_ID_FONT_SBS_THIN_10,
+      RESOURCE_ID_FONT_SBS_THIN_12, RESOURCE_ID_FONT_SBS_THIN_14,
+      RESOURCE_ID_FONT_SBS_THIN_17 },
+    { RESOURCE_ID_FONT_SBS_OVERSIZE_8,  RESOURCE_ID_FONT_SBS_OVERSIZE_10,
+      RESOURCE_ID_FONT_SBS_OVERSIZE_12, RESOURCE_ID_FONT_SBS_OVERSIZE_14,
+      RESOURCE_ID_FONT_SBS_OVERSIZE_17 }
+  };
+    if (font_id > 4 || size_idx > 4) return 0;
+  return sbs_font_resources[font_id][size_idx];
+#endif
+}
+
 static GFont get_number_font(void) {
   uint8_t fid  = s_settings.number_font;
-    uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
+  uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
-  // Side-By-Side mode: apply (selected_size / 2) - 1 formula.
-  // Available font sizes: {18, 22, 26, 30, 36} (indices 0-4).
-  // All halved values (8, 10, 12, 14, 17) are below the 18px minimum,
-  // so index 0 is always the correct result.
-  if (s_settings.shake_mode == 3) {
-    sidx = 0;
-  }
-  if (fid == s_cached_font_id && sidx == s_cached_font_size && s_cached_number_font) {
+  bool is_sbs = (s_settings.shake_mode == 3);
+  // In SBS mode the cache key includes the sbs flag so switching modes
+  // forces a reload even if fid and sidx are unchanged.
+  uint8_t cache_sidx = is_sbs ? (sidx + 10) : sidx;  // offset to distinguish
+  if (fid == s_cached_font_id && cache_sidx == s_cached_font_size && s_cached_number_font) {
     return s_cached_number_font;
   }
-
   // Unload old
   if (s_cached_number_font) {
     fonts_unload_custom_font(s_cached_number_font);
     s_cached_number_font = NULL;
   }
-
 #ifdef PBL_PLATFORM_APLITE
   // System font fallbacks for Aplite
   static const char *aplite_fonts[5] = {
@@ -380,16 +401,16 @@ static GFont get_number_font(void) {
   };
   s_cached_number_font = fonts_get_system_font(aplite_fonts[fid < 5 ? fid : 0]);
 #else
-  uint32_t res_id = get_font_resource_id(fid, sidx);
+  uint32_t res_id = is_sbs ? get_sbs_font_resource_id(fid, sidx)
+                           : get_font_resource_id(fid, sidx);
   if (res_id) {
     s_cached_number_font = fonts_load_custom_font(resource_get_handle(res_id));
   } else {
     s_cached_number_font = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   }
 #endif
-
   s_cached_font_id   = fid;
-  s_cached_font_size = sidx;
+  s_cached_font_size = cache_sidx;
   s_ink_valid = false;  // force re-measure of ink bounds for the new font
   return s_cached_number_font;
 }
