@@ -910,27 +910,28 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       graphics_draw_text(ctx, s_num_strings[h], num_font, text_rect,
                          GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
 
-      // Icon position: adjacent to number with 2px gap
+      // Icon position: adjacent to number with 4px gap
       int iox, ioy;
+      // Ink centre X of the number (used for top/bottom group centering)
+      int num_ink_cx = rx + ib.left + ink_w / 2;
       if (h == 11 || h == 0 || h == 1) {
-        // Top group: icon below number
-        ioy = ry + ib.top + ink_h + 2;  // 2px gap below number ink
-        iox = edge.x - sbs_icon_sz / 2;
-        if (h == 11) iox += sbs_icon_sz / 4;
-        if (h == 1)  iox -= sbs_icon_sz / 4;
+        // Top group: icon below number, X-centred on number ink centre
+        // num_ink_cx already incorporates the per-digit nudge from rx, so no
+        // additional offset is needed here.
+        ioy = ry + ib.top + ink_h + 4;  // 4px gap below number ink
+        iox = num_ink_cx - sbs_icon_sz / 2;
       } else if (h == 5 || h == 6 || h == 7) {
-        // Bottom group: icon above number
-        ioy = ry + ib.top - 2 - sbs_icon_sz;  // 2px gap above number ink
-        iox = edge.x - sbs_icon_sz / 2;
-        if (h == 7) iox += sbs_icon_sz / 4;
-        if (h == 5) iox -= sbs_icon_sz / 4;
+        // Bottom group: icon above number, X-centred on number ink centre
+        // num_ink_cx already incorporates the per-digit nudge from rx.
+        ioy = ry + ib.top - 4 - sbs_icon_sz;  // 4px gap above number ink
+        iox = num_ink_cx - sbs_icon_sz / 2;
       } else if (h == 8 || h == 9 || h == 10) {
         // Left group: icon to the right of number
-        iox = rx + ib.left + ink_w + 2;  // 2px gap right of number ink
+        iox = rx + ib.left + ink_w + 4;  // 4px gap right of number ink
         ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
       } else {
         // Right group: icon to the left of number
-        iox = rx + ib.left - 2 - sbs_icon_sz;  // 2px gap left of number ink
+        iox = rx + ib.left - 4 - sbs_icon_sz;  // 4px gap left of number ink
         ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
       }
 
