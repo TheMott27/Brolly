@@ -350,9 +350,15 @@ static uint32_t get_font_resource_id(uint8_t font_id, uint8_t size_idx) {
 
 static GFont get_number_font(void) {
   uint8_t fid  = s_settings.number_font;
-  uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
+    uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
-
+  // Side-By-Side mode: apply (selected_size / 2) - 1 formula.
+  // Available font sizes: {18, 22, 26, 30, 36} (indices 0-4).
+  // All halved values (8, 10, 12, 14, 17) are below the 18px minimum,
+  // so index 0 is always the correct result.
+  if (s_settings.shake_mode == 3) {
+    sidx = 0;
+  }
   if (fid == s_cached_font_id && sidx == s_cached_font_size && s_cached_number_font) {
     return s_cached_number_font;
   }
