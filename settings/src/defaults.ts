@@ -13,7 +13,7 @@ export interface BrollySettings {
   KEY_ICON_SIZE: number            // 151 — 1–5
   KEY_ICON_COLOR_MODE: number      // 153 — 0=single colour 1=weather-based
   KEY_DISPLAY_MODE: number         // 158 — 0=both 1=temp 2=date 3=none
-  KEY_SHAKE_MODE: number           // 107 — 0=show icons on shake 1=always show 2=always hide
+  KEY_SHAKE_MODE: number           // 107 — 0=show icons on shake 1=always show 2=always hide 3=side-by-side
 
   // ── Background ───────────────────────────────────────────────────────────
   KEY_BACKGROUND_COLOR: number     // 126

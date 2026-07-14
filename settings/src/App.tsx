@@ -388,6 +388,7 @@ function WeatherTab({ s, set }: {
             { label: 'Show icons on shake', value: 0 },
             { label: 'Always show icons', value: 1 },
             { label: 'Always hide icons', value: 2 },
+            { label: 'Side-By-Side', value: 3 },
           ]}
           onChange={v => set('KEY_SHAKE_MODE', v)}
         />

@@ -111,7 +111,7 @@ typedef struct {
   GColor bt_disconnect_outer_color;
   GColor bt_disconnect_inner_color;
   // Shake mode (for icons)
-  uint8_t shake_mode;   // 0=Show on shake 1=Always show 2=Always hide
+  uint8_t shake_mode;   // 0=Show on shake 1=Always show 2=Always hide 3=Side-by-side
   // City name display
   uint8_t city_display_mode; // 0=Off 1=Shake 2=Always
   GColor  city_color;
@@ -352,6 +352,11 @@ static GFont get_number_font(void) {
   uint8_t fid  = s_settings.number_font;
   uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
+
+  // Side-By-Side mode: use smallest font asset (18px) to approximate half-size
+  if (s_settings.shake_mode == 3) {
+    sidx = 0;
+  }
 
   if (fid == s_cached_font_id && sidx == s_cached_font_size && s_cached_number_font) {
     return s_cached_number_font;
@@ -807,15 +812,159 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   int icon_sz = s_icon_sizes[icon_sz_idx];
 
   bool draw_icons = false;
+  bool side_by_side = (s_settings.shake_mode == 3);
   if (s_settings.shake_mode == 1) {
     draw_icons = true;
   } else if (s_settings.shake_mode == 0) {
     draw_icons = s_showing_icons;
   }
   // shake_mode == 2 = always hide icons
+  // shake_mode == 3 = side-by-side (both numbers and icons always visible)
+
+  // In side-by-side mode, reduce icon size: (selected / 2) - 1
+  int sbs_icon_sz = (icon_sz / 2) - 1;
+  if (sbs_icon_sz < 8) sbs_icon_sz = 8;
 
   for (int h = 0; h < 12; h++) {
-    if (draw_icons) {
+    if (side_by_side) {
+      // ── Side-By-Side mode: draw both number and icon at reduced size ──
+      // Number uses smallest font (forced in get_number_font).
+      // Icon uses sbs_icon_sz.
+      // Layout: number at edge, icon adjacent with 2px gap.
+      int32_t angle = TRIG_MAX_ANGLE * h / 12;
+      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
+      int gap = sun_inset * 3 / 2;
+
+      InkBounds ib = s_ink[h];
+      if (!ib.valid) {
+        GSize sz = graphics_text_layout_get_content_size(
+          s_num_strings[h], num_font, GRect(0,0,80,80),
+          GTextOverflowModeWordWrap, GTextAlignmentLeft);
+        ib.box_w = (uint8_t)sz.w; ib.box_h = (uint8_t)sz.h;
+        ib.left = ib.top = ib.right = ib.bottom = 0;
+        ib.valid = true;
+      }
+      int ink_w = ib.box_w - ib.left - ib.right;
+      int ink_h = ib.box_h - ib.top  - ib.bottom;
+      if (ink_w < 1) ink_w = 1;
+      if (ink_h < 1) ink_h = 1;
+
+      // Number position (same formulas as normal mode)
+      int rx, ry;
+      if (h == 11 || h == 0 || h == 1) {
+        ry = gap - ib.top;
+        rx = edge.x - ink_w / 2 - ib.left;
+        if (h == 11) rx += ink_w / 4;
+        if (h == 1) {
+          InkBounds ib11 = s_ink[11];
+          int ink_w_11 = ib11.box_w - ib11.left - ib11.right;
+          if (ink_w_11 < 1) ink_w_11 = 1;
+          rx -= ink_w_11 / 4;
+        }
+      } else if (h == 5 || h == 6 || h == 7) {
+        ry = sh - gap - 80 + ib.bottom;
+        rx = edge.x - ink_w / 2 - ib.left;
+        if (h == 7) rx += ink_w / 4;
+        if (h == 5) rx -= ink_w / 4;
+      } else if (h == 8 || h == 9 || h == 10) {
+        rx = gap - ib.left;
+        {
+          InkBounds ib12 = s_ink[0];
+          InkBounds ib6  = s_ink[6];
+          int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
+          int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
+          int cross_y = edge.y;
+          if (h == 10)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
+          else if (h == 8)  cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
+          ry = cross_y - ink_h / 2 - ib.top;
+        }
+      } else {
+        rx = sw - gap - 80 + ib.right;
+        {
+          InkBounds ib12 = s_ink[0];
+          InkBounds ib6  = s_ink[6];
+          int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
+          int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
+          int cross_y = edge.y;
+          if (h == 2)      cross_y = y_12c + (y_6c - y_12c) * 25 / 100;
+          else if (h == 4) cross_y = y_12c + (y_6c - y_12c) * 75 / 100;
+          ry = cross_y - ink_h / 2 - ib.top;
+        }
+      }
+
+      // Draw number
+      GRect text_rect = GRect(rx, ry, 80, 80);
+      GColor num_draw_color;
+      if (s_settings.icon_color_mode == 2) {
+        static const GColor8 s_rainbow_num_colors[12] = {
+          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC },
+          { .argb = 0xEC }, { .argb = 0xCC }, { .argb = 0xCE },
+          { .argb = 0xCF }, { .argb = 0xCB }, { .argb = 0xC3 },
+          { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
+        };
+        num_draw_color = MONO_COLOR(s_rainbow_num_colors[h]);
+      } else {
+        num_draw_color = MONO_COLOR(s_settings.number_color);
+      }
+      graphics_context_set_text_color(ctx, num_draw_color);
+      graphics_draw_text(ctx, s_num_strings[h], num_font, text_rect,
+                         GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
+
+      // Icon position: adjacent to number with 2px gap
+      int iox, ioy;
+      if (h == 11 || h == 0 || h == 1) {
+        // Top group: icon below number
+        ioy = ry + ib.top + ink_h + 2;  // 2px gap below number ink
+        iox = edge.x - sbs_icon_sz / 2;
+        if (h == 11) iox += sbs_icon_sz / 4;
+        if (h == 1)  iox -= sbs_icon_sz / 4;
+      } else if (h == 5 || h == 6 || h == 7) {
+        // Bottom group: icon above number
+        ioy = ry + ib.top - 2 - sbs_icon_sz;  // 2px gap above number ink
+        iox = edge.x - sbs_icon_sz / 2;
+        if (h == 7) iox += sbs_icon_sz / 4;
+        if (h == 5) iox -= sbs_icon_sz / 4;
+      } else if (h == 8 || h == 9 || h == 10) {
+        // Left group: icon to the right of number
+        iox = rx + ib.left + ink_w + 2;  // 2px gap right of number ink
+        ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
+      } else {
+        // Right group: icon to the left of number
+        iox = rx + ib.left - 2 - sbs_icon_sz;  // 2px gap left of number ink
+        ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
+      }
+
+      // Determine icon data
+      int clock_num = (h == 0) ? 12 : h;
+      int am_hour = (clock_num == 12) ? 0 : clock_num;
+      int pm_hour = (clock_num == 12) ? 12 : clock_num + 12;
+      bool am_passed = (am_hour < cur_hour) || (am_hour == cur_hour && cur_min > 0);
+      bool pm_passed = (pm_hour < cur_hour) || (pm_hour == cur_hour && cur_min > 0);
+      int icon_hour = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
+      int8_t icon_code = s_icons[icon_hour];
+      GPathIconID gpath_id = icon_code_to_gpath(icon_code);
+
+      // Determine icon colour
+      GColor icon_draw_color;
+      if (s_settings.icon_color_mode == 2) {
+        static const GColor8 s_rainbow_colors[12] = {
+          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC },
+          { .argb = 0xEC }, { .argb = 0xCC }, { .argb = 0xCE },
+          { .argb = 0xCF }, { .argb = 0xCB }, { .argb = 0xC3 },
+          { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
+        };
+        icon_draw_color = MONO_COLOR(s_rainbow_colors[h]);
+      } else {
+        icon_draw_color = MONO_COLOR(s_settings.icon_color);
+      }
+      if (s_settings.icon_color_mode == 3) {
+        draw_weather_icon_shaded(ctx, gpath_id, iox, ioy, sbs_icon_sz);
+      } else {
+        draw_weather_icon(ctx, gpath_id, iox, ioy, sbs_icon_sz, icon_draw_color,
+                          s_settings.icon_color_mode == 1);
+      }
+
+    } else if (draw_icons) {
       // Determine which forecast hour to show
       int clock_num = (h == 0) ? 12 : h;
       int am_hour = (clock_num == 12) ? 0 : clock_num;
@@ -1399,7 +1548,10 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (t) { s_settings.vibrate_bt_reconnect = (bool)t->value->int32; settings_changed = true; }
 
   t = dict_find(iter, 107); // KEY_SHAKE_MODE
-  if (t) { s_settings.shake_mode = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true; }
+  if (t) { s_settings.shake_mode = (uint8_t)t->value->int32; settings_changed = true; bg_dirty = true;
+    // Invalidate font cache so numbers re-measure at the correct size
+    s_ink_valid = false;
+  }
 
   t = dict_find(iter, 110); // KEY_TEMP_UNIT
   if (t) { s_settings.temp_unit = (uint8_t)t->value->int32; settings_changed = true; }
