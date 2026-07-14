@@ -353,11 +353,6 @@ static GFont get_number_font(void) {
   uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
 
-  // Side-By-Side mode: use smallest font asset (18px) to approximate half-size
-  if (s_settings.shake_mode == 3) {
-    sidx = 0;
-  }
-
   if (fid == s_cached_font_id && sidx == s_cached_font_size && s_cached_number_font) {
     return s_cached_number_font;
   }
