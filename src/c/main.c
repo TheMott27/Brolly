@@ -128,7 +128,7 @@ static Layer    *s_bg_layer;
 static Layer    *s_complication_layer;
 static Layer    *s_hour_layer;
 static Layer    *s_minute_layer;
-static Layer    *s_seconds_layer;
+
 
 static Settings  s_settings;
 static int8_t    s_icons[24];
@@ -422,71 +422,6 @@ static const char *s_num_strings[12] = {
   "12","1","2","3","4","5","6","7","8","9","10","11"
 };
 
-static GPoint number_position(int h, GFont font) {
-  bool is_emery = (s_screen_w >= 200);
-  int margin = is_emery ? 12 : 6;
-  int sw = s_screen_w;
-  int sh = s_screen_h;
-
-  // Measure text size
-  GRect measure_box = GRect(0, 0, 50, 50);
-  GSize sz = graphics_text_layout_get_content_size(
-    s_num_strings[h], font, measure_box,
-    GTextOverflowModeWordWrap, GTextAlignmentCenter);
-  int actual_w = sz.w;
-  int actual_h = sz.h;
-
-  int extra_top = (s_settings.number_font == 0) ? 7 : 0;
-  int y_top = margin + actual_h / 2;
-  int y_mid = (sh - 1) / 2;
-  int y_bot = (sh - 1 - margin) - actual_h / 2;
-  // Actual rendered centre of 12 and 6 (used for 25%/75% positioning of 2/4/8/10)
-  int y_12 = y_top + extra_top;  // centre of number 12
-  int y_6  = y_bot;              // centre of number 6
-  int y_25 = y_12 + (y_6 - y_12) * 25 / 100;  // 25% between 12 and 6
-  int y_75 = y_12 + (y_6 - y_12) * 75 / 100;  // 75% between 12 and 6
-
-  GPoint pos = GPoint(sw / 2, sh / 2);
-
-  if (h == 0 || h == 1 || h == 11) {
-    // Top edge
-    pos.y = margin + actual_h / 2 + extra_top;
-    if (h == 0) {
-      pos.x = sw / 2;
-    } else {
-      // Diagonal: project angle to top/bottom edge
-      int32_t angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
-      int shift = is_emery ? 7 : 2;
-      pos.x = edge.x + (sw/2 - edge.x) * shift / actual_w;
-    }
-  } else if (h == 5 || h == 6 || h == 7) {
-    // Bottom edge
-    pos.y = sh - 1 - margin - actual_h / 2;
-    if (h == 6) {
-      pos.x = sw / 2;
-    } else {
-      int32_t angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
-      int shift = is_emery ? 7 : 2;
-      pos.x = edge.x + (sw/2 - edge.x) * shift / actual_w;
-    }
-  } else if (h == 8 || h == 9 || h == 10) {
-    // Left edge
-    pos.x = margin;
-    if (h == 9)       pos.y = y_mid;
-    else if (h == 10) pos.y = y_25;  // 25% between 12 and 6
-    else              pos.y = y_75;  // 75% between 12 and 6 (h==8)
-  } else {
-    // Right edge (h == 2, 3, 4)
-    pos.x = sw - 1 - margin;
-    if (h == 3)      pos.y = y_mid;
-    else if (h == 2) pos.y = y_25;  // 25% between 12 and 6
-    else             pos.y = y_75;  // 75% between 12 and 6 (h==4)
-  }
-
-  return pos;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hand drawing
@@ -1197,7 +1132,6 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 // Complication layer: date + temperature
 static void complication_layer_update(Layer *layer, GContext *ctx) {
   int sw = s_screen_w;
-  (void)sw;
   int cur_min = s_last_time.tm_min;
 
   // Determine y position (avoid minute hand)
@@ -1369,12 +1303,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   graphics_fill_circle(ctx, center, POS_X(1));
 }
 
-// Seconds hand layer — intentionally empty.
-// The seconds hand is drawn inside minute_layer_update (before the centre rings)
-// so it always appears below the centre ring/dot.
-static void seconds_layer_update(Layer *layer, GContext *ctx) {
-  (void)layer; (void)ctx;
-}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tick subscription management
@@ -1425,13 +1354,14 @@ static void hide_seconds_callback(void *data) {
   s_seconds_timer = NULL;
   s_seconds_visible = false;
   update_tick_subscription();
-  layer_mark_dirty(s_seconds_layer);
+  layer_mark_dirty(s_minute_layer);  // seconds drawn inside minute_layer
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tick handler
 // ─────────────────────────────────────────────────────────────────────────────
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  int prev_min = s_last_time.tm_min;
   bool hour_changed = (tick_time->tm_hour != s_last_time.tm_hour);
   s_last_time = *tick_time;
 
@@ -1440,8 +1370,18 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
   if (units_changed & MINUTE_UNIT) {
     layer_mark_dirty(s_minute_layer);
-    layer_mark_dirty(s_hour_layer);
-    layer_mark_dirty(s_complication_layer);
+    // Hour hand moves ~0.5° per minute; only redraw every 5 minutes for
+    // imperceptible visual difference but 80% fewer hour-layer redraws.
+    if (tick_time->tm_min % 5 == 0) {
+      layer_mark_dirty(s_hour_layer);
+    }
+    // Complication layer only repositions at minute 20 and 40 boundaries
+    // (to avoid the minute hand). Only redraw when crossing those thresholds.
+    bool was_mid = (prev_min >= 20 && prev_min <= 40);
+    bool now_mid = (tick_time->tm_min >= 20 && tick_time->tm_min <= 40);
+    if (was_mid != now_mid) {
+      layer_mark_dirty(s_complication_layer);
+    }
   }
   if (hour_changed) {
     layer_mark_dirty(s_bg_layer);
@@ -1496,7 +1436,9 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 // Battery handler
 // ─────────────────────────────────────────────────────────────────────────────
 static void battery_handler(BatteryChargeState charge) {
-  s_battery_pct = charge.charge_percent;
+  uint8_t new_pct = charge.charge_percent;
+  if (new_pct == s_battery_pct) return;  // No change — skip redraw
+  s_battery_pct = new_pct;
   layer_mark_dirty(s_minute_layer);
 }
 
@@ -1735,8 +1677,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
         // Behind hands: insert below hour layer (above bg)
         layer_insert_below_sibling(s_complication_layer, s_hour_layer);
       } else {
-        // On top of hands: insert below seconds_layer (which is topmost)
-        layer_insert_below_sibling(s_complication_layer, s_seconds_layer);
+        // On top of hands: add as topmost child of root
+        Layer *root = window_get_root_layer(s_window);
+        layer_add_child(root, s_complication_layer);
       }
     }
     settings_changed = true;
@@ -1762,7 +1705,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (settings_changed) {
     layer_mark_dirty(s_hour_layer);
     layer_mark_dirty(s_minute_layer);
-    // s_seconds_layer draws nothing itself; seconds are rendered in minute_layer
   }
 }
 
@@ -1867,10 +1809,7 @@ static void window_load(Window *window) {
   }
   // complication_layer == 1: already on top (added last before seconds)
 
-  s_seconds_layer = layer_create(bounds);
-  layer_set_update_proc(s_seconds_layer, seconds_layer_update);
-  // seconds_layer is kept for timer/dirty tracking but draws nothing itself
-  layer_add_child(root, s_seconds_layer);
+
 
   // Get initial time
   time_t now = time(NULL);
@@ -1923,7 +1862,6 @@ static void window_unload(Window *window) {
   accel_tap_service_unsubscribe();
 
   // Destroy layers
-  layer_destroy(s_seconds_layer);
   layer_destroy(s_minute_layer);
   layer_destroy(s_hour_layer);
   layer_destroy(s_complication_layer);

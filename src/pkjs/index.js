@@ -345,7 +345,20 @@ function resolveLocation(callback) {
     if (parts.length === 2 && !isNaN(parseFloat(parts[0])) && !isNaN(parseFloat(parts[1]))) {
       callback(null, parseFloat(parts[0]), parseFloat(parts[1]));
     } else {
-      geocodeCity(loc, callback);
+      // Use cached geocode result if available for the same city
+      if (s_storedLat !== null && s_storedLon !== null && s_useLatLon) {
+        callback(null, s_storedLat, s_storedLon);
+      } else {
+        geocodeCity(loc, function(err, lat, lon) {
+          if (!err) {
+            // Cache the geocoded coordinates to avoid re-geocoding every 30 min
+            s_storedLat = lat;
+            s_storedLon = lon;
+            s_useLatLon = true;
+          }
+          callback(err, lat, lon);
+        });
+      }
     }
     return;
   }
@@ -546,8 +559,11 @@ Pebble.addEventListener('webviewclosed', function(e) {
 
       sendSettingsToWatch(payload);
 
-      // Only re-fetch weather for real settings saves, not test button presses.
-      if (!isTestAction) {
+      // Only re-fetch weather when weather-relevant settings changed
+      // (location, temp unit), not for visual-only changes (colours, fonts).
+      var weatherRelevant = payload.KEY_CUSTOM_LOCATION !== undefined ||
+                            payload.KEY_TEMP_UNIT !== undefined;
+      if (!isTestAction && weatherRelevant) {
         doWeatherFetch();
       }
 
