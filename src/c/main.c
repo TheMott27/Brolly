@@ -149,9 +149,10 @@ static GPoint s_hour_marker_outer[12];
 static GPoint s_hour_marker_inner[12];
 
 // Font cache
-static GFont s_cached_number_font = NULL;
-static uint8_t s_cached_font_id   = 255;
-static uint8_t s_cached_font_size  = 255;
+static GFont   s_cached_number_font = NULL;
+static uint8_t s_cached_font_id     = 255;
+static uint8_t s_cached_font_size   = 255;
+static bool    s_cached_is_sbs      = false;  // tracks whether cache was built for SBS mode
 
 // Ink-bounds cache for the current number font (measured once per font change).
 // These describe, for a given digit string, how much empty padding sits inside
@@ -379,10 +380,8 @@ static GFont get_number_font(void) {
   uint8_t sidx = (s_settings.number_size >= 1 && s_settings.number_size <= 5)
                    ? s_settings.number_size - 1 : 2;
   bool is_sbs = (s_settings.shake_mode == 3);
-  // In SBS mode the cache key includes the sbs flag so switching modes
-  // forces a reload even if fid and sidx are unchanged.
-  uint8_t cache_sidx = is_sbs ? (sidx + 10) : sidx;  // offset to distinguish
-  if (fid == s_cached_font_id && cache_sidx == s_cached_font_size && s_cached_number_font) {
+  if (fid == s_cached_font_id && sidx == s_cached_font_size &&
+      is_sbs == s_cached_is_sbs && s_cached_number_font) {
     return s_cached_number_font;
   }
   // Unload old
@@ -410,7 +409,8 @@ static GFont get_number_font(void) {
   }
 #endif
   s_cached_font_id   = fid;
-  s_cached_font_size = cache_sidx;
+  s_cached_font_size = sidx;
+  s_cached_is_sbs    = is_sbs;
   s_ink_valid = false;  // force re-measure of ink bounds for the new font
   return s_cached_number_font;
 }
@@ -1250,14 +1250,12 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   }
 
   int line_gap = 18;
-  int x = sw / 2;
 
   if (show_date) {
     GRect dr = GRect(0, comp_y - 10, sw, 20);
     graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.date_color));
     graphics_draw_text(ctx, date_buf, comp_font, dr,
                        GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-    (void)x;
   }
 
   if (show_temp) {
@@ -1758,10 +1756,14 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (bg_dirty || weather_changed) {
     layer_mark_dirty(s_bg_layer);
   }
-  layer_mark_dirty(s_complication_layer);
-  layer_mark_dirty(s_hour_layer);
-  layer_mark_dirty(s_minute_layer);
-  layer_mark_dirty(s_seconds_layer);
+  if (settings_changed || weather_changed) {
+    layer_mark_dirty(s_complication_layer);
+  }
+  if (settings_changed) {
+    layer_mark_dirty(s_hour_layer);
+    layer_mark_dirty(s_minute_layer);
+    // s_seconds_layer draws nothing itself; seconds are rendered in minute_layer
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
