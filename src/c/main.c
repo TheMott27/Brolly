@@ -148,6 +148,28 @@ static GPoint s_min_marker_inner[60];
 static GPoint s_hour_marker_outer[12];
 static GPoint s_hour_marker_inner[12];
 
+// Perimeter point cache: pre-computed once at init (screen size never changes)
+static GPoint s_perimeter_cache[12];
+
+// Previous icon snapshot for change detection (avoids unnecessary bg redraws)
+static int8_t s_prev_icons[24];
+
+// Consolidated rainbow colour array (shared by all colour-mode-2 branches)
+static const GColor8 s_rainbow_colors[12] = {
+  { .argb = 0xF0 }, // h=0  red
+  { .argb = 0xF8 }, // h=1  orange
+  { .argb = 0xFC }, // h=2  yellow
+  { .argb = 0xEC }, // h=3  chartreuse
+  { .argb = 0xCC }, // h=4  green
+  { .argb = 0xCE }, // h=5  spring
+  { .argb = 0xCF }, // h=6  cyan
+  { .argb = 0xCB }, // h=7  sky blue
+  { .argb = 0xC3 }, // h=8  blue
+  { .argb = 0xE3 }, // h=9  violet
+  { .argb = 0xF3 }, // h=10 magenta
+  { .argb = 0xF2 }, // h=11 rose
+};
+
 // Font cache
 static GFont   s_cached_number_font = NULL;
 static uint8_t s_cached_font_id     = 255;
@@ -788,8 +810,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Number uses smallest font (forced in get_number_font).
       // Icon uses sbs_icon_sz.
       // Layout: number at edge, icon adjacent with 2px gap.
-      int32_t angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
+      GPoint edge = s_perimeter_cache[h];
       int gap = sun_inset * 3 / 2;
 
       InkBounds ib = s_ink[h];
@@ -852,17 +873,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // Draw number
       GRect text_rect = GRect(rx, ry, 80, 80);
       GColor num_draw_color;
-      if (s_settings.icon_color_mode == 2) {
-        static const GColor8 s_rainbow_num_colors[12] = {
-          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC },
-          { .argb = 0xEC }, { .argb = 0xCC }, { .argb = 0xCE },
-          { .argb = 0xCF }, { .argb = 0xCB }, { .argb = 0xC3 },
-          { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
-        };
-        num_draw_color = MONO_COLOR(s_rainbow_num_colors[h]);
-      } else {
-        num_draw_color = MONO_COLOR(s_settings.number_color);
-      }
+      num_draw_color = (s_settings.icon_color_mode == 2) 
+        ? MONO_COLOR(s_rainbow_colors[h]) : MONO_COLOR(s_settings.number_color);
       graphics_context_set_text_color(ctx, num_draw_color);
       graphics_draw_text(ctx, s_num_strings[h], num_font, text_rect,
                          GTextOverflowModeWordWrap, GTextAlignmentLeft, NULL);
@@ -904,17 +916,8 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
       // Determine icon colour
       GColor icon_draw_color;
-      if (s_settings.icon_color_mode == 2) {
-        static const GColor8 s_rainbow_colors[12] = {
-          { .argb = 0xF0 }, { .argb = 0xF8 }, { .argb = 0xFC },
-          { .argb = 0xEC }, { .argb = 0xCC }, { .argb = 0xCE },
-          { .argb = 0xCF }, { .argb = 0xCB }, { .argb = 0xC3 },
-          { .argb = 0xE3 }, { .argb = 0xF3 }, { .argb = 0xF2 },
-        };
-        icon_draw_color = MONO_COLOR(s_rainbow_colors[h]);
-      } else {
-        icon_draw_color = MONO_COLOR(s_settings.icon_color);
-      }
+      icon_draw_color = (s_settings.icon_color_mode == 2) 
+        ? MONO_COLOR(s_rainbow_colors[h]) : MONO_COLOR(s_settings.icon_color);
       if (s_settings.icon_color_mode == 3) {
         draw_weather_icon_shaded(ctx, gpath_id, iox, ioy, sbs_icon_sz);
       } else {
@@ -935,8 +938,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
       // Position icon flush to the nearest screen edge, with the cross-axis
       // following the hour-angle perimeter ray (same alignment as numbers).
-      int32_t i_angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint i_edge = square_perimeter_point(GPoint(sw/2, sh/2), i_angle, 0, 0);
+      GPoint i_edge = s_perimeter_cache[h];
 
       // Gap from screen edge to icon edge. Matches number gap to clear markers.
       int icon_gap = sun_inset * 3 / 2;
@@ -1016,8 +1018,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // hour-angle perimeter ray so each number lines up under its clock
       // position. The text box itself is offset so that, after the font's
       // internal padding (s_ink[h]), the lit pixels land exactly where we want.
-      int32_t angle = TRIG_MAX_ANGLE * h / 12;
-      GPoint edge = square_perimeter_point(GPoint(sw/2, sh/2), angle, 0, 0);
+      GPoint edge = s_perimeter_cache[h];
 
       InkBounds ib = s_ink[h];
       if (!ib.valid) {
@@ -1384,7 +1385,29 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     }
   }
   if (hour_changed) {
-    layer_mark_dirty(s_bg_layer);
+    // Battery optimisation: only redraw background if the visible 12-hour 
+    // weather icon window has actually changed.
+    int cur_hour = tick_time->tm_hour;
+    int cur_min  = tick_time->tm_min;
+    bool weather_diff = false;
+    for (int h = 0; h < 12; h++) {
+      int clock_num = (h == 0) ? 12 : h;
+      int am_hour = (clock_num == 12) ? 0 : clock_num;
+      int pm_hour = (clock_num == 12) ? 12 : clock_num + 12;
+      bool am_passed = (am_hour < cur_hour) || (am_hour == cur_hour && cur_min > 0);
+      bool pm_passed = (pm_hour < cur_hour) || (pm_hour == cur_hour && cur_min > 0);
+      int icon_hour = (!am_passed) ? am_hour : (!pm_passed) ? pm_hour : am_hour;
+      
+      if (s_icons[icon_hour] != s_prev_icons[icon_hour]) {
+        weather_diff = true;
+        break;
+      }
+    }
+    
+    if (weather_diff) {
+      memcpy(s_prev_icons, s_icons, sizeof(s_icons));
+      layer_mark_dirty(s_bg_layer);
+    }
   }
 }
 
@@ -1816,8 +1839,17 @@ static void window_load(Window *window) {
   struct tm *t = localtime(&now);
   if (t) s_last_time = *t;
 
-  // Initial seconds visibility
+    // Initial seconds visibility
   s_seconds_visible = (s_settings.seconds_hand_mode == 1);
+
+  // Pre-compute perimeter points once (screen size never changes at runtime)
+  for (int h = 0; h < 12; h++) {
+    int32_t angle = TRIG_MAX_ANGLE * h / 12;
+        s_perimeter_cache[h] = square_perimeter_point(GPoint(s_screen_w/2, s_screen_h/2), angle, 0, 0);
+  }
+
+  // Initial icon snapshot
+  memcpy(s_prev_icons, s_icons, sizeof(s_icons));
 
   // Subscribe to tick timer
   update_tick_subscription();

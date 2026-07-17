@@ -152,6 +152,8 @@ var s_useLatLon = false;
 var s_storedLat = null;
 var s_storedLon = null;
 var s_resolvedCityName = '';
+var s_weatherIntervalId = null;
+var s_currentWeatherInterval = 30; // default 30 mins
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Geocoding helper
@@ -417,6 +419,17 @@ function doWeatherFetch() {
   });
 }
 
+function updateWeatherInterval(mins) {
+  if (mins < 15) mins = 30; // safety minimum
+  if (mins === s_currentWeatherInterval && s_weatherIntervalId !== null) return;
+  console.log('Updating weather interval to ' + mins + ' minutes');
+  s_currentWeatherInterval = mins;
+  if (s_weatherIntervalId !== null) {
+    clearInterval(s_weatherIntervalId);
+  }
+  s_weatherIntervalId = setInterval(doWeatherFetch, mins * 60 * 1000);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Config / settings bridge
 // ─────────────────────────────────────────────────────────────────────────────
@@ -505,11 +518,16 @@ function sendSettingsToWatch(settings) {
     }
   });
 
-  // Custom location: store locally for weather fetch (trimmed).
+    // Custom location: store locally for weather fetch (trimmed).
   if (settings.KEY_CUSTOM_LOCATION !== undefined) {
     s_customLocation = String(settings.KEY_CUSTOM_LOCATION).trim();
   }
-
+  // Weather interval: store locally (not sent to watch, JS-only setting).
+  if (settings.KEY_WEATHER_INTERVAL !== undefined) {
+    var interval = parseInt(settings.KEY_WEATHER_INTERVAL, 10);
+    localStorage.setItem('weather_interval', interval);
+    updateWeatherInterval(interval);
+  }
   if (Object.keys(msg).length > 0) {
     Pebble.sendAppMessage(msg, function() {
       console.log('Settings sent to watch');
@@ -524,8 +542,13 @@ function sendSettingsToWatch(settings) {
 // ─────────────────────────────────────────────────────────────────────────────
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready');
+  // Load stored interval if available
+  var storedInterval = localStorage.getItem('weather_interval');
+  if (storedInterval) {
+    s_currentWeatherInterval = parseInt(storedInterval, 10);
+  }
   doWeatherFetch();
-  setInterval(doWeatherFetch, 30 * 60 * 1000);
+  updateWeatherInterval(s_currentWeatherInterval);
 });
 
 Pebble.addEventListener('appmessage', function(e) {
@@ -560,10 +583,16 @@ Pebble.addEventListener('webviewclosed', function(e) {
       sendSettingsToWatch(payload);
 
       // Only re-fetch weather when weather-relevant settings changed
-      // (location, temp unit), not for visual-only changes (colours, fonts).
+      // (location, temp unit, interval), not for visual-only changes.
       var weatherRelevant = payload.KEY_CUSTOM_LOCATION !== undefined ||
-                            payload.KEY_TEMP_UNIT !== undefined;
+                            payload.KEY_TEMP_UNIT !== undefined ||
+                            payload.KEY_WEATHER_INTERVAL !== undefined;
       if (!isTestAction && weatherRelevant) {
+        if (payload.KEY_WEATHER_INTERVAL !== undefined) {
+          var newInterval = parseInt(payload.KEY_WEATHER_INTERVAL, 10);
+          localStorage.setItem('weather_interval', newInterval);
+          updateWeatherInterval(newInterval);
+        }
         doWeatherFetch();
       }
 

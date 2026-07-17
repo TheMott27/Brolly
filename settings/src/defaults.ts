@@ -45,6 +45,7 @@ export interface BrollySettings {
   KEY_CITY_DISPLAY_MODE: number    // 160 — 0=off 1=shake 2=always
   KEY_CITY_COLOR: number           // 161
   KEY_COMPLICATION_LAYER: number   // 162 — 0=behind hands 1=on top of hands
+  KEY_WEATHER_INTERVAL: number     // 163 — 30/60/120 minutes
 
   // ── Sunrise / Sunset ─────────────────────────────────────────────────────
   KEY_SUNRISE_MARKER_VISIBLE: number // 147 — 0=always 1=with icons only 2=off
@@ -96,6 +97,7 @@ export const DEFAULTS: BrollySettings = {
   KEY_CITY_DISPLAY_MODE: 1,        // shake (same as date/temp default)
   KEY_CITY_COLOR: 0x0000aa,        // navy blue
   KEY_COMPLICATION_LAYER: 0,
+  KEY_WEATHER_INTERVAL: 30,
 
   KEY_SUNRISE_MARKER_VISIBLE: 0,
   KEY_SUNRISE_MARKER_COLOR: 0xff5500,  // orange-red (user request)

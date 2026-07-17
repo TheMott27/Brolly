@@ -445,6 +445,18 @@ function WeatherTab({ s, set }: {
               value={s.KEY_CITY_COLOR}
               onChange={v => set('KEY_CITY_COLOR', v)}
             />
+            <Sep />
+            <SelectRow
+              label="Weather update interval"
+              desc="How often to fetch new weather data from the phone. Longer intervals save more battery."
+              value={s.KEY_WEATHER_INTERVAL}
+              options={[
+                { label: '30 minutes', value: 30 },
+                { label: '60 minutes', value: 60 },
+                { label: '120 minutes', value: 120 },
+              ]}
+              onChange={v => set('KEY_WEATHER_INTERVAL', v)}
+            />
           </div>
         </div>
       </Card>
