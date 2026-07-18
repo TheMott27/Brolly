@@ -1,6 +1,6 @@
 {
   "name": "brolly",
-  "version": "2.48.0",
+  "version": "2.49.0",
   "author": "mrjamieraymusic",
   "keywords": [
     "pebble-app"
@@ -10,9 +10,9 @@
     "displayName": "Brolly",
     "uuid": "53a30793-7406-44e0-b02e-35fad4314fc5",
     "shortName": "Brolly",
-    "longName": "Brolly v2.48.0",
+    "longName": "Brolly v2.49.0",
     "companyName": "mrjamieraymusic",
-    "versionLabel": "2.48.0",
+    "versionLabel": "2.49.0",
     "watchapp": {
       "watchface": true
     },
@@ -23,7 +23,7 @@
           "type": "font",
           "name": "FONT_DIGITAL_18",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -34,7 +34,7 @@
           "type": "font",
           "name": "FONT_DIGITAL_22",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -45,7 +45,7 @@
           "type": "font",
           "name": "FONT_DIGITAL_26",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -56,7 +56,7 @@
           "type": "font",
           "name": "FONT_DIGITAL_30",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -67,7 +67,7 @@
           "type": "font",
           "name": "FONT_DIGITAL_36",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -78,7 +78,7 @@
           "type": "font",
           "name": "FONT_STANDARD_18",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -89,7 +89,7 @@
           "type": "font",
           "name": "FONT_STANDARD_22",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -100,7 +100,7 @@
           "type": "font",
           "name": "FONT_STANDARD_26",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -111,7 +111,7 @@
           "type": "font",
           "name": "FONT_STANDARD_30",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -122,7 +122,7 @@
           "type": "font",
           "name": "FONT_STANDARD_36",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -133,7 +133,7 @@
           "type": "font",
           "name": "FONT_TRADITIONAL_18",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -144,7 +144,7 @@
           "type": "font",
           "name": "FONT_TRADITIONAL_22",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -155,7 +155,7 @@
           "type": "font",
           "name": "FONT_TRADITIONAL_26",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -166,7 +166,7 @@
           "type": "font",
           "name": "FONT_TRADITIONAL_30",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -177,7 +177,7 @@
           "type": "font",
           "name": "FONT_TRADITIONAL_36",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -188,7 +188,7 @@
           "type": "font",
           "name": "FONT_THIN_18",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -199,7 +199,7 @@
           "type": "font",
           "name": "FONT_THIN_22",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -210,7 +210,7 @@
           "type": "font",
           "name": "FONT_THIN_26",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -221,7 +221,7 @@
           "type": "font",
           "name": "FONT_THIN_30",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -232,7 +232,7 @@
           "type": "font",
           "name": "FONT_THIN_36",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -243,7 +243,7 @@
           "type": "font",
           "name": "FONT_OVERSIZE_18",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -254,7 +254,7 @@
           "type": "font",
           "name": "FONT_OVERSIZE_22",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -265,7 +265,7 @@
           "type": "font",
           "name": "FONT_OVERSIZE_26",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -276,7 +276,7 @@
           "type": "font",
           "name": "FONT_OVERSIZE_30",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -287,7 +287,7 @@
           "type": "font",
           "name": "FONT_OVERSIZE_36",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -298,7 +298,7 @@
           "type": "font",
           "name": "FONT_SBS_DIGITAL_14",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -309,7 +309,7 @@
           "type": "font",
           "name": "FONT_SBS_DIGITAL_16",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -320,7 +320,7 @@
           "type": "font",
           "name": "FONT_SBS_DIGITAL_18",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -331,7 +331,7 @@
           "type": "font",
           "name": "FONT_SBS_DIGITAL_20",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -342,7 +342,7 @@
           "type": "font",
           "name": "FONT_SBS_DIGITAL_23",
           "file": "fonts/DSEG7Classic-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -353,7 +353,7 @@
           "type": "font",
           "name": "FONT_SBS_STANDARD_14",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -364,7 +364,7 @@
           "type": "font",
           "name": "FONT_SBS_STANDARD_16",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -375,7 +375,7 @@
           "type": "font",
           "name": "FONT_SBS_STANDARD_18",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -386,7 +386,7 @@
           "type": "font",
           "name": "FONT_SBS_STANDARD_20",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -397,7 +397,7 @@
           "type": "font",
           "name": "FONT_SBS_STANDARD_23",
           "file": "fonts/Roboto-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -408,7 +408,7 @@
           "type": "font",
           "name": "FONT_SBS_TRADITIONAL_14",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -419,7 +419,7 @@
           "type": "font",
           "name": "FONT_SBS_TRADITIONAL_16",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -430,7 +430,7 @@
           "type": "font",
           "name": "FONT_SBS_TRADITIONAL_18",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -441,7 +441,7 @@
           "type": "font",
           "name": "FONT_SBS_TRADITIONAL_20",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -452,7 +452,7 @@
           "type": "font",
           "name": "FONT_SBS_TRADITIONAL_23",
           "file": "fonts/Lora-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -463,7 +463,7 @@
           "type": "font",
           "name": "FONT_SBS_THIN_14",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -474,7 +474,7 @@
           "type": "font",
           "name": "FONT_SBS_THIN_16",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -485,7 +485,7 @@
           "type": "font",
           "name": "FONT_SBS_THIN_18",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -496,7 +496,7 @@
           "type": "font",
           "name": "FONT_SBS_THIN_20",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -507,7 +507,7 @@
           "type": "font",
           "name": "FONT_SBS_THIN_23",
           "file": "fonts/Jost-Thin.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -518,7 +518,7 @@
           "type": "font",
           "name": "FONT_SBS_OVERSIZE_14",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -529,7 +529,7 @@
           "type": "font",
           "name": "FONT_SBS_OVERSIZE_16",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -540,7 +540,7 @@
           "type": "font",
           "name": "FONT_SBS_OVERSIZE_18",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -551,7 +551,7 @@
           "type": "font",
           "name": "FONT_SBS_OVERSIZE_20",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
@@ -562,7 +562,7 @@
           "type": "font",
           "name": "FONT_SBS_OVERSIZE_23",
           "file": "fonts/Oswald-Regular.ttf",
-          "characterRegex": "[0-9]",
+          "characterRegex": "[0-9 :\u00b0]",
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
