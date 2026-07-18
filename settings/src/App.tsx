@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.3'
+const VERSION = 'v2.1.4'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

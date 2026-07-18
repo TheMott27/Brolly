@@ -1,6 +1,6 @@
 {
   "name": "brolly",
-  "version": "2.47.0",
+  "version": "2.48.0",
   "author": "mrjamieraymusic",
   "keywords": [
     "pebble-app"
@@ -10,9 +10,9 @@
     "displayName": "Brolly",
     "uuid": "53a30793-7406-44e0-b02e-35fad4314fc5",
     "shortName": "Brolly",
-    "longName": "Brolly v2.47.0",
+    "longName": "Brolly v2.48.0",
     "companyName": "mrjamieraymusic",
-    "versionLabel": "2.47.0",
+    "versionLabel": "2.48.0",
     "watchapp": {
       "watchface": true
     },
@@ -187,7 +187,7 @@
         {
           "type": "font",
           "name": "FONT_THIN_18",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -198,7 +198,7 @@
         {
           "type": "font",
           "name": "FONT_THIN_22",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -209,7 +209,7 @@
         {
           "type": "font",
           "name": "FONT_THIN_26",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -220,7 +220,7 @@
         {
           "type": "font",
           "name": "FONT_THIN_30",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -231,7 +231,7 @@
         {
           "type": "font",
           "name": "FONT_THIN_36",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -462,7 +462,7 @@
         {
           "type": "font",
           "name": "FONT_SBS_THIN_14",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -473,7 +473,7 @@
         {
           "type": "font",
           "name": "FONT_SBS_THIN_16",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -484,7 +484,7 @@
         {
           "type": "font",
           "name": "FONT_SBS_THIN_18",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -495,7 +495,7 @@
         {
           "type": "font",
           "name": "FONT_SBS_THIN_20",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
@@ -506,7 +506,7 @@
         {
           "type": "font",
           "name": "FONT_SBS_THIN_23",
-          "file": "fonts/NunitoSans-ExtraLight.ttf",
+          "file": "fonts/Jost-Thin.ttf",
           "characterRegex": "[0-9]",
           "compatibility": "2.7",
           "targetPlatforms": [
