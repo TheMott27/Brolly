@@ -701,10 +701,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
   int sh = bounds.size.h;
   GPoint center = GPoint(sw / 2, sh / 2);
 
-  // Fill background
+    // Fill background
   graphics_context_set_fill_color(ctx, MONO_COLOR(s_settings.background_color));
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-
+  // Measure true ink bounds once per font change. Must happen after the
+  // background fill (so the scratch area starts clean) but before any markers
+  // or icons are drawn (so the scratch-area clear at the end of measurement
+  // does not erase already-drawn content in the top-left corner).
+  GFont num_font = get_number_font();
+  if (!s_ink_valid) {
+    measure_ink_bounds(ctx, num_font, sw, sh);
+  }
   // Minute markers
   if (s_settings.display_minor_markers) {
     graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.minute_marker_color));
@@ -773,16 +780,9 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     }
   }
 
-  // Numbers or icons
-  GFont num_font = get_number_font();
+    // Numbers or icons
   int cur_hour = s_last_time.tm_hour;
   int cur_min  = s_last_time.tm_min;
-
-  // Measure true ink bounds once per font change. Must happen here (paint
-  // callback) where text rendering and framebuffer capture are valid.
-  if (!s_ink_valid) {
-    measure_ink_bounds(ctx, num_font, sw, sh);
-  }
 
   // Determine icon size in pixels
   static const int s_icon_sizes[5] = {18, 22, 26, 30, 36};

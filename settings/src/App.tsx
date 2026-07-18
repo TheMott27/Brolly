@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.2'
+const VERSION = 'v2.1.3'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -279,33 +279,17 @@ function DisplayTab({ s, set, onResetColours }: {
           value={s.KEY_ICON_SIZE} min={1} max={5}
           onChange={v => set('KEY_ICON_SIZE', v)}
         />
-        <Sep />
-        <SelectRow
-          label="Icon colour mode"
-          desc="Use a single colour or weather-based colours for icons"
-          value={s.KEY_ICON_COLOR_MODE}
-          options={[
-            { label: 'Single colour', value: 0 },
-            { label: 'Coloured icons', value: 1 },
-            { label: 'Coloured w/shading', value: 3 },
-            { label: 'Rainbow', value: 2 },
-          ]}
-          onChange={v => set('KEY_ICON_COLOR_MODE', v)}
-        />
       </Card>
 
       <Card>
-        <SectionTitle>Background</SectionTitle>
+        <SectionTitle>Watch Face</SectionTitle>
         <ColorRow
           label="Background colour"
           desc="Dial background colour"
           value={s.KEY_BACKGROUND_COLOR}
           onChange={v => set('KEY_BACKGROUND_COLOR', v)}
         />
-      </Card>
-
-      <Card>
-        <SectionTitle>Watch Hands</SectionTitle>
+        <Sep />
         <SubTitle>Hour hand</SubTitle>
         <ColorRow label="Outer colour" value={s.KEY_HOUR_HAND_OUTER} onChange={v => set('KEY_HOUR_HAND_OUTER', v)} />
         <Sep />
@@ -391,6 +375,19 @@ function WeatherTab({ s, set }: {
             { label: 'Side-By-Side', value: 3 },
           ]}
           onChange={v => set('KEY_SHAKE_MODE', v)}
+        />
+        <Sep />
+        <SelectRow
+          label="Icon style"
+          desc="Use a single colour or weather-based colours for icons"
+          value={s.KEY_ICON_COLOR_MODE}
+          options={[
+            { label: 'Single colour', value: 0 },
+            { label: 'Coloured icons', value: 1 },
+            { label: 'Coloured w/shading', value: 3 },
+            { label: 'Rainbow', value: 2 },
+          ]}
+          onChange={v => set('KEY_ICON_COLOR_MODE', v)}
         />
       </Card>
 
