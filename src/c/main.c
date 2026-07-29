@@ -26,8 +26,20 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 static int s_screen_w = 144;
 static int s_screen_h = 168;
 
-static inline int POS_X(int px) { return (px * s_screen_w) / DESIGN_W; }
-static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
+static inline int POS_X(int px) {
+#ifdef PBL_ROUND
+  return (px * 180) / DESIGN_W;
+#else
+  return (px * s_screen_w) / DESIGN_W;
+#endif
+}
+static inline int POS_Y(int py) {
+#ifdef PBL_ROUND
+  return (py * 180) / DESIGN_H;
+#else
+  return (py * s_screen_h) / DESIGN_H;
+#endif
+}
 
 #ifdef PBL_COLOR
   #define MONO_COLOR(c) (c)
@@ -41,6 +53,8 @@ static inline int POS_Y(int py) { return (py * s_screen_h) / DESIGN_H; }
 #define PERSIST_ICONS    0
 #define PERSIST_SETTINGS 1
 #define PERSIST_CITY     2
+#define PERSIST_TEMP_C   3
+#define PERSIST_TEMP_F   4
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppMessage inbox/outbox sizes
@@ -132,8 +146,8 @@ static Layer    *s_minute_layer;
 
 static Settings  s_settings;
 static int8_t    s_icons[24];
-static int8_t    s_temp_c = 0;
-static int8_t    s_temp_f = 32;
+static int8_t    s_temp_c = 127; // 127 = No data
+static int8_t    s_temp_f = 127;
 static char      s_city_name[32] = "";
 static int8_t    s_sunrise_hour = 6,  s_sunrise_min = 0;
 static int8_t    s_sunset_hour  = 18, s_sunset_min  = 0;
@@ -257,17 +271,20 @@ static GPoint polar_to_point(GPoint center, int32_t angle, int radius) {
 
 // Square perimeter point: where a ray from center at angle hits the rect boundary
 // margin_x / margin_y inset the boundary
-static GPoint square_perimeter_point(GPoint center, int32_t angle, int margin_x, int margin_y) {
+static GPoint get_perimeter_point(GPoint center, int32_t angle, int margin_x, int margin_y) {
+#ifdef PBL_ROUND
+  // For round screens, margin_x/y are ignored, we just use radius minus margin
+  int radius = (s_screen_w / 2) - margin_x;
+  return polar_to_point(center, angle, radius);
+#else
   int hw = s_screen_w / 2 - margin_x;
   int hh = s_screen_h / 2 - margin_y;
 
   int32_t sin_a = sin_lookup(angle);
   int32_t cos_a = cos_lookup(angle);
 
-  // Avoid division by zero
   if (sin_a == 0 && cos_a == 0) return center;
 
-  // Scale to find intersection with rectangle
   int32_t t_x = (sin_a != 0) ? (hw * TRIG_MAX_RATIO / abs(sin_a)) : INT32_MAX;
   int32_t t_y = (cos_a != 0) ? (hh * TRIG_MAX_RATIO / abs(cos_a)) : INT32_MAX;
   int32_t t   = (t_x < t_y) ? t_x : t_y;
@@ -276,6 +293,7 @@ static GPoint square_perimeter_point(GPoint center, int32_t angle, int margin_x,
     center.x + (int)(sin_a * t / TRIG_MAX_RATIO),
     center.y - (int)(cos_a * t / TRIG_MAX_RATIO)
   );
+#endif
 }
 
 // Angle for a clock position (minutes 0–59 or hours 0–11 scaled)
@@ -293,6 +311,9 @@ static int32_t angle_for_hour(int hour, int minute) {
 static void compute_markers(void) {
   GPoint center = GPoint(s_screen_w / 2, s_screen_h / 2);
   bool is_emery = (s_screen_w >= 200);
+#ifdef PBL_ROUND
+  int radius = s_screen_w / 2;
+#endif
 
   for (int i = 0; i < 60; i++) {
     int32_t angle = angle_for_minute(i);
@@ -303,8 +324,11 @@ static void compute_markers(void) {
     } else {
       marker_len = is_quarter ? 4 : 2;
     }
-    GPoint outer = square_perimeter_point(center, angle, 0, 0);
-    // Inner: move marker_len pixels toward center
+#ifdef PBL_ROUND
+    s_min_marker_outer[i] = polar_to_point(center, angle, radius);
+    s_min_marker_inner[i] = polar_to_point(center, angle, radius - marker_len);
+#else
+    GPoint outer = get_perimeter_point(center, angle, 0, 0);
     int dx = center.x - outer.x;
     int dy = center.y - outer.y;
     int dist = isqrt_int(dx*dx + dy*dy);
@@ -317,11 +341,16 @@ static void compute_markers(void) {
     }
     s_min_marker_outer[i] = outer;
     s_min_marker_inner[i] = inner;
+#endif
   }
 
   for (int i = 0; i < 12; i++) {
     int32_t angle = TRIG_MAX_ANGLE * i / 12;
-    GPoint outer = square_perimeter_point(center, angle, 0, 0);
+#ifdef PBL_ROUND
+    s_hour_marker_outer[i] = polar_to_point(center, angle, radius);
+    s_hour_marker_inner[i] = polar_to_point(center, angle, radius - 3);
+#else
+    GPoint outer = get_perimeter_point(center, angle, 0, 0);
     int dx = center.x - outer.x;
     int dy = center.y - outer.y;
     int dist = isqrt_int(dx*dx + dy*dy);
@@ -334,6 +363,7 @@ static void compute_markers(void) {
     }
     s_hour_marker_outer[i] = outer;
     s_hour_marker_inner[i] = inner;
+#endif
   }
 }
 
@@ -749,13 +779,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (sr_delta < 0) sr_delta += 720;
     if (sr_delta <= 720) {
       int32_t sr_angle = angle_for_minute(s_sunrise_hour * 5 + s_sunrise_min / 12);
-      GPoint sr_outer = square_perimeter_point(center, sr_angle, 0, 0);
+      GPoint sr_outer = get_perimeter_point(center, sr_angle, 0, 0);
+#ifdef PBL_ROUND
+      GPoint sr_inner = polar_to_point(center, sr_angle, (s_screen_w / 2) - sun_inset);
+#else
       int dx = center.x - sr_outer.x;
       int dy = center.y - sr_outer.y;
       int dist = isqrt_int(dx*dx + dy*dy);
       GPoint sr_inner = (dist > 0)
         ? GPoint(sr_outer.x + dx * sun_inset / dist, sr_outer.y + dy * sun_inset / dist)
         : sr_outer;
+#endif
       graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunrise_marker_color));
       graphics_context_set_stroke_width(ctx, 2);
       graphics_draw_line(ctx, sr_outer, sr_inner);
@@ -767,13 +801,17 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
     if (ss_delta < 0) ss_delta += 720;
     if (ss_delta <= 720) {
       int32_t ss_angle = angle_for_minute(s_sunset_hour * 5 + s_sunset_min / 12);
-      GPoint ss_outer = square_perimeter_point(center, ss_angle, 0, 0);
+      GPoint ss_outer = get_perimeter_point(center, ss_angle, 0, 0);
+#ifdef PBL_ROUND
+      GPoint ss_inner = polar_to_point(center, ss_angle, (s_screen_w / 2) - sun_inset);
+#else
       int dx = center.x - ss_outer.x;
       int dy = center.y - ss_outer.y;
       int dist = isqrt_int(dx*dx + dy*dy);
       GPoint ss_inner = (dist > 0)
         ? GPoint(ss_outer.x + dx * sun_inset / dist, ss_outer.y + dy * sun_inset / dist)
         : ss_outer;
+#endif
       graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.sunset_marker_color));
       graphics_context_set_stroke_width(ctx, 2);
       graphics_draw_line(ctx, ss_outer, ss_inner);
@@ -827,8 +865,12 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       if (ink_w < 1) ink_w = 1;
       if (ink_h < 1) ink_h = 1;
 
-      // Number position (same formulas as normal mode)
+      // Number position
       int rx, ry;
+#ifdef PBL_ROUND
+      rx = edge.x - ink_w / 2 - ib.left;
+      ry = edge.y - ink_h / 2 - ib.top;
+#else
       if (h == 11 || h == 0 || h == 1) {
         ry = gap - ib.top;
         rx = edge.x - ink_w / 2 - ib.left;
@@ -869,6 +911,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           ry = cross_y - ink_h / 2 - ib.top;
         }
       }
+#endif
 
       // Draw number
       GRect text_rect = GRect(rx, ry, 80, 80);
@@ -881,28 +924,27 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
 
       // Icon position: adjacent to number with 4px gap
       int iox, ioy;
-      // Ink centre X of the number (used for top/bottom group centering)
+#ifdef PBL_ROUND
+      // For round, place icon radially inward from the number
+      GPoint icon_pt = polar_to_point(center, TRIG_MAX_ANGLE * h / 12, (s_screen_w / 2) - sun_inset * 3 - ink_h - 4);
+      iox = icon_pt.x - sbs_icon_sz / 2;
+      ioy = icon_pt.y - sbs_icon_sz / 2;
+#else
       int num_ink_cx = rx + ib.left + ink_w / 2;
       if (h == 11 || h == 0 || h == 1) {
-        // Top group: icon below number, X-centred on number ink centre
-        // num_ink_cx already incorporates the per-digit nudge from rx, so no
-        // additional offset is needed here.
-        ioy = ry + ib.top + ink_h + 4;  // 4px gap below number ink
+        ioy = ry + ib.top + ink_h + 4;
         iox = num_ink_cx - sbs_icon_sz / 2;
       } else if (h == 5 || h == 6 || h == 7) {
-        // Bottom group: icon above number, X-centred on number ink centre
-        // num_ink_cx already incorporates the per-digit nudge from rx.
-        ioy = ry + ib.top - 4 - sbs_icon_sz;  // 4px gap above number ink
+        ioy = ry + ib.top - 4 - sbs_icon_sz;
         iox = num_ink_cx - sbs_icon_sz / 2;
       } else if (h == 8 || h == 9 || h == 10) {
-        // Left group: icon to the right of number
-        iox = rx + ib.left + ink_w + 4;  // 4px gap right of number ink
+        iox = rx + ib.left + ink_w + 4;
         ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
       } else {
-        // Right group: icon to the left of number
-        iox = rx + ib.left - 4 - sbs_icon_sz;  // 4px gap left of number ink
+        iox = rx + ib.left - 4 - sbs_icon_sz;
         ioy = ry + ib.top + ink_h / 2 - sbs_icon_sz / 2;
       }
+#endif
 
       // Determine icon data
       int clock_num = (h == 0) ? 12 : h;
@@ -1046,36 +1088,32 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
       // sits on the perimeter ray on the cross axis.
       int rx, ry;
 
+#ifdef PBL_ROUND
+      // For round screens, use pure radial centering.
+      // Position the ink center on the perimeter ray at radius R.
+      rx = edge.x - ink_w / 2 - ib.left;
+      ry = edge.y - ink_h / 2 - ib.top;
+#else
       if (h == 11 || h == 0 || h == 1) {
-        // Top group: shared baseline = digit with smallest ib.top.
-        // All digits use the group max box_h so the box origin is consistent.
         ry = gap - ib.top;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 11) rx += ink_w / 4;   // shift 11 right by 25% of its own ink width
+        if (h == 11) rx += ink_w / 4;
         if (h == 1) {
-          // shift 1 left by 25% of 11's ink width
           InkBounds ib11 = s_ink[11];
           int ink_w_11 = ib11.box_w - ib11.left - ib11.right;
           if (ink_w_11 < 1) ink_w_11 = 1;
           rx -= ink_w_11 / 4;
         }
       } else if (h == 5 || h == 6 || h == 7) {
-        // Bottom group: shared baseline = digit with smallest ib.bottom.
-        // Use group max box_h so all digits share the same ry regardless of
-        // per-digit SDK box height variation (fixes Thin 5/7 too low).
         ry = sh - gap - 80 + ib.bottom;
         rx = edge.x - ink_w / 2 - ib.left;
-        if (h == 7) rx += ink_w / 4;   // shift 7 right by 25% of ink width
-        if (h == 5) rx -= ink_w / 4;   // shift 5 left by 25% of ink width
+        if (h == 7) rx += ink_w / 4;
+        if (h == 5) rx -= ink_w / 4;
       } else if (h == 8 || h == 9 || h == 10) {
-        // Left group: shared baseline = digit with smallest ib.left.
-        // Use group max box_w so all digits share the same rx regardless of
-        // per-digit SDK box width variation (fixes Digital 10 not at edge).
         rx = gap - ib.left;
         {
-          // 25%/75% between rendered ink centres of 12 and 6
-          InkBounds ib12 = s_ink[0];  // h==0 is "12"
-          InkBounds ib6  = s_ink[6];  // h==6 is "6"
+          InkBounds ib12 = s_ink[0];
+          InkBounds ib6  = s_ink[6];
           int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
           int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
           int cross_y = edge.y;
@@ -1084,13 +1122,10 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           ry = cross_y - ink_h / 2 - ib.top;
         }
       } else {
-        // Right group: shared baseline = digit with smallest ib.right.
-        // Use group max box_w for consistent rx.
         rx = sw - gap - 80 + ib.right;
         {
-          // 25%/75% between rendered ink centres of 12 and 6
-          InkBounds ib12 = s_ink[0];  // h==0 is "12"
-          InkBounds ib6  = s_ink[6];  // h==6 is "6"
+          InkBounds ib12 = s_ink[0];
+          InkBounds ib6  = s_ink[6];
           int y_12c = gap + (ib12.box_h - ib12.top - ib12.bottom) / 2;
           int y_6c  = sh - gap - (ib6.box_h - ib6.top - ib6.bottom) / 2;
           int cross_y = edge.y;
@@ -1099,6 +1134,7 @@ static void bg_layer_update(Layer *layer, GContext *ctx) {
           ry = cross_y - ink_h / 2 - ib.top;
         }
       }
+#endif
 
       GRect text_rect = GRect(rx, ry, 80, 80);
       // Determine number colour based on mode
@@ -1138,9 +1174,17 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   // Determine y position (avoid minute hand)
   int comp_y;
   if (cur_min >= 20 && cur_min <= 40) {
+#ifdef PBL_ROUND
+    comp_y = 40;
+#else
     comp_y = POS_Y(45);
+#endif
   } else {
+#ifdef PBL_ROUND
+    comp_y = 140;
+#else
     comp_y = POS_Y(105);
+#endif
   }
 
   bool is_emery = (sw >= 200);
@@ -1177,10 +1221,14 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   // Temperature string
   char temp_buf[16] = "";
   if (show_temp) {
-    if (s_settings.temp_unit == 0) {
-      snprintf(temp_buf, sizeof(temp_buf), "%d\xc2\xb0""C", (int)s_temp_c);
+    if (s_temp_c == 127 || s_temp_f == 127) {
+      snprintf(temp_buf, sizeof(temp_buf), "--\xc2\xb0");
     } else {
-      snprintf(temp_buf, sizeof(temp_buf), "%d\xc2\xb0""F", (int)s_temp_f);
+      if (s_settings.temp_unit == 0) {
+        snprintf(temp_buf, sizeof(temp_buf), "%d\xc2\xb0""C", (int)s_temp_c);
+      } else {
+        snprintf(temp_buf, sizeof(temp_buf), "%d\xc2\xb0""F", (int)s_temp_f);
+      }
     }
   }
 
@@ -1214,10 +1262,18 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
       int city_y;
       if (comp_y < s_screen_h / 2) {
         // date/temp is near top → city near bottom
+#ifdef PBL_ROUND
+        city_y = 140;
+#else
         city_y = POS_Y(105);
+#endif
       } else {
         // date/temp is near bottom → city near top
+#ifdef PBL_ROUND
+        city_y = 40;
+#else
         city_y = POS_Y(45);
+#endif
       }
       GRect cr = GRect(0, city_y - 10, sw, 20);
       graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.city_color));
@@ -1265,7 +1321,7 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   // ── Seconds hand — drawn here so it appears BELOW the centre rings ──────────
   if (s_seconds_visible) {
     int32_t sec_angle = angle_for_minute(s_last_time.tm_sec);
-    GPoint sec_tip  = square_perimeter_point(center, sec_angle, 0, 0);
+    GPoint sec_tip  = get_perimeter_point(center, sec_angle, 0, 0);
     int32_t tail_angle = sec_angle + (TRIG_MAX_ANGLE / 2);
     GPoint sec_tail = polar_to_point(center, tail_angle, POS_Y(18));
     graphics_context_set_stroke_color(ctx, MONO_COLOR(s_settings.seconds_hand_color));
@@ -1515,6 +1571,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   if (weather_changed) {
     persist_write_data(PERSIST_ICONS, s_icons, sizeof(s_icons));
+    persist_write_int(PERSIST_TEMP_C, (int32_t)s_temp_c);
+    persist_write_int(PERSIST_TEMP_F, (int32_t)s_temp_f);
   }
 
   // Settings
@@ -1804,6 +1862,13 @@ static void window_load(Window *window) {
   if (persist_exists(PERSIST_CITY)) {
     persist_read_string(PERSIST_CITY, s_city_name, sizeof(s_city_name));
   }
+  // Load persisted temperature
+  if (persist_exists(PERSIST_TEMP_C)) {
+    s_temp_c = (int8_t)persist_read_int(PERSIST_TEMP_C);
+  }
+  if (persist_exists(PERSIST_TEMP_F)) {
+    s_temp_f = (int8_t)persist_read_int(PERSIST_TEMP_F);
+  }
 
   // Compute marker caches
   compute_markers();
@@ -1843,9 +1908,10 @@ static void window_load(Window *window) {
   s_seconds_visible = (s_settings.seconds_hand_mode == 1);
 
   // Pre-compute perimeter points once (screen size never changes at runtime)
+  GPoint center = GPoint(s_screen_w / 2, s_screen_h / 2);
   for (int h = 0; h < 12; h++) {
     int32_t angle = TRIG_MAX_ANGLE * h / 12;
-        s_perimeter_cache[h] = square_perimeter_point(GPoint(s_screen_w/2, s_screen_h/2), angle, 0, 0);
+    s_perimeter_cache[h] = get_perimeter_point(center, angle, 0, 0);
   }
 
   // Initial icon snapshot

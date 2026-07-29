@@ -296,6 +296,9 @@ function processWeatherData(data) {
   var tempC = Math.round(data.current.temperature_2m);
   var tempF = Math.round(tempC * 9 / 5 + 32);
 
+  // Validation: if temperature is missing or NaN, do not send it (let watch keep last good value)
+  var hasTemp = (typeof tempC === 'number' && !isNaN(tempC));
+
   // Sunrise / sunset (today)
   var sunriseStr = data.daily.sunrise[0]; // "YYYY-MM-DDTHH:MM"
   var sunsetStr  = data.daily.sunset[0];
@@ -311,8 +314,10 @@ function processWeatherData(data) {
   for (var k = 0; k < 24; k++) {
     msg[k] = icons[k]; // KEY_ICON_0..23 = numeric keys 0..23
   }
-  msg[KEY.TEMP_C]          = tempC;
-  msg[KEY.TEMP_F]          = tempF;
+  if (hasTemp) {
+    msg[KEY.TEMP_C]        = tempC;
+    msg[KEY.TEMP_F]        = tempF;
+  }
   msg[KEY.SUNRISE_HOUR]    = srHour;
   msg[KEY.SUNRISE_MINUTE]  = srMin;
   msg[KEY.SUNSET_HOUR]     = ssHour;

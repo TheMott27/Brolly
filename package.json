@@ -1,6 +1,6 @@
 {
   "name": "brolly",
-  "version": "2.51.0",
+  "version": "2.52.0",
   "author": "mrjamieraymusic",
   "keywords": [
     "pebble-app"
@@ -10,9 +10,9 @@
     "displayName": "Brolly",
     "uuid": "53a30793-7406-44e0-b02e-35fad4314fc5",
     "shortName": "Brolly",
-    "longName": "Brolly v2.51.0",
+    "longName": "Brolly v2.52.0",
     "companyName": "mrjamieraymusic",
-    "versionLabel": "2.51.0",
+    "versionLabel": "2.52.0",
     "watchapp": {
       "watchface": true
     },
@@ -27,7 +27,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -38,7 +39,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -49,7 +51,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -60,7 +63,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -71,7 +75,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -82,7 +87,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -93,7 +99,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -104,7 +111,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -115,7 +123,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -126,7 +135,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -137,7 +147,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -148,7 +159,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -159,7 +171,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -170,7 +183,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -181,7 +195,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -192,7 +207,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -203,7 +219,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -214,7 +231,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -225,7 +243,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -236,7 +255,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -247,7 +267,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -258,7 +279,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -269,7 +291,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -280,7 +303,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -291,7 +315,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -302,7 +327,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -313,7 +339,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -324,7 +351,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -335,7 +363,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -346,7 +375,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -357,7 +387,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -368,7 +399,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -379,7 +411,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -390,7 +423,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -401,7 +435,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -412,7 +447,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -423,7 +459,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -434,7 +471,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -445,7 +483,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -456,7 +495,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -467,7 +507,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -478,7 +519,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -489,7 +531,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -500,7 +543,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -511,7 +555,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -522,7 +567,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -533,7 +579,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -544,7 +591,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -555,7 +603,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         },
         {
@@ -566,7 +615,8 @@
           "compatibility": "2.7",
           "targetPlatforms": [
             "basalt",
-            "emery"
+            "emery",
+            "chalk"
           ]
         }
       ]
@@ -574,7 +624,8 @@
     "targetPlatforms": [
       "aplite",
       "basalt",
-      "emery"
+      "emery",
+      "chalk"
     ],
     "capabilities": [
       "location",
