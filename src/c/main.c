@@ -1234,8 +1234,46 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
 
   int line_gap = 18;
 
+  // ── Hour-hand-aware X positioning ─────────────────────────────────────────
+  // The complication is at the TOP when cur_min is 20-40, BOTTOM otherwise.
+  // When the hour hand sweeps near the complication, shift it left (25%) or
+  // right (75%) to avoid being obscured.
+  //
+  // Top complication (mins 20-40):
+  //   hour 11 (11:xx)  → shift RIGHT to 75%
+  //   hour  0 (12:xx)  → shift LEFT  to 25%
+  // Bottom complication (mins outside 20-40):
+  //   hour  5 (5:xx)   → shift LEFT  to 25%
+  //   hour  6 (6:xx)   → shift RIGHT to 75%
+  //
+  // "hour" here is tm_hour % 12 (0-11).
+  int cur_hour12 = s_last_time.tm_hour % 12;
+  bool comp_at_top = (cur_min >= 20 && cur_min <= 40);
+
+  // Box width = 50% of screen, centred at comp_cx.
+  // Default: centred (comp_cx = sw/2).
+  int box_w = sw / 2;
+  int comp_cx = sw / 2; // default: screen centre
+
+  if (comp_at_top) {
+    if (cur_hour12 == 11) {
+      comp_cx = (sw * 3) / 4; // 75% — shift right
+    } else if (cur_hour12 == 0) {
+      comp_cx = sw / 4;       // 25% — shift left
+    }
+  } else {
+    if (cur_hour12 == 5) {
+      comp_cx = sw / 4;       // 25% — shift left
+    } else if (cur_hour12 == 6) {
+      comp_cx = (sw * 3) / 4; // 75% — shift right
+    }
+  }
+
+  // Build the GRect anchored at comp_cx (box spans comp_cx ± box_w/2)
+  int box_x = comp_cx - box_w / 2;
+
   if (show_date) {
-    GRect dr = GRect(0, comp_y - 10, sw, 20);
+    GRect dr = GRect(box_x, comp_y - 10, box_w, 20);
     graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.date_color));
     graphics_draw_text(ctx, date_buf, comp_font, dr,
                        GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
@@ -1243,7 +1281,7 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
 
   if (show_temp) {
     int ty = show_date ? comp_y + line_gap - 10 : comp_y - 10;
-    GRect tr = GRect(0, ty, sw, 20);
+    GRect tr = GRect(box_x, ty, box_w, 20);
     graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.temp_color));
     graphics_draw_text(ctx, temp_buf, comp_font, tr,
                        GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
