@@ -1236,15 +1236,15 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
 
   // ── Hour-hand-aware X positioning ─────────────────────────────────────────
   // The complication is at the TOP when cur_min is 20-40, BOTTOM otherwise.
-  // When the hour hand sweeps near the complication, shift it left (25%) or
-  // right (75%) to avoid being obscured.
+  // When the hour hand sweeps near the complication, shift it left (33%) or
+  // right (66%) to avoid being obscured.
   //
   // Top complication (mins 20-40):
-  //   hour 11 (11:xx)  → shift RIGHT to 75%
-  //   hour  0 (12:xx)  → shift LEFT  to 25%
+  //   hours 10-11 (10:xx, 11:xx)  → shift RIGHT to 66%
+  //   hours 12-1  ( 0:xx,  1:xx)  → shift LEFT  to 33%
   // Bottom complication (mins outside 20-40):
-  //   hour  5 (5:xx)   → shift LEFT  to 25%
-  //   hour  6 (6:xx)   → shift RIGHT to 75%
+  //   hours  4-5  ( 4:xx,  5:xx)  → shift LEFT  to 33%
+  //   hours  6-7  ( 6:xx,  7:xx)  → shift RIGHT to 66%
   //
   // "hour" here is tm_hour % 12 (0-11).
   int cur_hour12 = s_last_time.tm_hour % 12;
@@ -1256,16 +1256,20 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
   int comp_cx = sw / 2; // default: screen centre
 
   if (comp_at_top) {
-    if (cur_hour12 == 11) {
-      comp_cx = (sw * 3) / 4; // 75% — shift right
-    } else if (cur_hour12 == 0) {
-      comp_cx = sw / 4;       // 25% — shift left
+    // Hours 10-11 (range 10:xx–11:xx) → shift right to 66%
+    if (cur_hour12 == 10 || cur_hour12 == 11) {
+      comp_cx = (sw * 2) / 3; // 66%
+    // Hours 12-1 (range 12:xx–1:xx, i.e. 0 and 1 in 12h) → shift left to 33%
+    } else if (cur_hour12 == 0 || cur_hour12 == 1) {
+      comp_cx = sw / 3;       // 33%
     }
   } else {
-    if (cur_hour12 == 5) {
-      comp_cx = sw / 4;       // 25% — shift left
-    } else if (cur_hour12 == 6) {
-      comp_cx = (sw * 3) / 4; // 75% — shift right
+    // Hours 4-5 (range 4:xx–5:xx) → shift left to 33%
+    if (cur_hour12 == 4 || cur_hour12 == 5) {
+      comp_cx = sw / 3;       // 33%
+    // Hours 6-7 (range 6:xx–7:xx) → shift right to 66%
+    } else if (cur_hour12 == 6 || cur_hour12 == 7) {
+      comp_cx = (sw * 2) / 3; // 66%
     }
   }
 
