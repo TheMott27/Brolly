@@ -919,6 +919,12 @@ static void draw_weather_icon_shaded(GContext *ctx, GPathIconID icon_id,
   if (native_max == 0) return;
   int scale256 = (sz * 256) / native_max;
 
+  // Hatching must always be one pixel wide. The background layer draws
+  // markers before icons and may leave the graphics context at 2–3 px;
+  // without this reset, the first icon (12 o'clock) inherits that width and
+  // its shading appears as a solid block rather than distinct diagonal lines.
+  graphics_context_set_stroke_width(ctx, 1);
+
   // Scaled gap
   int gap = (SHADE_GAP_NATIVE * scale256) / 256;
   if (gap < 2) gap = 2;
