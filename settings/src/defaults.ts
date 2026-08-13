@@ -97,7 +97,7 @@ export const DEFAULTS: BrollySettings = {
   KEY_CITY_DISPLAY_MODE: 1,        // shake (same as date/temp default)
   KEY_CITY_COLOR: 0x0000aa,        // navy blue
   KEY_COMPLICATION_LAYER: 0,
-  KEY_WEATHER_INTERVAL: 30,
+  KEY_WEATHER_INTERVAL: 60,
 
   KEY_SUNRISE_MARKER_VISIBLE: 0,
   KEY_SUNRISE_MARKER_COLOR: 0xff5500,  // orange-red (user request)

@@ -1297,7 +1297,9 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
     if (s_settings.city_display_mode == 2) {
       show_city = true;
     } else if (s_settings.city_display_mode == 1) {
-      show_city = s_showing_icons; // same shake gate as icons
+      // s_showing_icons is the shared timed shake-content gate. City name
+      // triggers this gate independently of the selected icon display mode.
+      show_city = s_showing_icons;
     }
     if (show_city) {
       // comp_y is POS_Y(45) or POS_Y(105). Opposite side:
@@ -1532,11 +1534,13 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
     layer_mark_dirty(s_minute_layer);  // seconds drawn inside minute layer
   }
 
-  // Icons on shake (shake_mode == 0).
+  // Timed shake content: icons when configured for On shake, and/or the city
+  // name when configured for On shake. City visibility is deliberately
+  // independent of whether icons are Always Show, Always Hide, or Side-by-Side.
   // Every shake restarts the full show cycle: cancel any in-flight timers,
-  // hide icons immediately, then start the 500ms delay before re-showing.
-  // This eliminates any lockout window regardless of seconds-hand state.
-  if (s_settings.shake_mode == 0) {
+  // hide the timed content immediately, then start the 500ms delay before
+  // re-showing it. This eliminates any lockout window.
+  if (s_settings.shake_mode == 0 || s_settings.city_display_mode == 1) {
     // Cancel hide timer if running
     if (s_shake_timer) {
       app_timer_cancel(s_shake_timer);
@@ -1811,7 +1815,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   // Shake mode also controls accel subscription
   if (settings_changed) {
     persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(Settings));
-    bool need_accel = (s_settings.shake_mode == 0 || s_settings.seconds_hand_mode == 2);
+    bool need_accel = (s_settings.shake_mode == 0 ||
+                       s_settings.seconds_hand_mode == 2 ||
+                       s_settings.city_display_mode == 1);
     if (need_accel) {
       accel_tap_service_subscribe(accel_tap_handler);
     } else {
@@ -1972,8 +1978,10 @@ static void window_load(Window *window) {
     .pebble_app_connection_handler = bt_handler
   });
 
-  // Subscribe to accel tap if needed
-  bool need_accel = (s_settings.shake_mode == 0 || s_settings.seconds_hand_mode == 2);
+  // Subscribe to accel tap if any shake-triggered content is enabled.
+  bool need_accel = (s_settings.shake_mode == 0 ||
+                     s_settings.seconds_hand_mode == 2 ||
+                     s_settings.city_display_mode == 1);
   if (need_accel) {
     accel_tap_service_subscribe(accel_tap_handler);
   }

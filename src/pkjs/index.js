@@ -153,7 +153,7 @@ var s_storedLat = null;
 var s_storedLon = null;
 var s_resolvedCityName = '';
 var s_weatherIntervalId = null;
-var s_currentWeatherInterval = 30; // default 30 mins
+var s_currentWeatherInterval = 60; // default 60 mins
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Geocoding helper
