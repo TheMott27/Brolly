@@ -1861,8 +1861,6 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 // Default settings
 // ─────────────────────────────────────────────────────────────────────────────
 static void load_default_settings(void) {
-  bool is_emery = (s_screen_w >= 200);
-
   s_settings.background_color       = GColorBlack;
   s_settings.display_hour_markers   = true;
   s_settings.hour_marker_color      = GColorWhite;
