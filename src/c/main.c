@@ -1384,8 +1384,11 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   bool critical_battery = (s_battery_pct <= s_settings.battery_center_threshold &&
                             s_settings.battery_center_threshold > 0);
 
-  if (low_battery)      battery_ring = GColorRed;
-  if (critical_battery) { battery_ring = GColorRed; inner_ring = GColorRed; dot = GColorRed; }
+  // Low battery: highlight only the inner ring. Preserve the outer ring and
+  // centre dot in their normal colours so the alert is distinct from critical.
+  if (low_battery)      inner_ring = GColorRed;
+  // Critical battery: both rings are red; keep the centre dot at its normal colour.
+  if (critical_battery) { battery_ring = GColorRed; inner_ring = GColorRed; }
 
   // r5 outer ring
   graphics_context_set_fill_color(ctx, MONO_COLOR(battery_ring));
