@@ -1379,16 +1379,25 @@ static void minute_layer_update(Layer *layer, GContext *ctx) {
   GColor inner_ring   = s_settings.min_hand_inner;
   GColor dot          = s_settings.hour_hand_outer;
 
-  bool low_battery      = (s_battery_pct <= s_settings.battery_ring_threshold &&
-                            s_settings.battery_ring_threshold > 0);
   bool critical_battery = (s_battery_pct <= s_settings.battery_center_threshold &&
-                            s_settings.battery_center_threshold > 0);
+                           s_settings.battery_center_threshold > 0);
+  // Low applies only above the critical threshold. This makes the visual
+  // states mutually exclusive even though a critical percentage is also
+  // numerically below the low-battery threshold.
+  bool low_battery = !critical_battery &&
+                     (s_battery_pct <= s_settings.battery_ring_threshold &&
+                      s_settings.battery_ring_threshold > 0);
 
-  // Low battery: highlight only the inner ring. Preserve the outer ring and
-  // centre dot in their normal colours so the alert is distinct from critical.
-  if (low_battery)      inner_ring = GColorRed;
-  // Critical battery: both rings are red; keep the centre dot at its normal colour.
-  if (critical_battery) { battery_ring = GColorRed; inner_ring = GColorRed; }
+  // Low battery: only the inner ring turns red. The outer ring and centre dot
+  // retain their normal colours.
+  if (low_battery) {
+    inner_ring = GColorRed;
+  }
+  // Critical battery: both rings turn red. The centre dot remains normal.
+  if (critical_battery) {
+    battery_ring = GColorRed;
+    inner_ring = GColorRed;
+  }
 
   // r5 outer ring
   graphics_context_set_fill_color(ctx, MONO_COLOR(battery_ring));
@@ -1729,10 +1738,18 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
   t = dict_find(iter, 144); // KEY_TEST_BATTERY_ALERT
   if (t && t->value->int32) {
-    // Show ring-threshold battery alert for 3 seconds, then restore
+    // Test LOW (not critical) battery for 3 seconds. Pick a percentage midway
+    // between the configured low and critical thresholds when possible.
     if (s_test_battery_timer) { app_timer_cancel(s_test_battery_timer); }
     s_test_saved_battery = s_battery_pct;
-    s_battery_pct = 5;  // below ring threshold
+    uint8_t low_threshold = s_settings.battery_ring_threshold;
+    uint8_t critical_threshold = s_settings.battery_center_threshold;
+    if (low_threshold > critical_threshold + 1) {
+      s_battery_pct = critical_threshold + (low_threshold - critical_threshold) / 2;
+    } else {
+      // Fallback for overlapping/invalid thresholds: use the low threshold.
+      s_battery_pct = low_threshold;
+    }
     layer_mark_dirty(s_minute_layer);
     s_test_battery_timer = app_timer_register(3000, test_battery_restore_callback, NULL);
   }
@@ -1869,8 +1886,8 @@ static void load_default_settings(void) {
   s_settings.temp_unit              = 0;   // °C
   s_settings.date_color             = GColorFromRGB(0x4a, 0x5f, 0x7f);
   s_settings.temp_color             = GColorFromRGB(0x4a, 0x5f, 0x7f);
-  s_settings.battery_ring_threshold   = is_emery ? 30 : 50;
-  s_settings.battery_center_threshold = is_emery ? 10 : 20;
+  s_settings.battery_ring_threshold   = 20;
+  s_settings.battery_center_threshold = 10;
   s_settings.sunrise_marker_visible = 0;   // Always
   s_settings.sunrise_marker_color   = GColorFromRGB(0xff, 0x95, 0x00);
   s_settings.sunset_marker_color    = GColorFromRGB(0x00, 0x61, 0xfe);
