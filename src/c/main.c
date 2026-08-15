@@ -1319,7 +1319,30 @@ static void complication_layer_update(Layer *layer, GContext *ctx) {
         city_y = POS_Y(45);
 #endif
       }
-      GRect cr = GRect(0, city_y - 10, sw, 20);
+      // Keep short names on the normal full-width line. For long names, use
+      // a protected central two-line area: its side margins clear the dial's
+      // 10/2 numbers and weather icons, while WordWrap moves the remainder
+      // onto a new line below instead of painting across them.
+      int city_safe_margin = POS_X(36);
+      int city_safe_w = sw - city_safe_margin * 2;
+      if (city_safe_w < POS_X(60)) city_safe_w = POS_X(60);
+
+      // Measure against a deliberately wide one-line box to detect whether
+      // the name would intrude into the protected central area.
+      GSize city_natural_size = graphics_text_layout_get_content_size(
+        s_city_name, comp_font, GRect(0, 0, sw * 2, 30),
+        GTextOverflowModeWordWrap, GTextAlignmentCenter);
+      bool city_needs_wrap = city_natural_size.w > city_safe_w;
+
+      GRect cr;
+      if (city_needs_wrap) {
+        int city_line_h = is_emery ? 26 : 18;
+        cr = GRect(city_safe_margin, city_y - city_line_h / 2,
+                   city_safe_w, city_line_h * 2);
+      } else {
+        cr = GRect(0, city_y - 10, sw, 20);
+      }
+
       graphics_context_set_text_color(ctx, MONO_COLOR(s_settings.city_color));
       graphics_draw_text(ctx, s_city_name, comp_font, cr,
                          GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
