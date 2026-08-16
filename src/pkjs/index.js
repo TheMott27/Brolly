@@ -154,6 +154,64 @@ var s_storedLon = null;
 var s_resolvedCityName = '';
 var s_weatherIntervalId = null;
 var s_currentWeatherInterval = 60; // default 60 mins
+var CUSTOM_LOCATION_STORAGE_KEY = 'custom_location';
+
+// Keep custom-location state durable across PebbleKit JS restarts and clear
+// coordinate/city caches whenever the user selects a different place.
+function setCustomLocation(location) {
+  var normalized = String(location || '').trim();
+  s_customLocation = normalized;
+  s_resolvedCityName = '';
+  s_useLatLon = false;
+  s_storedLat = null;
+  s_storedLon = null;
+  if (normalized) {
+    localStorage.setItem(CUSTOM_LOCATION_STORAGE_KEY, normalized);
+  } else {
+    localStorage.removeItem(CUSTOM_LOCATION_STORAGE_KEY);
+  }
+}
+
+// Pebble AppMessage has one active delivery at a time. Queue every outgoing
+// message and retry transient failures so settings and weather cannot race.
+var s_messageQueue = [];
+var s_messageSending = false;
+var APP_MESSAGE_MAX_RETRIES = 3;
+var APP_MESSAGE_RETRY_MS = 1000;
+
+function enqueueAppMessage(message, label) {
+  if (!message || Object.keys(message).length === 0) return;
+  s_messageQueue.push({ message: message, label: label || 'AppMessage', attempts: 0 });
+  sendNextAppMessage();
+}
+
+function sendNextAppMessage() {
+  if (s_messageSending || s_messageQueue.length === 0) return;
+
+  var item = s_messageQueue[0];
+  s_messageSending = true;
+  Pebble.sendAppMessage(item.message, function() {
+    console.log(item.label + ' sent to watch');
+    s_messageQueue.shift();
+    s_messageSending = false;
+    sendNextAppMessage();
+  }, function(e) {
+    item.attempts++;
+    if (item.attempts <= APP_MESSAGE_MAX_RETRIES) {
+      var delay = APP_MESSAGE_RETRY_MS * item.attempts;
+      console.log(item.label + ' send failed; retry ' + item.attempts + ' in ' + delay + 'ms: ' + JSON.stringify(e));
+      setTimeout(function() {
+        s_messageSending = false;
+        sendNextAppMessage();
+      }, delay);
+    } else {
+      console.log(item.label + ' send failed after retries: ' + JSON.stringify(e));
+      s_messageQueue.shift();
+      s_messageSending = false;
+      sendNextAppMessage();
+    }
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Geocoding helper
@@ -327,11 +385,7 @@ function processWeatherData(data) {
     msg[KEY.CITY_NAME] = s_resolvedCityName.substring(0, 31);
   }
 
-  Pebble.sendAppMessage(msg, function() {
-    console.log('Weather sent to watch');
-  }, function(e) {
-    console.log('Weather send failed: ' + JSON.stringify(e));
-  });
+  enqueueAppMessage(msg, 'Weather');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -444,31 +498,19 @@ function sendSettingsToWatch(settings) {
   if (settings.KEY_TEST_BATTERY_ALERT) {
     var msg144 = {};
     msg144[KEY.TEST_BATTERY_ALERT] = 1;
-    Pebble.sendAppMessage(msg144, function() {
-      console.log('Test battery alert sent');
-    }, function(e) {
-      console.log('Test battery alert failed: ' + JSON.stringify(e));
-    });
+    enqueueAppMessage(msg144, 'Test low battery alert');
     return;
   }
   if (settings.KEY_TEST_BT_DISCONNECT) {
     var msg145 = {};
     msg145[KEY.TEST_BT_DISCONNECT] = 1;
-    Pebble.sendAppMessage(msg145, function() {
-      console.log('Test BT disconnect sent');
-    }, function(e) {
-      console.log('Test BT disconnect failed: ' + JSON.stringify(e));
-    });
+    enqueueAppMessage(msg145, 'Test Bluetooth disconnect');
     return;
   }
   if (settings.KEY_TEST_CRITICAL_BATTERY_ALERT) {
     var msg146 = {};
     msg146[KEY.TEST_CRITICAL_BATTERY_ALERT] = 1;
-    Pebble.sendAppMessage(msg146, function() {
-      console.log('Test critical battery alert sent');
-    }, function(e) {
-      console.log('Test critical battery alert failed: ' + JSON.stringify(e));
-    });
+    enqueueAppMessage(msg146, 'Test critical battery alert');
     return;
   }
 
@@ -523,9 +565,9 @@ function sendSettingsToWatch(settings) {
     }
   });
 
-    // Custom location: store locally for weather fetch (trimmed).
+    // Custom location is JS-only, but must survive companion restarts.
   if (settings.KEY_CUSTOM_LOCATION !== undefined) {
-    s_customLocation = String(settings.KEY_CUSTOM_LOCATION).trim();
+    setCustomLocation(settings.KEY_CUSTOM_LOCATION);
   }
   // Weather interval: store locally (not sent to watch, JS-only setting).
   if (settings.KEY_WEATHER_INTERVAL !== undefined) {
@@ -534,11 +576,7 @@ function sendSettingsToWatch(settings) {
     updateWeatherInterval(interval);
   }
   if (Object.keys(msg).length > 0) {
-    Pebble.sendAppMessage(msg, function() {
-      console.log('Settings sent to watch');
-    }, function(e) {
-      console.log('Settings send failed: ' + JSON.stringify(e));
-    });
+    enqueueAppMessage(msg, 'Settings');
   }
 }
 
@@ -547,10 +585,14 @@ function sendSettingsToWatch(settings) {
 // ─────────────────────────────────────────────────────────────────────────────
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready');
-  // Load stored interval if available
+  // Restore JS-only settings before the first weather request.
   var storedInterval = localStorage.getItem('weather_interval');
   if (storedInterval) {
     s_currentWeatherInterval = parseInt(storedInterval, 10);
+  }
+  var storedLocation = localStorage.getItem(CUSTOM_LOCATION_STORAGE_KEY);
+  if (storedLocation !== null) {
+    setCustomLocation(storedLocation);
   }
   doWeatherFetch();
   updateWeatherInterval(s_currentWeatherInterval);
@@ -570,14 +612,9 @@ Pebble.addEventListener('webviewclosed', function(e) {
     try {
       var payload = JSON.parse(decodeURIComponent(e.response));
 
-      // Update custom location BEFORE calling sendSettingsToWatch so that
-      // s_customLocation is already set when doWeatherFetch runs.
+      // Update the durable custom location before requesting new weather.
       if (payload.KEY_CUSTOM_LOCATION !== undefined) {
-        s_customLocation = String(payload.KEY_CUSTOM_LOCATION).trim();
-        s_resolvedCityName = "";
-        s_useLatLon = false;  // discard any cached GPS coords
-        s_storedLat = null;
-        s_storedLon = null;
+        setCustomLocation(payload.KEY_CUSTOM_LOCATION);
       }
 
       // Check if this is a test-button-only payload — if so, don't re-fetch weather.
