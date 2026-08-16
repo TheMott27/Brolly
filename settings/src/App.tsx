@@ -5,17 +5,37 @@
  * Reset All: resets every field to DEFAULTS and clears localStorage.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.4'
+const VERSION = 'v2.1.5'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getReturnTo(): string {
   const params = new URLSearchParams(window.location.search)
   return params.get('return_to') || 'pebblejs://close#'
+}
+
+/** Resolve a free-form location to the canonical City, Country form. */
+async function verifyCustomLocation(rawLocation: string): Promise<string> {
+  const query = rawLocation.trim().replace(/\s+/g, ' ')
+  if (!query) return ''
+
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`
+  )
+  if (!response.ok) throw new Error('Location lookup failed')
+
+  const data = await response.json()
+  const match = data?.results?.[0]
+  if (!match) throw new Error('No matching city found')
+
+  const city = String(match.name || match.admin1 || '').trim()
+  const country = String(match.country || '').trim()
+  if (!city || !country) throw new Error('Incomplete location result')
+  return `${city}, ${country}`
 }
 
 // ─── Tiny reusable components ─────────────────────────────────────────────────
@@ -95,7 +115,8 @@ function SelectRow({ label, desc, value, options, onChange }: {
           marginTop: 8, width: '100%',
           background: '#0a1929', border: '1px solid rgba(255,255,255,0.12)',
           color: '#f0f4f8', borderRadius: 8, padding: '9px 12px',
-          fontSize: 13, outline: 'none', cursor: 'pointer',
+          // 16px prevents iOS/Pebble webview zooming when a select is focused.
+          fontSize: 16, outline: 'none', cursor: 'pointer',
         }}
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -343,12 +364,48 @@ function DisplayTab({ s, set, onResetColours }: {
   )
 }
 
-function WeatherTab({ s, set }: {
+function WeatherTab({ s, set, notify }: {
   s: BrollySettings;
   set: <K extends keyof BrollySettings>(k: K, v: BrollySettings[K]) => void;
+  notify: (message: string) => void;
 }) {
   const [updatingGps, setUpdatingGps] = useState(false)
+  const [verifyingLocation, setVerifyingLocation] = useState(false)
+  const locationInputRef = useRef<HTMLInputElement>(null)
+  const locationVerificationInFlight = useRef(false)
+  const lastVerifiedLocation = useRef('')
   const { placeholder: gpsPlaceholder, refresh: refreshGps } = useGpsPlaceholder()
+
+  async function confirmCustomLocation() {
+    const rawLocation = (locationInputRef.current?.value || s.KEY_CUSTOM_LOCATION)
+      .trim()
+      .replace(/\s+/g, ' ')
+
+    // An empty location deliberately means GPS; it needs no city lookup.
+    if (!rawLocation) {
+      lastVerifiedLocation.current = ''
+      return
+    }
+    // Blur and button-click can fire together; allow one lookup only.
+    if (locationVerificationInFlight.current || rawLocation === lastVerifiedLocation.current) {
+      return
+    }
+
+    locationVerificationInFlight.current = true
+    setVerifyingLocation(true)
+    try {
+      const formattedLocation = await verifyCustomLocation(rawLocation)
+      set('KEY_CUSTOM_LOCATION', formattedLocation)
+      lastVerifiedLocation.current = formattedLocation
+      notify(`Verified: ${formattedLocation}`)
+    } catch {
+      lastVerifiedLocation.current = ''
+      notify('Location not found — please enter a city and country')
+    } finally {
+      locationVerificationInFlight.current = false
+      setVerifyingLocation(false)
+    }
+  }
 
   async function handleUpdateGps() {
     // Clear any custom location text and re-run GPS resolution.
@@ -399,17 +456,44 @@ function WeatherTab({ s, set }: {
             desc="LEAVE BLANK FOR GPS. Type city or country & postcode for custom location."
           />
           <input
+            ref={locationInputRef}
             type="text"
+            inputMode="text"
+            autoCapitalize="words"
             value={s.KEY_CUSTOM_LOCATION}
             placeholder={gpsPlaceholder}
-            onChange={e => set('KEY_CUSTOM_LOCATION', e.target.value)}
+            onChange={e => {
+              lastVerifiedLocation.current = ''
+              set('KEY_CUSTOM_LOCATION', e.target.value)
+            }}
+            onBlur={() => { void confirmCustomLocation() }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void confirmCustomLocation()
+              }
+            }}
             style={{
               marginTop: 8, width: '100%', boxSizing: 'border-box',
               background: '#0a1929', border: '1px solid rgba(255,255,255,0.12)',
               color: '#f0f4f8', borderRadius: 8, padding: '10px 12px',
-              fontSize: 13, outline: 'none',
+              // A 16px native input prevents iOS/Pebble webview focus zoom.
+              fontSize: 16, outline: 'none', touchAction: 'manipulation',
             }}
           />
+          <button
+            onClick={() => { void confirmCustomLocation() }}
+            disabled={verifyingLocation}
+            style={{
+              marginTop: 8, width: '100%', padding: '8px 0',
+              background: 'rgba(13,148,136,0.16)', border: '1px solid rgba(45,212,191,0.55)',
+              color: verifyingLocation ? '#64748b' : '#5eead4', borderRadius: 8,
+              fontSize: 14, fontWeight: 600, cursor: verifyingLocation ? 'wait' : 'pointer',
+              transition: 'background 0.15s', touchAction: 'manipulation',
+            }}
+          >
+            {verifyingLocation ? 'Verifying location…' : 'Confirm city & country'}
+          </button>
           <button
             onClick={handleUpdateGps}
             disabled={updatingGps}
@@ -749,10 +833,12 @@ export default function App() {
   // Does NOT use window.confirm — that is blocked in the Pebble webview.
   // Instead, the AlertsTab shows an inline confirm/cancel button pair.
   function handleResetAll() {
+    // Replace—not merge—settings and save the complete defaults object
+    // immediately, so every selector is reset (including Icon Style = Single colour).
     const fresh: BrollySettings = { ...DEFAULTS }
-    localStorage.removeItem('brolly_settings')
+    localStorage.setItem('brolly_settings', JSON.stringify(fresh))
     setSettings(fresh)
-    setToast('All settings reset to defaults')
+    setToast('All settings reset — Icon Style is Single colour')
   }
 
   const TABS = [
@@ -842,7 +928,7 @@ export default function App() {
           <DisplayTab s={settings} set={set} onResetColours={handleResetColours} />
         )}
         {tab === 'weather' && (
-          <WeatherTab s={settings} set={set} />
+          <WeatherTab s={settings} set={set} notify={setToast} />
         )}
         {tab === 'alerts' && (
           <AlertsTab s={settings} set={set} onResetColours={handleResetColours} onResetAll={handleResetAll} />
