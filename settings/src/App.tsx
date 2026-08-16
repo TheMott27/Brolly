@@ -485,14 +485,14 @@ function WeatherTab({ s, set, notify }: {
             onClick={() => { void confirmCustomLocation() }}
             disabled={verifyingLocation}
             style={{
-              marginTop: 8, padding: '7px 12px',
+              marginTop: 8, width: '100%', boxSizing: 'border-box', padding: '8px 12px',
               background: 'rgba(13,148,136,0.16)', border: '1px solid rgba(45,212,191,0.55)',
               color: verifyingLocation ? '#64748b' : '#5eead4', borderRadius: 7,
               fontSize: 14, fontWeight: 600, cursor: verifyingLocation ? 'wait' : 'pointer',
               transition: 'background 0.15s', touchAction: 'manipulation',
             }}
           >
-            {verifyingLocation ? 'Verifying location…' : 'Confirm city & country'}
+            {verifyingLocation ? 'Verifying location…' : 'Confirm custom location'}
           </button>
           <button
             onClick={handleUpdateGps}
@@ -838,7 +838,7 @@ export default function App() {
     const fresh: BrollySettings = { ...DEFAULTS }
     localStorage.setItem('brolly_settings', JSON.stringify(fresh))
     setSettings(fresh)
-    setToast('All settings reset — Icon Style is Single colour')
+    setToast('All settings reset')
   }
 
   const TABS = [
