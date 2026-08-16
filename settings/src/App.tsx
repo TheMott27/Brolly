@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.5'
+const VERSION = 'v2.1.6'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -782,6 +782,7 @@ export default function App() {
 
   const [tab, setTab] = useState<'display' | 'weather' | 'alerts'>('display')
   const [toast, setToast] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('brolly_settings', JSON.stringify(settings))
@@ -797,13 +798,32 @@ export default function App() {
     setSettings(prev => ({ ...prev, [k]: v }))
   }
 
-  function handleSave() {
-    const payload: Record<string, number | string> = { ...settings }
-    localStorage.setItem('brolly_settings', JSON.stringify(settings))
+  async function handleSave() {
+    if (saving) return
+    setSaving(true)
+
+    // The location field may be mid-verification when Save is pressed (for
+    // example, clicking Save causes the focused input to blur). Verify here as
+    // well so the payload always contains the final City, Country value.
+    let payload: BrollySettings = { ...settings }
+    const rawLocation = String(payload.KEY_CUSTOM_LOCATION || '').trim()
+    if (rawLocation) {
+      try {
+        const verifiedLocation = await verifyCustomLocation(rawLocation)
+        payload = { ...payload, KEY_CUSTOM_LOCATION: verifiedLocation }
+      } catch {
+        setToast('Location not found — please enter a city and country')
+        setSaving(false)
+        return
+      }
+    }
+
+    localStorage.setItem('brolly_settings', JSON.stringify(payload))
+    setSettings(payload)
     setToast('Settings saved!')
-    setTimeout(() => {
+    window.setTimeout(() => {
       window.location.href = getReturnTo() + encodeURIComponent(JSON.stringify(payload))
-    }, 600)
+    }, 200)
   }
 
   function handleResetColours() {
@@ -907,16 +927,17 @@ export default function App() {
               ))}
             </div>
             <button
-              onClick={handleSave}
+              onClick={() => { void handleSave() }}
+              disabled={saving}
               style={{
                 padding: '9px 16px', fontSize: 13, fontWeight: 700,
-                background: 'linear-gradient(135deg, #0d9488, #0891b2)',
-                color: '#fff', border: 'none', borderRadius: 8,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 2px 8px rgba(13,148,136,0.4)',
+                background: saving ? '#1e3a5f' : 'linear-gradient(135deg, #0d9488, #0891b2)',
+                color: saving ? '#94a3b8' : '#fff', border: 'none', borderRadius: 8,
+                cursor: saving ? 'wait' : 'pointer', whiteSpace: 'nowrap',
+                boxShadow: saving ? 'none' : '0 2px 8px rgba(13,148,136,0.4)',
               }}
             >
-              ✓ Save
+              {saving ? 'Saving…' : '✓ Save'}
             </button>
           </div>
         </div>
