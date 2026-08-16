@@ -485,9 +485,9 @@ function WeatherTab({ s, set, notify }: {
             onClick={() => { void confirmCustomLocation() }}
             disabled={verifyingLocation}
             style={{
-              marginTop: 8, width: '100%', padding: '8px 0',
+              marginTop: 8, padding: '7px 12px',
               background: 'rgba(13,148,136,0.16)', border: '1px solid rgba(45,212,191,0.55)',
-              color: verifyingLocation ? '#64748b' : '#5eead4', borderRadius: 8,
+              color: verifyingLocation ? '#64748b' : '#5eead4', borderRadius: 7,
               fontSize: 14, fontWeight: 600, cursor: verifyingLocation ? 'wait' : 'pointer',
               transition: 'background 0.15s', touchAction: 'manipulation',
             }}
