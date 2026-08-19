@@ -55,12 +55,18 @@ static inline int POS_Y(int py) {
 #define PERSIST_CITY     2
 #define PERSIST_TEMP_C   3
 #define PERSIST_TEMP_F   4
+#define PERSIST_CUSTOM_LOCATION 5
+
+// AppMessage keys used only for settings snapshot synchronisation.
+#define KEY_REQUEST_SETTINGS  163
+#define KEY_SETTINGS_SNAPSHOT 164
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AppMessage inbox/outbox sizes
 // ─────────────────────────────────────────────────────────────────────────────
 #define APP_MSG_INBOX_SIZE  512
-#define APP_MSG_OUTBOX_SIZE  64
+// A complete settings snapshot is returned to the companion on demand.
+#define APP_MSG_OUTBOX_SIZE  512
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shake / seconds timings
@@ -149,6 +155,9 @@ static int8_t    s_icons[24];
 static int8_t    s_temp_c = 127; // 127 = No data
 static int8_t    s_temp_f = 127;
 static char      s_city_name[32] = "";
+// Kept on the watch as part of the per-user settings snapshot so a companion
+// restart cannot make the settings page lose a custom location.
+static char      s_custom_location[64] = "";
 static int8_t    s_sunrise_hour = 6,  s_sunrise_min = 0;
 static int8_t    s_sunset_hour  = 18, s_sunset_min  = 0;
 
@@ -259,6 +268,16 @@ static void test_bt_restore_callback(void *data) {
 static GColor rgb_to_gcolor(int32_t rgb) {
   if (rgb == -1) return GColorClear;
   return GColorFromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+}
+
+// Convert Pebble's native 2-bit-per-channel colour back to the 0xRRGGBB form
+// used by the settings page and companion configuration messages.
+static int32_t gcolor_to_rgb(GColor color) {
+  uint8_t argb = color.argb;
+  uint8_t r = ((argb >> 4) & 0x03) * 85;
+  uint8_t g = ((argb >> 2) & 0x03) * 85;
+  uint8_t b = (argb & 0x03) * 85;
+  return ((int32_t)r << 16) | ((int32_t)g << 8) | b;
 }
 
 // Polar to point (clock-hand angle, 12 o'clock = 0)
@@ -1620,6 +1639,59 @@ static void bt_handler(bool connected) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Settings snapshot response
+// ─────────────────────────────────────────────────────────────────────────────
+// The companion requests this before opening the configuration page. Returning
+// the watch's persisted settings makes the page independent of webview cache.
+static void send_settings_snapshot(void) {
+  DictionaryIterator *out;
+  if (app_message_outbox_begin(&out) != APP_MSG_OK) return;
+
+  dict_write_uint8(out, KEY_SETTINGS_SNAPSHOT, 1);
+  dict_write_uint8(out, 40, s_settings.display_hour_markers);
+  dict_write_uint8(out, 41, s_settings.display_minor_markers);
+  dict_write_uint8(out, 53, s_settings.bt_disconnect_min_inner_red);
+  dict_write_uint8(out, 54, s_settings.vibrate_bt_disconnect);
+  dict_write_uint8(out, 55, s_settings.vibrate_bt_reconnect);
+  dict_write_uint8(out, 107, s_settings.shake_mode);
+  dict_write_uint8(out, 110, s_settings.temp_unit);
+  dict_write_cstring(out, 113, s_custom_location);
+  dict_write_int32(out, 114, gcolor_to_rgb(s_settings.hour_hand_outer));
+  dict_write_int32(out, 115, gcolor_to_rgb(s_settings.hour_hand_inner));
+  dict_write_int32(out, 116, gcolor_to_rgb(s_settings.min_hand_outer));
+  dict_write_int32(out, 117, gcolor_to_rgb(s_settings.min_hand_inner));
+  dict_write_uint8(out, 118, s_settings.date_visible);
+  dict_write_uint8(out, 119, s_settings.temp_visible);
+  dict_write_uint8(out, 121, s_settings.number_font);
+  dict_write_int32(out, 126, gcolor_to_rgb(s_settings.background_color));
+  dict_write_int32(out, 127, gcolor_to_rgb(s_settings.number_color));
+  dict_write_int32(out, 128, gcolor_to_rgb(s_settings.icon_color));
+  dict_write_int32(out, 129, gcolor_to_rgb(s_settings.hour_marker_color));
+  dict_write_int32(out, 130, gcolor_to_rgb(s_settings.minute_marker_color));
+  dict_write_int32(out, 134, gcolor_to_rgb(s_settings.date_color));
+  dict_write_int32(out, 135, gcolor_to_rgb(s_settings.temp_color));
+  dict_write_int32(out, 136, gcolor_to_rgb(s_settings.bt_disconnect_outer_color));
+  dict_write_int32(out, 137, gcolor_to_rgb(s_settings.bt_disconnect_inner_color));
+  dict_write_uint8(out, 138, s_settings.battery_ring_threshold);
+  dict_write_uint8(out, 139, s_settings.battery_center_threshold);
+  dict_write_int32(out, 141, gcolor_to_rgb(s_settings.seconds_hand_color));
+  dict_write_uint8(out, 142, s_settings.seconds_hand_mode);
+  dict_write_uint8(out, 143, s_settings.seconds_shake_dur);
+  dict_write_uint8(out, 147, s_settings.sunrise_marker_visible);
+  dict_write_int32(out, 148, gcolor_to_rgb(s_settings.sunrise_marker_color));
+  dict_write_int32(out, 149, gcolor_to_rgb(s_settings.sunset_marker_color));
+  dict_write_uint8(out, 150, s_settings.number_size);
+  dict_write_uint8(out, 151, s_settings.icon_size);
+  dict_write_uint8(out, 153, s_settings.icon_color_mode);
+  dict_write_uint8(out, 158, s_settings.display_mode);
+  dict_write_uint8(out, 160, s_settings.city_display_mode);
+  dict_write_int32(out, 161, gcolor_to_rgb(s_settings.city_color));
+  dict_write_uint8(out, 162, s_settings.complication_layer);
+  dict_write_end(out);
+  app_message_outbox_send();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // AppMessage handler
 // ─────────────────────────────────────────────────────────────────────────────
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
@@ -1628,6 +1700,14 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   bool bg_dirty         = false;
 
   Tuple *t;
+
+  // The phone requests this before opening the settings page. Respond before
+  // processing normal weather or settings payloads.
+  t = dict_find(iter, KEY_REQUEST_SETTINGS);
+  if (t && t->value->int32) {
+    send_settings_snapshot();
+    return;
+  }
 
   // Icons
   for (int i = 0; i < 24; i++) {
@@ -1681,8 +1761,12 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   t = dict_find(iter, 110); // KEY_TEMP_UNIT
   if (t) { s_settings.temp_unit = (uint8_t)t->value->int32; settings_changed = true; }
 
-  t = dict_find(iter, 113); // KEY_CUSTOM_LOCATION (string, handled by JS)
-  // No C-side action needed
+  t = dict_find(iter, 113); // KEY_CUSTOM_LOCATION
+  if (t && t->type == TUPLE_CSTRING) {
+    strncpy(s_custom_location, t->value->cstring, sizeof(s_custom_location) - 1);
+    s_custom_location[sizeof(s_custom_location) - 1] = '\0';
+    persist_write_string(PERSIST_CUSTOM_LOCATION, s_custom_location);
+  }
 
   t = dict_find(iter, 114); // KEY_HOUR_HAND_OUTER
   if (t) { s_settings.hour_hand_outer = rgb_to_gcolor(t->value->int32); settings_changed = true; }
@@ -1947,9 +2031,12 @@ static void window_load(Window *window) {
   } else {
     memset(s_icons, ICON_UNKNOWN, sizeof(s_icons));
   }
-  // Load persisted city name
+  // Load persisted city name and custom location.
   if (persist_exists(PERSIST_CITY)) {
     persist_read_string(PERSIST_CITY, s_city_name, sizeof(s_city_name));
+  }
+  if (persist_exists(PERSIST_CUSTOM_LOCATION)) {
+    persist_read_string(PERSIST_CUSTOM_LOCATION, s_custom_location, sizeof(s_custom_location));
   }
   // Load persisted temperature
   if (persist_exists(PERSIST_TEMP_C)) {
