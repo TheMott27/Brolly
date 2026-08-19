@@ -73,6 +73,7 @@ var KEY = {
   // Settings
   SHAKE_MODE:              107,
   TEMP_UNIT:               110,
+  CUSTOM_LOCATION:         113,
   HOUR_HAND_OUTER:         114,
   HOUR_HAND_INNER:         115,
   MIN_HAND_OUTER:          116,
@@ -112,6 +113,9 @@ var KEY = {
   CITY_DISPLAY_MODE: 160,
   CITY_COLOR:        161,
   COMPLICATION_LAYER:162,
+  // Settings snapshot synchronisation
+  REQUEST_SETTINGS:  163,
+  SETTINGS_SNAPSHOT: 164,
   // Markers
   DISPLAY_HOUR_MARKERS:  40,
   DISPLAY_MINOR_MARKERS: 41
@@ -155,6 +159,87 @@ var s_resolvedCityName = '';
 var s_weatherIntervalId = null;
 var s_currentWeatherInterval = 60; // default 60 mins
 var CUSTOM_LOCATION_STORAGE_KEY = 'custom_location';
+var FULL_SETTINGS_STORAGE_KEY = 'brolly_full_settings_v1';
+var s_fullSettings = null;
+var s_waitingForSettingsSnapshot = false;
+var s_settingsSnapshotTimer = null;
+
+// Numeric watch snapshot fields mapped back to the settings-page property names.
+var SNAPSHOT_FIELD_MAP = {
+  40: 'KEY_DISPLAY_HOUR_MARKERS', 41: 'KEY_DISPLAY_MINOR_MARKERS',
+  53: 'KEY_BT_DISCONNECT_MIN_INNER_RED', 54: 'KEY_VIBRATE_BT_DISCONNECT',
+  55: 'KEY_VIBRATE_BT_RECONNECT', 107: 'KEY_SHAKE_MODE', 110: 'KEY_TEMP_UNIT',
+  113: 'KEY_CUSTOM_LOCATION', 114: 'KEY_HOUR_HAND_OUTER', 115: 'KEY_HOUR_HAND_INNER',
+  116: 'KEY_MIN_HAND_OUTER', 117: 'KEY_MIN_HAND_INNER', 118: 'KEY_DATE_VISIBLE',
+  119: 'KEY_TEMP_VISIBLE', 121: 'KEY_NUMBER_FONT', 126: 'KEY_BACKGROUND_COLOR',
+  127: 'KEY_NUMBER_COLOR', 128: 'KEY_ICON_COLOR', 129: 'KEY_HOUR_MARKER_COLOR',
+  130: 'KEY_MINUTE_MARKER_COLOR', 134: 'KEY_DATE_COLOR', 135: 'KEY_TEMP_COLOR',
+  136: 'KEY_BT_DISCONNECT_OUTER_COLOR', 137: 'KEY_BT_DISCONNECT_INNER_COLOR',
+  138: 'KEY_BATTERY_RING_THRESHOLD', 139: 'KEY_BATTERY_CENTER_THRESHOLD',
+  141: 'KEY_SECONDS_HAND_COLOR', 142: 'KEY_SECONDS_HAND_MODE',
+  143: 'KEY_SECONDS_SHAKE_DUR', 147: 'KEY_SUNRISE_MARKER_VISIBLE',
+  148: 'KEY_SUNRISE_MARKER_COLOR', 149: 'KEY_SUNSET_MARKER_COLOR',
+  150: 'KEY_NUMBER_SIZE', 151: 'KEY_ICON_SIZE', 153: 'KEY_ICON_COLOR_MODE',
+  158: 'KEY_DISPLAY_MODE', 160: 'KEY_CITY_DISPLAY_MODE', 161: 'KEY_CITY_COLOR',
+  162: 'KEY_COMPLICATION_LAYER'
+};
+
+function loadFullSettings() {
+  if (s_fullSettings) return s_fullSettings;
+  try {
+    var raw = localStorage.getItem(FULL_SETTINGS_STORAGE_KEY);
+    s_fullSettings = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.log('Stored settings parse error: ' + e);
+    s_fullSettings = {};
+  }
+  return s_fullSettings;
+}
+
+function persistFullSettings(patch) {
+  var current = loadFullSettings();
+  var next = {};
+  var key;
+
+  // Keep only real configuration fields; test buttons must never become a
+  // user's next-open settings state.
+  Object.keys(current).forEach(function(k) {
+    if (k.indexOf('KEY_') === 0 && k.indexOf('KEY_TEST_') !== 0) next[k] = current[k];
+  });
+  Object.keys(patch || {}).forEach(function(k) {
+    if (k.indexOf('KEY_') === 0 && k.indexOf('KEY_TEST_') !== 0) next[k] = patch[k];
+  });
+
+  if (next.KEY_WEATHER_INTERVAL === undefined) {
+    next.KEY_WEATHER_INTERVAL = s_currentWeatherInterval || 60;
+  }
+  s_fullSettings = next;
+  localStorage.setItem(FULL_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+function decodeWatchSettingsSnapshot(payload) {
+  var patch = {};
+  var existing = loadFullSettings();
+  Object.keys(SNAPSHOT_FIELD_MAP).forEach(function(numericKey) {
+    if (!payload.hasOwnProperty(numericKey)) return;
+    var settingKey = SNAPSHOT_FIELD_MAP[numericKey];
+    // Earlier watchface versions did not store custom locations on the watch.
+    // Keep the companion's known legacy value until a new save explicitly
+    // writes it to the upgraded watchface.
+    if (settingKey === 'KEY_CUSTOM_LOCATION' &&
+        !payload[numericKey] && existing.KEY_CUSTOM_LOCATION) return;
+    patch[settingKey] = payload[numericKey];
+  });
+  return persistFullSettings(patch);
+}
+
+function openConfigurationPage(settings) {
+  var snapshot = settings || loadFullSettings();
+  var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/?v=' + Date.now() +
+                  '#settings=' + encodeURIComponent(JSON.stringify(snapshot));
+  Pebble.openURL(configUrl);
+}
 
 // Keep custom-location state durable across PebbleKit JS restarts and clear
 // coordinate/city caches whenever the user selects a different place.
@@ -179,9 +264,14 @@ var s_messageSending = false;
 var APP_MESSAGE_MAX_RETRIES = 3;
 var APP_MESSAGE_RETRY_MS = 1000;
 
-function enqueueAppMessage(message, label) {
+function enqueueAppMessage(message, label, onSuccess) {
   if (!message || Object.keys(message).length === 0) return;
-  s_messageQueue.push({ message: message, label: label || 'AppMessage', attempts: 0 });
+  s_messageQueue.push({
+    message: message,
+    label: label || 'AppMessage',
+    attempts: 0,
+    onSuccess: onSuccess || null
+  });
   sendNextAppMessage();
 }
 
@@ -194,6 +284,7 @@ function sendNextAppMessage() {
     console.log(item.label + ' sent to watch');
     s_messageQueue.shift();
     s_messageSending = false;
+    if (item.onSuccess) item.onSuccess();
     sendNextAppMessage();
   }, function(e) {
     item.attempts++;
@@ -514,6 +605,10 @@ function sendSettingsToWatch(settings) {
     return;
   }
 
+  // Keep the complete user configuration before delivery. This becomes the
+  // companion fallback if settings are opened while the watch is unavailable.
+  settings = persistFullSettings(settings);
+
   // Regular settings: build numeric-keyed message
   var msg = {};
 
@@ -524,6 +619,7 @@ function sendSettingsToWatch(settings) {
     KEY_VIBRATE_BT_RECONNECT:        KEY.VIBRATE_BT_RECONNECT,
     KEY_SHAKE_MODE:                  KEY.SHAKE_MODE,
     KEY_TEMP_UNIT:                   KEY.TEMP_UNIT,
+    KEY_CUSTOM_LOCATION:             KEY.CUSTOM_LOCATION,
     KEY_HOUR_HAND_OUTER:             KEY.HOUR_HAND_OUTER,
     KEY_HOUR_HAND_INNER:             KEY.HOUR_HAND_INNER,
     KEY_MIN_HAND_OUTER:              KEY.MIN_HAND_OUTER,
@@ -561,11 +657,16 @@ function sendSettingsToWatch(settings) {
 
   Object.keys(keyMap).forEach(function(strKey) {
     if (settings.hasOwnProperty(strKey)) {
-      msg[keyMap[strKey]] = parseInt(settings[strKey], 10);
+      if (strKey === 'KEY_CUSTOM_LOCATION') {
+        msg[keyMap[strKey]] = String(settings[strKey] || '');
+      } else {
+        msg[keyMap[strKey]] = parseInt(settings[strKey], 10);
+      }
     }
   });
 
-    // Custom location is JS-only, but must survive companion restarts.
+  // The same custom location is now also persisted by the watch so the
+  // full snapshot can restore it even after a companion restart.
   if (settings.KEY_CUSTOM_LOCATION !== undefined) {
     setCustomLocation(settings.KEY_CUSTOM_LOCATION);
   }
@@ -585,26 +686,66 @@ function sendSettingsToWatch(settings) {
 // ─────────────────────────────────────────────────────────────────────────────
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready');
-  // Restore JS-only settings before the first weather request.
-  var storedInterval = localStorage.getItem('weather_interval');
+  // Restore the complete per-user snapshot before the first weather request.
+  var restored = loadFullSettings();
+  var storedInterval = restored.KEY_WEATHER_INTERVAL !== undefined
+    ? restored.KEY_WEATHER_INTERVAL : localStorage.getItem('weather_interval');
   if (storedInterval) {
     s_currentWeatherInterval = parseInt(storedInterval, 10);
   }
-  var storedLocation = localStorage.getItem(CUSTOM_LOCATION_STORAGE_KEY);
-  if (storedLocation !== null) {
+  var storedLocation = restored.KEY_CUSTOM_LOCATION !== undefined
+    ? restored.KEY_CUSTOM_LOCATION : localStorage.getItem(CUSTOM_LOCATION_STORAGE_KEY);
+  if (storedLocation !== null && storedLocation !== undefined) {
     setCustomLocation(storedLocation);
   }
+  // Migrate users of earlier versions, which stored only these two JS-side
+  // values, into the complete per-user settings snapshot.
+  persistFullSettings({
+    KEY_WEATHER_INTERVAL: s_currentWeatherInterval,
+    KEY_CUSTOM_LOCATION: storedLocation || ''
+  });
   doWeatherFetch();
   updateWeatherInterval(s_currentWeatherInterval);
 });
 
 Pebble.addEventListener('appmessage', function(e) {
-  console.log('AppMessage from watch: ' + JSON.stringify(e.payload));
+  var payload = e.payload || {};
+  if (payload[KEY.SETTINGS_SNAPSHOT]) {
+    var snapshot = decodeWatchSettingsSnapshot(payload);
+    if (snapshot.KEY_CUSTOM_LOCATION !== undefined) {
+      setCustomLocation(snapshot.KEY_CUSTOM_LOCATION);
+    }
+    if (snapshot.KEY_WEATHER_INTERVAL !== undefined) {
+      updateWeatherInterval(parseInt(snapshot.KEY_WEATHER_INTERVAL, 10));
+    }
+    if (s_waitingForSettingsSnapshot) {
+      s_waitingForSettingsSnapshot = false;
+      if (s_settingsSnapshotTimer) clearTimeout(s_settingsSnapshotTimer);
+      s_settingsSnapshotTimer = null;
+      openConfigurationPage(snapshot);
+    }
+    return;
+  }
+  console.log('AppMessage from watch: ' + JSON.stringify(payload));
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-  var configUrl = 'https://themott27.github.io/Test_Brolly_v2_Settings/?v=' + Date.now();
-  Pebble.openURL(configUrl);
+  if (s_waitingForSettingsSnapshot) return;
+  s_waitingForSettingsSnapshot = true;
+
+  // A saved companion snapshot is always available as a fallback. The short
+  // timeout keeps Settings usable if a legacy watchface cannot answer yet.
+  s_settingsSnapshotTimer = setTimeout(function() {
+    if (!s_waitingForSettingsSnapshot) return;
+    console.log('Settings snapshot timed out; opening companion snapshot');
+    s_waitingForSettingsSnapshot = false;
+    s_settingsSnapshotTimer = null;
+    openConfigurationPage(loadFullSettings());
+  }, 1800);
+
+  var request = {};
+  request[KEY.REQUEST_SETTINGS] = 1;
+  enqueueAppMessage(request, 'Settings snapshot request');
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
