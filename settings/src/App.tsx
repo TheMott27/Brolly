@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { DEFAULTS, BrollySettings } from './defaults'
 import { PebbleColorPicker, toHex } from './PebbleColorPicker'
 
-const VERSION = 'v2.1.6'
+const VERSION = 'v2.1.7'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -768,16 +768,46 @@ function AlertsTab({ s, set, onResetColours, onResetAll }: {
 
 export default function App() {
   const [settings, setSettings] = useState<BrollySettings>(() => {
-    const saved = localStorage.getItem('brolly_settings')
     const params = new URLSearchParams(window.location.hash.slice(1))
+    const companionSettings: Partial<BrollySettings> = {}
+    const serializedSnapshot = params.get('settings')
+
+    // The Pebble companion sends the user's persisted snapshot whenever it is
+    // available. It is authoritative; browser localStorage is only a fallback
+    // for first-run or legacy-watchface openings.
+    if (serializedSnapshot) {
+      try {
+        const parsed = JSON.parse(serializedSnapshot)
+        if (parsed && typeof parsed === 'object') {
+          Object.keys(parsed).forEach(key => {
+            if (key.indexOf('KEY_') === 0) (companionSettings as any)[key] = parsed[key]
+          })
+        }
+      } catch {
+        // A malformed snapshot should not prevent the page from opening.
+      }
+    }
+
+    let cachedSettings: Partial<BrollySettings> = {}
+    if (Object.keys(companionSettings).length === 0) {
+      try {
+        const saved = localStorage.getItem('brolly_settings')
+        cachedSettings = saved ? JSON.parse(saved) : {}
+      } catch {
+        cachedSettings = {}
+      }
+    }
+
     const urlSettings: Partial<BrollySettings> = {}
     params.forEach((v, k) => {
+      if (k === 'settings') return
       if (v === 'true') (urlSettings as any)[k] = 1
       else if (v === 'false') (urlSettings as any)[k] = 0
       else if (!isNaN(Number(v))) (urlSettings as any)[k] = Number(v)
       else (urlSettings as any)[k] = v
     })
-    return { ...DEFAULTS, ...(saved ? JSON.parse(saved) : {}), ...urlSettings }
+
+    return { ...DEFAULTS, ...cachedSettings, ...companionSettings, ...urlSettings }
   })
 
   const [tab, setTab] = useState<'display' | 'weather' | 'alerts'>('display')
