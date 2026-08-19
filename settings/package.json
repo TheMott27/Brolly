@@ -1,7 +1,7 @@
 {
   "name": "brolly-settings",
   "private": true,
-  "version": "2.1.6",
+  "version": "2.1.7",
   "type": "module",
   "scripts": {
     "build": "vite build --base=./"
