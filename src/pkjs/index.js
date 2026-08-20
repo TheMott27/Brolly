@@ -729,23 +729,37 @@ Pebble.addEventListener('appmessage', function(e) {
   console.log('AppMessage from watch: ' + JSON.stringify(payload));
 });
 
-Pebble.addEventListener('showConfiguration', function(e) {
-  if (s_waitingForSettingsSnapshot) return;
-  s_waitingForSettingsSnapshot = true;
-
-  // A saved companion snapshot is always available as a fallback. The short
-  // timeout keeps Settings usable if a legacy watchface cannot answer yet.
-  s_settingsSnapshotTimer = setTimeout(function() {
-    if (!s_waitingForSettingsSnapshot) return;
-    console.log('Settings snapshot timed out; opening companion snapshot');
-    s_waitingForSettingsSnapshot = false;
-    s_settingsSnapshotTimer = null;
-    openConfigurationPage(loadFullSettings());
-  }, 1800);
-
+function requestSettingsSnapshot() {
   var request = {};
   request[KEY.REQUEST_SETTINGS] = 1;
   enqueueAppMessage(request, 'Settings snapshot request');
+}
+
+Pebble.addEventListener('showConfiguration', function(e) {
+  if (s_waitingForSettingsSnapshot) return;
+
+  var cachedSnapshot = loadFullSettings();
+  if (Object.keys(cachedSnapshot).length > 0) {
+    // The companion already holds the user's complete saved configuration, so
+    // open Settings immediately. Refresh it from the watch in the background
+    // so a later opening also reflects any direct watch-side changes.
+    openConfigurationPage(cachedSnapshot);
+    requestSettingsSnapshot();
+    return;
+  }
+
+  // First run (or a legacy upgrade) has no local full snapshot. Briefly wait
+  // for the watch's authoritative values, then preserve the safe fallback.
+  s_waitingForSettingsSnapshot = true;
+  s_settingsSnapshotTimer = setTimeout(function() {
+    if (!s_waitingForSettingsSnapshot) return;
+    console.log('Initial settings snapshot timed out; opening fallback settings');
+    s_waitingForSettingsSnapshot = false;
+    s_settingsSnapshotTimer = null;
+    openConfigurationPage(loadFullSettings());
+  }, 650);
+
+  requestSettingsSnapshot();
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
